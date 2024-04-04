@@ -4,13 +4,13 @@
 \alias{get_json_files}
 \title{JSON Files Container}
 \usage{
-get_json_files(root_path, pattern, fyear = NULL)
+get_json_files(root_path, pattern = NULL, fyear = NULL)
 }
 \arguments{
 \item{root_path}{Character giving the path to the root folder location (see 'Details').}
 
 \item{pattern}{An optional \link[base]{regex}. Only file names which match the regular expression will be returned
-as in \code{\link[base]{list.files}}.}
+as in \code{\link[base]{list.files}}. Default to \code{NULL}.}
 
 \item{fyear}{Optional numeric vector specifying the time window in fiscal years. When \code{NULL},
 all the fiscal years detected in \code{root_path} are considered. Default to \code{NULL}.}
