@@ -1,10 +1,17 @@
+if ( getRversion() >= "2.15.1" ) {
+  utils::globalVariables( c( "jcol", "item", "fyear", ".", "col1",
+                             "col2", "col4", "col5", "col6", "col10", "col11", "col12",
+                             "text", "year_filed", "date_filed") )
+}
 #' Convert JSON to data.frame
 #'
 #' Convenient function to covert a container list of JSON files to data.frame structures.
 #'
 #' @param json_list A list of JSON files as built by \code{\link{get_json_files}}.
+#' @param ncores The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.
 #'
-#' @return I don't remember yet...check in later...
+#' @return A list of data.table where each element represents a fiscal year. Each data.table contains
+#' several identification columns in addition to the document itself. 
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
@@ -16,35 +23,43 @@
 #' @importFrom iterators iter
 #' @export
 
-from_json_to_df = function(json_list) {
-
+from_json_to_df = function(json_list, ncores = 1) {
+  
+  followup = str_extract(names(json_list), "\\d+")
+  big_bucket = vector("list", length(followup))
+  names(big_bucket) = str_c("fyear_", followup)
+  
   for ( i_year in seq_along(json_list) ) {
-    message("# # #")
-    message("Processing batch ", names(json_list)[i_year])
+    
+    current_year = str_extract(names(json_list)[i_year], "\\d+")
+    message("# # # Processing batch ", current_year, " # # #")
     current_list = json_list[[i_year]]
-
+    
     message("Reading JSON files")
-    json_list = lapply(current_list, fromJSON)
+    temp = lapply(current_list, fromJSON)
     message("Converting to data.table")
-    df = lapply(json_list, as.data.table)
-
-    # the following if-statement checks whether the filings are before or after 2006.
-    # This is when SEC introduces SOX and mandated to include Item 1A
-    # It could be also due to an issue in 2006
-    if ( followup[i_year] == "2006" ) {
+    df = lapply(temp, as.data.table)
+    
+    # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
+    # the following if-statement checks whether the filings are from 2006.
+    # This is because some columns were missing during the initial retrieval. 
+    if ( current_year == "2006" ) {
       id_col_item1 = sapply(df, function(x) str_which(names(x), "section_1\\b")) - 1L
     } else {
       id_col_item1 = sapply(df, function(x) str_which(names(x), "item_1\\b")) - 1L
     }
-    n_df = length(df)
-
+    # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
+    
+    # This internal loop is parallel because it represents the bottleneck in this function. 
+    # Check the core assignment as it is not super efficient at the moment. 
     message("Fixing column names and melting")
-    it = iter( seq_len(n_df), by = "row" )
-    cl = makeCluster( ncores )
-    registerDoParallel( cl )
+    n_df = length(df)
+    it = iter(seq_len(n_df), by = "row")
+    cl = makeCluster(ncores)
+    registerDoParallel(cl)
     df_melt = foreach(
       jcol = it,
-      .packages = c( "iterators", "data.table", "quanteda", "stringr", "lubridate", "jsonlite" )
+      .packages = c("iterators", "data.table", "stringr")
     ) %dopar% {
       columns_to_fix = 1L:id_col_item1[jcol]
       columns_fixed = str_c("col", columns_to_fix)
@@ -53,31 +68,41 @@ from_json_to_df = function(json_list) {
            id.vars = columns_fixed,
            variable.name = "item",
            value.name = "text")
-
     }
     stopCluster(cl)
-
+    
     message("Binding into one data.table")
     out = rbindlist(df_melt, fill = TRUE)
-    if ( followup[i_year] == "2006" ) {
-      setnames(out, 1L:3L, c("filename", "cik", "fiscal_year"))
+    if ( current_year == "2006" ) {
+      setnames(out, 1L:3L, c("filename", "cik", "fyear"))
       out[ , item := str_replace(item, "section", "item")]
     } else {
-      out[ , fiscal_year := as.integer(followup[i_year])]
-      out = out[ , .(col1, col2, fiscal_year, col4, col5, col6, item, text)]
-      setnames(out, 1L:6L, c("cik", "cname", "fiscal_year", "date_filed", "fiscal_year_end", "sic"))
+      out[ , fyear := as.integer(current_year)]
+      out = out[ , .(col1, col2, fyear, col4, col5, col6, item, col10, col11, col12, text)]
+      setnames(out, new = c("cik", "cname", "fyear", "date_filed", "fyear_end", "sic", "item",
+                            "filing_detail", "filing_html", "filing_txt", "text"))
+      # This check is to avoid any late filers and to keep everything as consitens as possible
       out[ , year_filed := year(date_filed)]
-      cat("Keeping t+1 observations only\n")
-      out = out[ year_filed <= as.integer(followup[i_year]) + 1L ]
+      out = out[ year_filed <= as.integer(current_year) + 1L ]
       out[ , year_filed := NULL]
     }
-
-    # cat("Saving\n")
-    # saveRDS(out, str_c("Data/10K_JSON_splits_df/", "AR_", followup[i_year], "_byitem_df.rds"))
+    
+    big_bucket[[ i_year ]] = out
+    rm(out)
+    
+    # cat("Saving\n")a
+    # saveRDS(out, str_c("Data/10K_JSON_splits_df/", "AR_", current_year, "_byitem_df.rds"))
     # rm(list = c("current_list", "json_list", "df", "df_melt", "out"))
     # cat("Done!\n")
   }
-
-
+  
+  # this way of returning is not ideal because if one processes a long time series, you saturate
+  # the RAM at one point. 
+  # SOLUTION: add a parameter that controls whether one wants to save to disk 
+  # the data.table at each iteration. This would require a path out and a potential naming convention. 
+  # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
+  # 
+  return(big_bucket)
+  
 }
 

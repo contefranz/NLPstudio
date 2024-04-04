@@ -4,13 +4,16 @@
 \alias{from_json_to_df}
 \title{Convert JSON to data.frame}
 \usage{
-from_json_to_df(json_list)
+from_json_to_df(json_list, ncores = 1)
 }
 \arguments{
 \item{json_list}{A list of JSON files as built by \code{\link{get_json_files}}.}
+
+\item{ncores}{The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.}
 }
 \value{
-I don't remember yet...check in later...
+A list of data.table where each element represents a fiscal year. Each data.table contains
+several identification columns in addition to the document itself.
 }
 \description{
 Convenient function to covert a container list of JSON files to data.frame structures.
