@@ -1,12 +1,25 @@
 Package: edgartools
-Title: What the Package Does (One Line, Title Case)
+Title: Convert SEC Filings Into A Corpus
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Authors@R: c(
+    person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
+    role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")),
+    person("Piergiorgio", "Di Pasquale", , "dipasquale.piergiorgio@gmail.com", 
+    role = c("ctb")))
+Description: A set of convenient functions to convert raw JSON files containing SEC filings data to a 
+  quanteda corpus for extensive Natural Language Processing analyses.
+License: `use_gpl3_license()`
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
+Depends: R (>= 4.3.3)
+Imports:
+    data.table (>= 1.15.4),
+    quanteda (>= 3.3.1),
+    jsonlite (>= 1.8.8),
+    foreach (>= 1.5.2),
+    iterators (>= 1.0.14),
+    doParallel (>= 1.0.17),
+    parallel (>= 4.3.3),
+    stringr (>= 1.5.1)
+    
