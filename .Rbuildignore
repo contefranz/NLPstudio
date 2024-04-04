@@ -10,3 +10,4 @@
 ^\.github$          # GitHub Actions workflows
 ^scratch$           # ignore folder scratch containing bad code before it is converted to R functions
 ^test$              # ignore folder test containing snippets that test the package
+^LICENSE\.md$
