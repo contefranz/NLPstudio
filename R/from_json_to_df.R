@@ -88,6 +88,11 @@ from_json_to_df = function(json_list, ncores = 1) {
       # convert date_filed and fyear_end to IDat
       out[ , `:=` (date_filed = as.IDate(date_filed),
                    fyear_end = as.IDate(fyear_end))]
+      # convert cik to integer
+      out[ , cik := as.integer(cik)]
+      # convert sic to integer
+      out[ str_detect(sic, "\\D"), sic := NA_character_]
+      out[ , sic := as.integer(sic)]
     }
 
     big_bucket[[ i_year ]] = out
