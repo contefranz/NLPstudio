@@ -4,7 +4,12 @@
 \alias{get_sec_master_files}
 \title{SEC Master Files Container}
 \usage{
-get_sec_master_files(root_path, pattern = NULL, fyear = NULL)
+get_sec_master_files(
+  root_path,
+  pattern = NULL,
+  fyear = NULL,
+  drop_late = FALSE
+)
 }
 \arguments{
 \item{root_path}{Character giving the path to the root folder location (see 'Details').}
@@ -14,6 +19,9 @@ as in \code{\link[base]{list.files}}. Default to \code{NULL}.}
 
 \item{fyear}{Optional numeric vector specifying the time window in fiscal years. When \code{NULL},
 all the fiscal years detected in \code{root_path} are considered. Default to \code{NULL}.}
+
+\item{drop_late}{When \code{TRUE}, remove filings referring to distant fiscal period. Default to
+\code{FALSE}.}
 }
 \value{
 A \code{data.table} containing all the SEC master files as detected by the function

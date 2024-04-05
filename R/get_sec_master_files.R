@@ -7,6 +7,8 @@
 #' as in \code{\link[base]{list.files}}. Default to \code{NULL}.
 #' @param fyear Optional numeric vector specifying the time window in fiscal years. When \code{NULL},
 #' all the fiscal years detected in \code{root_path} are considered. Default to \code{NULL}.
+#' @param drop_late When \code{TRUE}, remove filings referring to distant fiscal period. Default to
+#' \code{FALSE}.
 #'
 #' @details
 #' The function works in conjunction with the EDGAR crawler structure. In general, this creates three
@@ -43,7 +45,7 @@
 #' @export
 
 
-get_sec_master_files = function(root_path, pattern = NULL, fyear = NULL) {
+get_sec_master_files = function(root_path, pattern = NULL, fyear = NULL, drop_late = FALSE) {
 
   # remove the trailing "/" at the end of the path to avoid double slashes in the call of list.files
   root_path = str_remove(root_path, "/$")
@@ -93,8 +95,18 @@ get_sec_master_files = function(root_path, pattern = NULL, fyear = NULL) {
   setcolorder(master_all, c("cik", "cname", "type", "date_filed", "fyear_end", "sic", "state_of_inc",
                             "state_location", "filing_detail", "filing_html", "filing_txt", "filename"))
 
-  # note that date columns are in the efficient and fast format IDat which is proper of data.table
-  # Make sure that the output of from_json_to_df() has that too!
+  if (drop_late) {
+    # SUPER IMPORTANT!
+    # the following code fixes late filers. It can happen that multiple filings (e.g., a 10-K) are
+    # filed on the same date_filed but they refer to different fyear_end. We only want the original
+    # filing that is associated to the current fiscal period. To solve the problem we sort
+    # by cik, date_filed, fyear_end so that the most current filing is the last observation within the
+    # group. We use duplicated() to spot duplicated observations in reverse order and then drop them.
+    setkey(master_all, cik, date_filed, fyear_end, sic, filing_detail, filing_html, filing_txt)
+    master_all[ , checkdup := duplicated(master_all, by = c("cik", "date_filed"), fromLast = TRUE)]
+
+    master_all = master_all[ checkdup == FALSE ]
+  }
 
   return(master_all[])
 
