@@ -99,3 +99,4 @@ rsconnect/
 
 # Log file
 *.log
+.DS_Store
