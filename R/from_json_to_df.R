@@ -1,7 +1,7 @@
 if ( getRversion() >= "2.15.1" ) {
   utils::globalVariables( c( "jcol", "item", "fyear", ".", "col1",
                              "col2", "col4", "col5", "col6", "col10", "col11", "col12",
-                             "text", "year_filed", "date_filed") )
+                             "text", "year_filed", "date_filed", "fyear_end", "sic") )
 }
 #' Convert JSON to data.frame
 #'

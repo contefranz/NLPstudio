@@ -1,3 +1,6 @@
+if ( getRversion() >= "2.15.1" ) {
+  utils::globalVariables( c("fyear_end", "sic", "filing_html") )
+}
 #' SEC Master Files Container
 #'
 #' Create a container list with the pointers to all the JSON files detected in the input folder.
