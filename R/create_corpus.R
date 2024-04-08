@@ -69,8 +69,7 @@ create_corpus = function(df_container, form_type = c("10-K"), to_disk = FALSE, p
     
     # add the filename (with accession number) and internal docname for corpus to the data.table
     current_df[ , `:=` (filename = filename_df[ , filename],
-                        doc_id_corpus = filename_df[ , doc_id_corpus],
-                        checkdup = NULL)]
+                        doc_id_corpus = filename_df[ , doc_id_corpus])]
     
     message("Building corpus")
     current_corpus = corpus(x = current_df, text_field = "text", docid_field = "doc_id_corpus")
@@ -93,10 +92,10 @@ create_corpus = function(df_container, form_type = c("10-K"), to_disk = FALSE, p
         out_corpus = out_corpus + current_corpus
       }
     }
-    if ( to_disk ) {
-      message("Done!")
-    } else {
-      return(out_corpus)
-    }
+  }
+  if ( to_disk ) {
+    return(NULL)
+  } else {
+    return(out_corpus)
   }
 }
