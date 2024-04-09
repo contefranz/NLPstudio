@@ -16,7 +16,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table foreach quanteda
-#' @importFrom stringr str_which str_replace
+#' @importFrom stringr str_which str_replace str_extract
 #' @importFrom jsonlite fromJSON
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom doParallel registerDoParallel
@@ -87,6 +87,10 @@ from_json_to_df = function(json_list, ncores = 1) {
     out[ , year_filed := NULL]
     # move the column fyear where it belongs
     setcolorder(out, neworder = "fyear", after = "period_of_report")
+    # extract the accession number useful for checking duplicate observations and to trace
+    # back the filing on SEC EDGAR.
+    out[ , accession_number := str_extract(filename, "\\d{10}-\\d{2}-\\d{6}")]
+    setcolorder(out, neworder = "accession_number", after = "filename")
 
     # collect output and put it in the final list
     big_bucket[[ i_year ]] = out
