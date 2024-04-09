@@ -1,6 +1,6 @@
 if ( getRversion() >= "2.15.1" ) {
-  utils::globalVariables( c( "jcol", "item", "fyear", ".", "col1",
-                             "col2", "col4", "col5", "col6", "col10", "col11", "col12",
+  utils::globalVariables( c( "jcol", "item", "fyear", ".", "filing_date",
+                             "period_of_report", "accession_number",
                              "text", "year_filed", "date_filed", "fyear_end", "sic") )
 }
 #' Convert JSON to data.frame
@@ -9,8 +9,11 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @param json_list A list of JSON files as built by \code{\link{get_json_files}}.
 #' @param ncores The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.
+#' @param bind Logical indicating whether to return a single \code{data.table} or a \code{list}.
+#' Default to \code{TRUE}.
 #'
-#' @return A list of data.table where each element represents a fiscal year. Each data.table contains
+#' @return Either a single \code{data.table} when \code{bind = TRUE} or a list of data.table
+#' where each element represents a fiscal year. Each observation contains
 #' several identification columns in addition to the document itself.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
@@ -23,7 +26,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom iterators iter
 #' @export
 
-from_json_to_df = function(json_list, ncores = 1) {
+from_json_to_df = function(json_list, ncores = 1, bind = TRUE) {
 
   followup = str_extract(names(json_list), "\\d+")
   big_bucket = vector("list", length(followup))
@@ -96,10 +99,6 @@ from_json_to_df = function(json_list, ncores = 1) {
     big_bucket[[ i_year ]] = out
     rm(out)
 
-    # cat("Saving\n")a
-    # saveRDS(out, str_c("Data/10K_JSON_splits_df/", "AR_", current_year, "_byitem_df.rds"))
-    # rm(list = c("current_list", "json_list", "df", "df_melt", "out"))
-    # cat("Done!\n")
   }
 
   # this way of returning is not ideal because if one processes a long time series, you saturate
@@ -108,7 +107,11 @@ from_json_to_df = function(json_list, ncores = 1) {
   # the data.table at each iteration. This would require a path out and a potential naming convention.
   # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
   #
-  return(big_bucket)
-
+  if ( bind ) {
+    bind_bucket = rbindlist(big_bucket)
+    return(bind_bucket[])
+  } else {
+    return(big_bucket)
+  }
 }
 
