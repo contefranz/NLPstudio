@@ -41,13 +41,12 @@ from_json_to_df = function(json_list, ncores = 1) {
     df = lapply(temp, as.data.table)
 
     # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
-    # the following if-statement checks whether the filings are from 2006.
-    # This is because some columns were missing during the initial retrieval.
-    if ( current_year == "2006" ) {
-      id_col_item1 = sapply(df, function(x) str_which(names(x), "section_1\\b")) - 1L
-    } else {
-      id_col_item1 = sapply(df, function(x) str_which(names(x), "item_1\\b")) - 1L
-    }
+    # the following if-statement checks the location of column "item_1" which marks the starting
+    # point of the textual data. This is due to some observations missing the column
+    # "state_of_inc".
+    # In some cases, the wording might be off and instead of "item" it's "section". That's why
+    # I included an OR in the regex.
+    id_col_item1 = sapply(df, function(x) str_which(names(x), "item_1\\b|section_1\\b")) - 1L
     # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
 
     # This internal loop is parallel because it represents the bottleneck in this function.
@@ -62,10 +61,9 @@ from_json_to_df = function(json_list, ncores = 1) {
       .packages = c("iterators", "data.table", "stringr")
     ) %dopar% {
       columns_to_fix = 1L:id_col_item1[jcol]
-      columns_fixed = str_c("col", columns_to_fix)
-      setnames(df[[jcol]], columns_to_fix, columns_fixed)
+      old_col_names = names(df[[jcol]])[columns_to_fix]
       melt(df[[jcol]],
-           id.vars = columns_fixed,
+           id.vars = old_col_names,
            variable.name = "item",
            value.name = "text")
     }
@@ -73,28 +71,24 @@ from_json_to_df = function(json_list, ncores = 1) {
 
     message("Binding into one data.table")
     out = rbindlist(df_melt, fill = TRUE)
-    if ( current_year == "2006" ) {
-      setnames(out, 1L:3L, c("filename", "cik", "fyear"))
-      out[ , item := str_replace(item, "section", "item")]
-    } else {
-      out[ , fyear := as.integer(current_year)]
-      out = out[ , .(col1, col2, fyear, col4, col5, col6, item, col10, col11, col12, text)]
-      setnames(out, new = c("cik", "cname", "fyear", "date_filed", "fyear_end", "sic", "item",
-                            "filing_detail", "filing_html", "filing_txt", "text"))
-      # This check is to avoid any late filers and to keep everything as consistent as possible
-      out[ , year_filed := year(date_filed)]
-      out = out[ year_filed <= as.integer(current_year) + 1L ]
-      out[ , year_filed := NULL]
-      # convert date_filed and fyear_end to IDat
-      out[ , `:=` (date_filed = as.IDate(date_filed),
-                   fyear_end = as.IDate(fyear_end))]
-      # convert cik to integer
-      out[ , cik := as.integer(cik)]
-      # convert sic to integer
-      out[ str_detect(sic, "\\D"), sic := NA_character_]
-      out[ , sic := as.integer(sic)]
-    }
 
+    # convert cik to integer
+    out[ , cik := as.integer(cik)]
+    # convert sic to integer
+    out[ str_detect(sic, "\\D"), sic := NA_character_]
+    out[ , sic := as.integer(sic)]
+    # convert date_filed and fyear_end to IDat
+    out[ , `:=` (filing_date = as.IDate(filing_date),
+                 period_of_report = as.IDate(period_of_report))]
+    out[ , fyear := year(period_of_report)]
+    # This check is to avoid any late filers and to keep everything as consistent as possible
+    out[ , year_filed := year(filing_date)]
+    out = out[ year_filed <= fyear + 1L ]
+    out[ , year_filed := NULL]
+    # move the column fyear where it belongs
+    setcolorder(out, neworder = "fyear", after = "period_of_report")
+
+    # collect output and put it in the final list
     big_bucket[[ i_year ]] = out
     rm(out)
 
