@@ -21,4 +21,7 @@ Imports:
     iterators (>= 1.0.14),
     doParallel (>= 1.0.17),
     parallel (>= 4.3.3),
-    stringr (>= 1.5.1)
+    stringr (>= 1.5.1),
+    future (>= 1.33.2),
+    future.apply (>= 1.11.2),
+    cli (>= 3.6.2)
