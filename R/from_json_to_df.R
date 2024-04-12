@@ -10,17 +10,18 @@ if ( getRversion() >= "2.15.1" ) {
 #' @param json_list A list of JSON files as built by \code{\link{get_json_files}}.
 #' @param ncores The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.
 #'
-#' @return A single \code{data.table} containing
+#' @returns A single \code{data.table} containing
 #' several identification columns in addition to the document itself.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table foreach quanteda
-#' @importFrom stringr str_which str_replace str_extract
+#' @importFrom stringr str_c str_which str_replace str_extract
 #' @importFrom jsonlite fromJSON
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom doParallel registerDoParallel
 #' @importFrom iterators iter
+#' @importFrom cli cli_h1 cli_h2 cli_alert cli_alert_success cli_alert_danger
 #' @export
 
 from_json_to_df = function(json_list, ncores = 1) {
@@ -29,15 +30,16 @@ from_json_to_df = function(json_list, ncores = 1) {
   big_bucket = vector("list", length(followup))
   names(big_bucket) = str_c("fyear_", followup)
 
+  cli_h1("Flattening JSONs")
   for ( i_year in seq_along(json_list) ) {
 
     current_year = str_extract(names(json_list)[i_year], "\\d+")
-    message("# # # Processing batch ", current_year, " # # #")
+    cli_h2("Processing batch {current_year}")
     current_list = json_list[[i_year]]
 
-    message("Reading JSON files")
+    cli_alert("Reading JSON files")
     temp = lapply(current_list, fromJSON)
-    message("Converting to data.table")
+    cli_alert("Converting to data.table")
     df = lapply(temp, as.data.table)
 
     # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
@@ -51,7 +53,7 @@ from_json_to_df = function(json_list, ncores = 1) {
 
     # This internal loop is parallel because it represents the bottleneck in this function.
     # Check the core assignment as it is not super efficient at the moment.
-    message("Fixing column names and melting")
+    cli_alert("Fixing column names and melting")
     n_df = length(df)
     it = iter(seq_len(n_df), by = "row")
     cl = makeCluster(ncores)
@@ -69,9 +71,10 @@ from_json_to_df = function(json_list, ncores = 1) {
     }
     stopCluster(cl)
 
-    message("Binding into one data.table")
+    cli_alert("Binding into one data.table")
     out = rbindlist(df_melt, fill = TRUE)
 
+    cli_alert("Casting correct column classes and creating accession_number")
     # convert cik to integer
     out[ , cik := as.integer(cik)]
     # convert sic to integer
@@ -105,6 +108,7 @@ from_json_to_df = function(json_list, ncores = 1) {
   # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
   #
   bind_bucket = rbindlist(big_bucket)
+  cli_alert_success("Conversion has been successful")
   return(bind_bucket[])
 }
 

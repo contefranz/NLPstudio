@@ -9,12 +9,20 @@ if ( getRversion() >= "2.15.1" ) {
 #' @param df_container A \code{data.table} containing the raw textual documents
 #' as built by \code{\link{from_json_to_df}}.
 #'
-#' @return A quanteda \code{\link[quanteda]{corpus}} object.
+#' @details
+#' Even if this function is supposed to be used in conjunction with \code{\link{from_json_to_df}},
+#' it can also be used more generally when a \code{data.table} containing some textual documents is
+#' available. At the moment, the requirements are that the input object \code{df_container} must have a column
+#' \code{"text"} containing the documents and a column \code{"filename"} that contains the document
+#' filenames.
+#'
+#' @returns A quanteda \code{\link[quanteda]{corpus}} object.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table quanteda
 #' @importFrom stringr str_remove str_detect str_c
+#' @importFrom cli cli_h2
 #' @export
 
 create_corpus = function(df_container) {
@@ -37,7 +45,7 @@ create_corpus = function(df_container) {
   }
   df_container[ , checkdup := NULL]
 
-  message("Building corpus")
+  cli_h2("Building corpus")
   current_corpus = corpus(x = df_container, text_field = "text", docid_field = "doc_id_corpus")
   df_container[ , `:=` (filename2 = NULL, doc_id_corpus = NULL)]
   return(current_corpus)

@@ -12,12 +12,12 @@ get_json_files(root_path, pattern = NULL, fyear = NULL)
 \item{pattern}{An optional \link[base]{regex}. Only file names which match the regular expression will be returned
 as in \code{\link[base]{list.files}}. Default to \code{NULL}.}
 
-\item{fyear}{Optional numeric vector specifying the time window in fiscal years. When \code{NULL},
-all the fiscal years detected in \code{root_path} are considered. Default to \code{NULL}.}
+\item{fyear}{Optional numeric vector specifying the time window in years. When \code{NULL},
+all the years detected in \code{root_path} are considered. Default to \code{NULL}.}
 }
 \value{
-A list whose elements are the fiscal years. Each element contains the pointers to each JSON file within
-each fiscal year.
+A list whose elements are the years. Each element contains the pointers to each JSON file within
+each year.
 }
 \description{
 Create a container list with the pointers to all the JSON files detected in the input folder.
@@ -26,6 +26,6 @@ Create a container list with the pointers to all the JSON files detected in the 
 The function works in conjunction with the EDGAR crawler structure. In general, this creates three
 main folders as containers: (i) the original HTML files, (ii) the metadata of each filing, (iii)
 the extracted items in JSON format. Each of these structures is usually, and conveniently, organized
-by fiscal year. This is not an imposition but rather a strong suggestion. Ideally, one could put
+by year. This is not an imposition but rather a strong suggestion. Ideally, one could put
 all the filings into the root_path
 }

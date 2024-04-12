@@ -24,7 +24,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' stored in a .csv file and are located in \code{root_path} with no sub-directory. It is recommended
 #' to specify at least a \code{pattern} to detect those files.
 #'
-#' @return A \code{data.table} containing all the SEC master files as detected by the function
+#' @returns A \code{data.table} containing all the SEC master files as detected by the function
 #' with the following columns:
 #'
 #' \item{\code{cik}}{The Central Index Key as given by the SEC EDGAR database. Integer.}

@@ -38,14 +38,5 @@ tokenize_corpus = function(x, ncores, ...) {
     stop("Different document numbers")
   }
 
-  # if ( additional_cleaning ) {
-  #   message("Cleaning tokens...")
-  #   toks = tokens_keep(toks, ...)
-  #   # plan(multisession, workers = ncores)
-  #   # chunks = split(toks, rep_len(1:ncores, ndoc(x)))
-  #   # toks = do.call(c, future_lapply(chunks, tokens_keep, min_nchar = 3))
-  #   # plan(sequential)
-  #   toks = tokens_tolower(toks)
-  # }
   return(toks)
 }

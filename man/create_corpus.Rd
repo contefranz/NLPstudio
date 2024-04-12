@@ -16,6 +16,13 @@ A quanteda \code{\link[quanteda]{corpus}} object.
 \description{
 Build a quanteda corpus from the data.table container.
 }
+\details{
+Even if this function is supposed to be used in conjunction with \code{\link{from_json_to_df}},
+it can also be used more generally when a \code{data.table} containing some textual documents is
+available. At the moment, the requirements are that the input object \code{df_container} must have a column
+\code{"text"} containing the documents and a column \code{"filename"} that contains the document
+filenames.
+}
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
 }
