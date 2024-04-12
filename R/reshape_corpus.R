@@ -3,7 +3,7 @@
 #' Reshape a \code{\link[quanteda]{corpus}} in parallel under the \strong{future} paradigm.
 #'
 #' @param x A \code{\link[quanteda]{corpus}} as built by \code{create_corpus}.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for the tokenization.
+#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for the reshaping.
 #' @param ... Additional arguments passed to \code{\link[quanteda]{corpus_reshape}} (see 'Details').
 #'
 #' @details
@@ -37,7 +37,7 @@ reshape_corpus = function(x, ncores, ...) {
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
   cli_h2("Reshaping")
-  reshaped = do.call(c, future_lapply(chunks, corpus_reshape))
+  reshaped = do.call(c, future_lapply(chunks, corpus_reshape, future.seed = TRUE, ...))
   plan(sequential)
 
   doc_names = sort(docnames(x))

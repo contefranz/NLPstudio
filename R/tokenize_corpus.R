@@ -28,7 +28,7 @@ tokenize_corpus = function(x, ncores, ...) {
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
   cli_h2("Tokenizing")
-  toks = do.call(c, future_lapply(chunks, tokens))
+  toks = do.call(c, future_lapply(chunks, tokens, future.seed = TRUE, ...))
   plan(sequential)
 
   if ( ndoc(toks) == ndoc(x) ) {
