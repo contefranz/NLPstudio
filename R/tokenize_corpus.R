@@ -6,7 +6,7 @@
 #' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for the tokenization.
 #' @param ... Additional arguments passed to \code{\link[quanteda]{tokens}}.
 #'
-#' @return A \code{\link[quanteda]{tokens}} object.
+#' @returns A \code{\link[quanteda]{tokens}} object.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
