@@ -4,19 +4,15 @@
 \alias{from_json_to_df}
 \title{Convert JSON to data.frame}
 \usage{
-from_json_to_df(json_list, ncores = 1, bind = TRUE)
+from_json_to_df(json_list, ncores = 1)
 }
 \arguments{
 \item{json_list}{A list of JSON files as built by \code{\link{get_json_files}}.}
 
 \item{ncores}{The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.}
-
-\item{bind}{Logical indicating whether to return a single \code{data.table} or a \code{list}.
-Default to \code{TRUE}.}
 }
 \value{
-Either a single \code{data.table} when \code{bind = TRUE} or a list of data.table
-where each element represents a fiscal year. Each observation contains
+A single \code{data.table} containing
 several identification columns in addition to the document itself.
 }
 \description{

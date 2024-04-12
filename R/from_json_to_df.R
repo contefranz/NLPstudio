@@ -9,11 +9,8 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @param json_list A list of JSON files as built by \code{\link{get_json_files}}.
 #' @param ncores The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.
-#' @param bind Logical indicating whether to return a single \code{data.table} or a \code{list}.
-#' Default to \code{TRUE}.
 #'
-#' @return Either a single \code{data.table} when \code{bind = TRUE} or a list of data.table
-#' where each element represents a fiscal year. Each observation contains
+#' @return A single \code{data.table} containing
 #' several identification columns in addition to the document itself.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
@@ -26,7 +23,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom iterators iter
 #' @export
 
-from_json_to_df = function(json_list, ncores = 1, bind = TRUE) {
+from_json_to_df = function(json_list, ncores = 1) {
 
   followup = str_extract(names(json_list), "\\d+")
   big_bucket = vector("list", length(followup))
@@ -107,11 +104,7 @@ from_json_to_df = function(json_list, ncores = 1, bind = TRUE) {
   # the data.table at each iteration. This would require a path out and a potential naming convention.
   # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
   #
-  if ( bind ) {
-    bind_bucket = rbindlist(big_bucket)
-    return(bind_bucket[])
-  } else {
-    return(big_bucket)
-  }
+  bind_bucket = rbindlist(big_bucket)
+  return(bind_bucket[])
 }
 
