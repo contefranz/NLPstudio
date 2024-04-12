@@ -1,0 +1,63 @@
+#' Fast Calculation of Readability Measures
+#'
+#' Compute readability measures in parallel with the \strong{future} paradigm. 
+#'
+#' @param x A \code{\link[quanteda]{corpus}} or a character vector containing the documents to process.
+#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for 
+#' the calculation of readability.
+#' @param ... Additional arguments passed to \code{\link[quanteda.textstats]{textstat_readability}}.
+#'
+#' @returns A \code{\link[data.table]{data.table}} with as many columns as passed to 
+#' \code{measure} and \code{doc_id} as the document identifier.
+#'
+#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#'
+#' @import data.table
+#' @importFrom quanteda.textstats textstat_readability
+#' @importFrom stringr str_c str_which str_remove
+#' @importFrom future plan multisession sequential
+#' @importFrom future.apply future_lapply
+#' @importFrom cli cli_h2 cli_alert cli_alert_success
+#' @export
+
+
+calculate_readability = function(x, ncores, ...) {
+  
+  if ( !is.corpus(x) || !is.character(x) ) {
+    stop("x must be a quanteda corpus object or a character vector containing the documents")
+  }
+  
+  cli_h2("Calculating readability")
+  # args = as.list(substitute(list(...)))[-1L]
+  args = list(...)
+  if ( any(names(args) %in% "measure") ) {
+    cli_alert("Selected readability measures: {args$measure}")
+  }
+  if ( any(names(args) %in% "min_sentence_length") ) {
+    cli_alert("Minimum sentence length: {args$min_sentence_length}")
+  }
+  if ( any(names(args) %in% "max_sentence_length") ) {
+    cli_alert("Maximum sentence length: {args$max_sentence_length}")
+  }
+  
+  # define the number of workers
+  plan(multisession, workers = ncores)
+  chunks = split(x, rep_len(1L:ncores, ndoc(x)))
+  readability_measures = do.call(c, future_lapply(chunks, textstat_readability, 
+                                                  future.seed = TRUE, ...))
+  plan(sequential)
+  
+  Nel = length(readability_measures)
+  bucket_names = names(readability_measures)
+  out = vector("list", Nel)
+  for ( j in seq_len(Nel) ) {
+    where = str_which(bucket_names, str_c("^", j, "\\."))
+    now = as.data.table(readability_measures[where])
+    setnames(now, str_remove(names(now), "^\\d+\\."))
+    out[[ j ]] = now
+  }
+  out_all = rbindlist(out, fill = TRUE)
+  setnames(out_all, "document", "doc_id")
+  cli_alert_success("Done")
+  return(out_all)
+}
