@@ -1,6 +1,6 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![release](https://img.shields.io/badge/release-v0.0.2-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.2)
+[![release](https://img.shields.io/badge/release-v0.0.3-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.3)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # edgartools: Convert SEC Filings Into A Corpus
@@ -23,6 +23,17 @@ a container list with the local pointers.
 structures.
 
 - `create_corpus()`: Workhorse function to create a [__quanteda__](https://quanteda.io/) corpus.
+
+- `reshape_corpus()`: Reshape a [__quanteda__](https://quanteda.io/) corpus in parallel via the 
+[__future__](https://future.futureverse.org/index.html) paradigm. 
+
+- `tokenize_corpus()`: Tokenize a [__quanteda__](https://quanteda.io/) corpus in parallel via the 
+[__future__](https://future.futureverse.org/index.html) paradigm. 
+
+- `calculate_readability()`: Calculate readability measures with [__quanteda.textstats__](https://github.com/quanteda/quanteda.textstats) in parallel via 
+the [__future__](https://future.futureverse.org/index.html) paradigm. 
+
+### Additional Utility Functions
 
 - `get_sec_master_files()`: Convenient function to collect SEC EDGAR master files from local directory. 
 
@@ -47,6 +58,7 @@ root_path = "edgar-crawler/datasets/"
 filing_year = 2007
 ncores = 2
 corpus_folder = "quanteda_corpus"
+tokens_folder = "quanteda_tokens"
 
 
 # CORPUS CREATION PIPELINE --------------------------------------------------------------------
@@ -76,8 +88,23 @@ saveRDS(current_corpus, file = file.path(corpus_folder, fileout))
 
 cli_alert_success("Corpus correctly saved!")
 
-# END OF SCRIPT
+# TOKENIZATION --------------------------------------------------------------------------------
 
+# 4. Tokenize the corpus
+toks = tokenize_corpus(x = current_corpus,
+                       ncores = 2,
+                       remove_separator = FALSE,
+                       remove_punct = TRUE,
+                       remove_symbols = TRUE,
+                       remove_numbers = FALSE)
+
+cli_h1("Saving the corpus")
+fileout = str_c("quanteda_tokens_", filing_year, ".rds")
+saveRDS(toks, file = file.path(tokens_folder, fileout))
+
+cli_alert_success("Corpus correctly saved!")
+
+# END OF SCRIPT
 ```
 
 ## Authors
