@@ -23,7 +23,7 @@ tokenize_corpus = function(x, ncores, ...) {
     stop("x must be a quanteda corpus object")
   }
 
-  cli_h2("Calculating readability")
+  cli_h2("Tokenizing corpus")
   args = list(...)
   if ( length(args) < 1 ) {
     cli_alert_info("quanteda::tokens() has been called with the default parameters")
@@ -39,7 +39,6 @@ tokenize_corpus = function(x, ncores, ...) {
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
-  cli_h3("Tokenizing")
   toks = do.call(c, future_lapply(chunks, tokens, future.seed = TRUE, ...))
   plan(sequential)
 
