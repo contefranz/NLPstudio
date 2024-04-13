@@ -22,7 +22,7 @@
 #' @importFrom future plan multisession sequential
 #' @importFrom stringr str_remove
 #' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_alert_success cli_alert_danger
+#' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success cli_alert_danger
 #' @export
 
 
@@ -31,12 +31,23 @@ reshape_corpus = function(x, ncores, ...) {
   if ( !is.corpus(x) ) {
     stop("x must be a quanteda corpus object")
   }
+  
+  cli_h2("Reshaping corpus")
+  args = list(...)
+  if ( length(args) < 1 ) {
+    cli_alert_info("quanteda::corpus_reshape() has been called with the default parameters")
+  } else {
+    cli_alert_info("quanteda::corpus_reshape() has been called with the following parameters")
+    args_active = paste0(names(args), " = ", unlist(args))
+    for (iarg in seq_along(args_active) ) {
+      cli_alert("{args_active[iarg]}")
+    }
+  }
 
   # define the number of workers
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
-  cli_h2("Reshaping")
   reshaped = do.call(c, future_lapply(chunks, corpus_reshape, future.seed = TRUE, ...))
   plan(sequential)
 

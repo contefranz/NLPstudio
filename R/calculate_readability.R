@@ -17,7 +17,7 @@
 #' @importFrom stringr str_c str_which str_remove
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_alert cli_alert_success
+#' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success
 #' @export
 
 
@@ -28,16 +28,15 @@ calculate_readability = function(x, ncores, ...) {
   }
   
   cli_h2("Calculating readability")
-  # args = as.list(substitute(list(...)))[-1L]
   args = list(...)
-  if ( any(names(args) %in% "measure") ) {
-    cli_alert("Selected readability measures: {args$measure}")
-  }
-  if ( any(names(args) %in% "min_sentence_length") ) {
-    cli_alert("Minimum sentence length: {args$min_sentence_length}")
-  }
-  if ( any(names(args) %in% "max_sentence_length") ) {
-    cli_alert("Maximum sentence length: {args$max_sentence_length}")
+  if ( length(args) < 1 ) {
+    cli_alert_info("quanteda.textstats::textstat_readability() has been called with the default parameters")
+  } else {
+    cli_alert_info("quanteda.textstats::textstat_readability() has been called with the following parameters")
+    args_active = paste0(names(args), " = ", unlist(args))
+    for (iarg in seq_along(args_active) ) {
+      cli_alert("{args_active[iarg]}")
+    }
   }
   
   # define the number of workers
