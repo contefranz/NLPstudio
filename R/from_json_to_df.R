@@ -21,25 +21,25 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom doParallel registerDoParallel
 #' @importFrom iterators iter
-#' @importFrom cli cli_h1 cli_h2 cli_alert cli_alert_success cli_alert_danger
+#' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert_success
 #' @export
 
 from_json_to_df = function(json_list, ncores = 1) {
 
+  cli_h2("Flattening JSONs")
   followup = str_extract(names(json_list), "\\d+")
   big_bucket = vector("list", length(followup))
   names(big_bucket) = str_c("fyear_", followup)
 
-  cli_h1("Flattening JSONs")
   for ( i_year in seq_along(json_list) ) {
 
     current_year = str_extract(names(json_list)[i_year], "\\d+")
-    cli_h2("Processing batch {current_year}")
+    cli_h3("Processing batch {current_year}")
     current_list = json_list[[i_year]]
 
-    cli_alert("Reading JSON files")
+    cli_alert_info("Reading JSON files")
     temp = lapply(current_list, fromJSON)
-    cli_alert("Converting to data.table")
+    cli_alert_info("Converting to data.table")
     df = lapply(temp, as.data.table)
 
     # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
@@ -53,7 +53,7 @@ from_json_to_df = function(json_list, ncores = 1) {
 
     # This internal loop is parallel because it represents the bottleneck in this function.
     # Check the core assignment as it is not super efficient at the moment.
-    cli_alert("Fixing column names and melting")
+    cli_alert_info("Reshaping to long format using {ncores} cores")
     n_df = length(df)
     it = iter(seq_len(n_df), by = "row")
     cl = makeCluster(ncores)
@@ -71,10 +71,10 @@ from_json_to_df = function(json_list, ncores = 1) {
     }
     stopCluster(cl)
 
-    cli_alert("Binding into one data.table")
+    cli_alert_info("Compressing into one data.table")
     out = rbindlist(df_melt, fill = TRUE)
 
-    cli_alert("Casting correct column classes and creating accession_number")
+    cli_alert_info("Fixing columns")
     # convert cik to integer
     out[ , cik := as.integer(cik)]
     # convert sic to integer
@@ -95,6 +95,8 @@ from_json_to_df = function(json_list, ncores = 1) {
     out[ , accession_number := str_extract(filename, "\\d{10}-\\d{2}-\\d{6}")]
     setcolorder(out, neworder = "accession_number", after = "filename")
 
+    ndocs = formatC(nrow(out), decimal.mark = ".", big.mark = ",", digits = 2, format = "d")
+    cli_alert_info("Compressed output has {ndocs} documents")
     # collect output and put it in the final list
     big_bucket[[ i_year ]] = out
     rm(out)
@@ -106,7 +108,7 @@ from_json_to_df = function(json_list, ncores = 1) {
   # SOLUTION: add a parameter that controls whether one wants to save to disk
   # the data.table at each iteration. This would require a path out and a potential naming convention.
   # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
-  #
+  cli_alert_info("Final binding")
   bind_bucket = rbindlist(big_bucket)
   cli_alert_success("Conversion has been successful")
   return(bind_bucket[])
