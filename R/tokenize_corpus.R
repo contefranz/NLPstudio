@@ -13,7 +13,7 @@
 #' @importFrom quanteda is.corpus tokens ndoc
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_alert_success cli_alert_danger
+#' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert cli_alert_success cli_alert_danger
 #' @export
 
 
@@ -23,11 +23,23 @@ tokenize_corpus = function(x, ncores, ...) {
     stop("x must be a quanteda corpus object")
   }
 
+  cli_h2("Calculating readability")
+  args = list(...)
+  if ( length(args) < 1 ) {
+    cli_alert_info("quanteda::tokens() has been called with the default parameters")
+  } else {
+    cli_alert_info("quanteda::tokens() has been called with the following parameters")
+    args_active = paste0(names(args), " = ", unlist(args))
+    for (iarg in seq_along(args_active) ) {
+      cli_alert("{args_active[iarg]}")
+    }
+  }
+  
   # define the number of workers
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
-  cli_h2("Tokenizing")
+  cli_h3("Tokenizing")
   toks = do.call(c, future_lapply(chunks, tokens, future.seed = TRUE, ...))
   plan(sequential)
 
