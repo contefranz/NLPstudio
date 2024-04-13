@@ -9,7 +9,7 @@ reshape_corpus(x, ncores, ...)
 \arguments{
 \item{x}{A \code{\link[quanteda]{corpus}} as built by \code{create_corpus}.}
 
-\item{ncores}{The number of \code{\link[future]{multisession}} workers to be allocated for the tokenization.}
+\item{ncores}{The number of \code{\link[future]{multisession}} workers to be allocated for the reshaping.}
 
 \item{...}{Additional arguments passed to \code{\link[quanteda]{corpus_reshape}} (see 'Details').}
 }

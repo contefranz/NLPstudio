@@ -19,24 +19,27 @@
 #' each year.
 #'
 #' @importFrom stringr str_remove str_c str_locate str_extract
-#' @importFrom cli cli_h2 cli_progress_bar cli_progress_update cli_alert_success
+#' @importFrom cli cli_h2 cli_alert_info cli_progress_bar cli_progress_update cli_alert_success
 #'
 #' @export
 
 get_json_files = function(root_path, pattern = NULL, fyear = NULL) {
 
+  cli_h2("Locating files")
   # remove the trailing "/" at the end of the path to avoid double slashes in the call of list.files
   root_path = str_remove(root_path, "/$")
 
   # if fyear specifies a followup, modifies the search pattern
   if (!is.null(fyear)) {
+    cli_alert_info("Looking for years {fyear}")
     if (!is.null(pattern)) {
       pattern = str_c(pattern, ".*", fyear, collapse = "|")
     } else {
       pattern = str_c(fyear, collapse = "|")
     }
+  } else {
+    cli_alert_info("Looking for all years")
   }
-  cli_h2("Locating files")
   thedirs = list.files(root_path, pattern = pattern,
                        recursive = FALSE,
                        include.dirs = TRUE,
@@ -53,7 +56,7 @@ get_json_files = function(root_path, pattern = NULL, fyear = NULL) {
   n_steps = length(thedirs_list)
   cli_progress_bar("Extracting JSON pointers", total = n_steps)
   for ( i_year in seq_along(thedirs_list) ) {
-    Sys.sleep(2/100)
+    Sys.sleep(1/100)
     cli_progress_update()
     current_path = thedirs[i_year]
     current_files = list.files(current_path,
