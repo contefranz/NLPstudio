@@ -26,3 +26,4 @@ Imports:
     future (>= 1.33.2),
     future.apply (>= 1.11.2),
     cli (>= 3.6.2)
+LazyData: true
