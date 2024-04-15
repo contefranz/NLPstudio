@@ -33,6 +33,11 @@ structures.
 - `calculate_readability()`: Calculate readability measures with [__quanteda.textstats__](https://github.com/quanteda/quanteda.textstats) in parallel via 
 the [__future__](https://future.futureverse.org/index.html) paradigm. 
 
+- `parse_corpus()`: Parse a [__quanteda__](https://quanteda.io/) corpus in parallel via 
+the [__future__](https://future.futureverse.org/index.html) paradigm with 
+[__spacyr__](https://github.com/quanteda/spacyr).
+
+
 ### Additional Utility Functions
 
 - `get_sec_master_files()`: Convenient function to collect SEC EDGAR master files from local directory. 
@@ -62,16 +67,19 @@ library(data.table)
 library(edgartools)
 library(stringr)
 library(quanteda)
+library(quanteda.textstats)
+library(qs)
 library(cli)
 
 
 # SET THE PARAMETERS --------------------------------------------------------------------------
 
-root_path = "edgar-crawler/datasets/"
-filing_year = 2007
-ncores = 2
-corpus_folder = "quanteda_corpus"
-tokens_folder = "quanteda_tokens"
+root_path = "edgar-crawler/datasets/" # root path to search for JSONs
+filing_year = 2007                    # filing year to process
+ncores = 2                            # cores for parallel backend with foreach and future
+nthreads = 2                          # threads for writing .qs files on disk
+corpus_folder = "quanteda_corpus"     # corpus storing folder
+tokens_folder = "quanteda_tokens"     # tokens storing folder
 
 
 # CORPUS CREATION PIPELINE --------------------------------------------------------------------
@@ -97,7 +105,7 @@ if ( !dir.exists(corpus_folder) ) {
 
 cli_h1("Saving the corpus")
 fileout = str_c("quanteda_corpus_", filing_year, ".rds")
-saveRDS(current_corpus, file = file.path(corpus_folder, fileout))
+qsave(current_corpus, file = file.path(corpus_folder, fileout), nthreads = nthreads)
 
 cli_alert_success("Corpus correctly saved!")
 
@@ -112,15 +120,31 @@ toks = tokenize_corpus(x = current_corpus,
                        remove_numbers = FALSE)
 
 cli_h1("Saving the corpus")
-fileout = str_c("quanteda_tokens_", filing_year, ".rds")
-saveRDS(toks, file = file.path(tokens_folder, fileout))
+fileout = str_c("quanteda_tokens_", filing_year, ".qs")
+qsave(toks, file = file.path(tokens_folder, fileout), nthreads = nthreads)
 
 cli_alert_success("Corpus correctly saved!")
+
+
+
+# CALCULATE READABILITY -----------------------------------------------------------------------
+
+fog_index = calculate_readability(x = current_corpus,
+                                  ncores = ncores,
+                                  measure = "FOG")
+
+
+# PARSE CORPUS WITH SPACY ---------------------------------------------------------------------
+
+parsed = parse_corpus(x = current_corpus,
+                      ncores = ncores,
+                      pos = TRUE,
+                      entity = FALSE)
 
 # END OF SCRIPT
 ```
 
-## Authors
+## Author
 
 * [Francesco Grossetti](https://accounting.unibocconi.eu/people/francesco-grossetti) 
 
@@ -128,8 +152,3 @@ cli_alert_success("Corpus correctly saved!")
   Bocconi Institute for Data Science and Analytics ([BIDSA](https://www.bidsa.unibocconi.eu/wps/wcm/connect/Site/Bidsa/Home))  
   Accounting Department, Bocconi University.  
   Contact Francesco at: francesco.grossetti@unibocconi.it.  
-
-* [Piergiorgio Di Pasquale](https://www.linkedin.com/in/piergiorgio-di-pasquale-a0059319a/)
-
-  Data Scientist at Accenture  
-  Contact Pier at: dipasquale.piergiorgio@gmail.com.  
