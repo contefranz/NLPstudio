@@ -12,7 +12,7 @@ robust framework for wrangling SEC filings and preparing them for further analys
 Natural Language Processing techniques.
 
 
-## Functions
+## Core Functions
 
 The set of available functions is subject to change: 
 
@@ -36,6 +36,19 @@ the [__future__](https://future.futureverse.org/index.html) paradigm.
 ### Additional Utility Functions
 
 - `get_sec_master_files()`: Convenient function to collect SEC EDGAR master files from local directory. 
+
+## Available Dictionaries
+
+__edgartools__ comes with a set of pre-compiled __quanteda__ dictionaries. They can be used to 
+execute bag-of-words analyses on a `tokens` object. They build on the collection of dictionaries 
+available with [__quanteda.sentiment__](https://github.com/quanteda/quanteda.sentiment). 
+At the moment, they are: 
+
+- Loughran & McDonald firm complexity dictionary.
+
+- Li's forward looking statements dictionary. 
+
+- Bozanic, Roulstone, and VanBuskirk forward looking statements dictionary. 
 
 ## Optimal Usage
 
