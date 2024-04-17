@@ -1,4 +1,4 @@
-core <- c("quanteda", "quanteda.textstats", "spacyr", "data.table", "jsonlite", "foreach", "future")
+core <- c("quanteda", "quanteda.textstats", "spacyr", "data.table", "stringr", "jsonlite", "foreach", "future")
 
 
 .onAttach <- function(...) {
@@ -11,7 +11,7 @@ is_attached <- function(x) {
 }
 
 is_loading_for_tests <- function() {
-  !interactive() && identical(Sys.getenv("DEVTOOLS_LOAD"), "tidyverse")
+  !interactive() && identical(Sys.getenv("DEVTOOLS_LOAD"), "edgartools")
 }
 
 core_unloaded <- function() {

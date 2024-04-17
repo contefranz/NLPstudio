@@ -3,57 +3,79 @@
 [![release](https://img.shields.io/badge/release-v0.0.3-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.3)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
-# edgartools: Convert SEC Filings Into A Corpus
+# NLPStudio <img src="man/figures/logo.svg" align="right" height="139" alt="" />
 
-__edgartools__ is an experimental R package that aims at minimizing the effort of converting
-raw JSON files containing SEC filings data into a more manageable corpus of documents within the
-[__quanteda__](https://quanteda.io/) framework. The rationale behind this package is to establish a 
-robust framework for wrangling SEC filings and preparing them for further analysis through 
-Natural Language Processing techniques.
+## Overview
+
+**NLPStudio** is a robust R package designed to facilitate the transformation of textual data into structured, analyzable corpora within the [__quanteda__](https://quanteda.io/) framework. This package offers a suite of parallel, efficient, and intuitive functions optimized for high-performance management and analysis of various textual datasets. By enhancing the processes of corpus creation, text tokenization, and data transformation, **NLPStudio** utilizes optimized R and C++ code to efficiently handle large volumes of data. 
+
+In fact, in addition to the seamless integration with **quanteda**, **NLPStudio** also integrates 
+smoothly with other R and C++ libraries, such as 
+[**data.table**](https://rdatatable.gitlab.io/data.table/) for fast data processing and management and
+[**future**](https://future.futureverse.org/index.html) for efficient parallel processing of large corpora.
+Overall, this ecosystem of libraries ensures all text handling and processing is both rapid and precise. 
+This approach allows **NLPStudio** to deliver unmatched performance and ease of use for social science 
+researchers, particularly those without deep coding expertise.
+
+While it is adept at processing diverse text sources, **NLPStudio** also includes specialized 
+capabilities for managing financial disclosures, such as SEC filings, extending its applicability 
+and utility in financial analytics.
 
 
 ## Core Functions
 
-The set of available functions is subject to change: 
+The functionality provided by **NLPStudio** is dynamic and may evolve:
 
-- `get_json_files()`: Convenient function to gather all the JSON files in a given folder and build
-a container list with the local pointers.
+- `create_corpus()`: The main function to create a [**quanteda**](https://quanteda.io/) corpus, 
+facilitating advanced text analysis.
 
-- `from_json_to_df()`: Efficient function to convert the JSON files into [__data.table__](https://rdatatable.gitlab.io/data.table/) 
-structures.
+- `reshape_corpus()`: Allows users to reshape a [**quanteda**](https://quanteda.io/) corpus in 
+parallel using the [**future**](https://future.futureverse.org/index.html) paradigm for enhanced performance.
 
-- `create_corpus()`: Workhorse function to create a [__quanteda__](https://quanteda.io/) corpus.
+- `tokenize_corpus()`: Tokenizes a [**quanteda**](https://quanteda.io/) corpus in parallel, 
+optimizing processing speed and efficiency.
 
-- `reshape_corpus()`: Reshape a [__quanteda__](https://quanteda.io/) corpus in parallel via the 
-[__future__](https://future.futureverse.org/index.html) paradigm. 
+- `calculate_readability()`: Computes readability metrics for documents using
+[**quanteda.textstats**](https://github.com/quanteda/quanteda.textstats) in parallel through the
+[**future**](https://future.futureverse.org/index.html) framework.
 
-- `tokenize_corpus()`: Tokenize a [__quanteda__](https://quanteda.io/) corpus in parallel via the 
-[__future__](https://future.futureverse.org/index.html) paradigm. 
+- `parse_corpus()`: Parses a [**quanteda**](https://quanteda.io/) corpus in parallel with
+[**spacyr**](https://github.com/quanteda/spacyr), leveraging advanced NLP techniques.
 
-- `calculate_readability()`: Calculate readability measures with [__quanteda.textstats__](https://github.com/quanteda/quanteda.textstats) in parallel via 
-the [__future__](https://future.futureverse.org/index.html) paradigm. 
+## Utility Functions
 
-- `parse_corpus()`: Parse a [__quanteda__](https://quanteda.io/) corpus in parallel via 
-the [__future__](https://future.futureverse.org/index.html) paradigm with 
-[__spacyr__](https://github.com/quanteda/spacyr).
+- `get_json_files()`: This function gathers all JSON files in a specified folder, creating a 
+list with local pointers for easy access.
 
+- `from_json_to_df()`: Converts JSON files into efficient 
+[**data.table**](https://rdatatable.gitlab.io/data.table/) structures.
 
-### Additional Utility Functions
-
-- `get_sec_master_files()`: Convenient function to collect SEC EDGAR master files from local directory. 
+- `get_sec_master_files()`: Efficiently retrieves SEC EDGAR master files from a local directory 
+for processing.
 
 ## Available Dictionaries
 
-__edgartools__ comes with a set of pre-compiled __quanteda__ dictionaries. They can be used to 
-execute bag-of-words analyses on a `tokens` object. They build on the collection of dictionaries 
-available with [__quanteda.sentiment__](https://github.com/quanteda/quanteda.sentiment). 
-At the moment, they are: 
+**NLPStudio** includes a selection of pre-compiled **quanteda** dictionaries, ideal for conducting 
+bag-of-words analyses on a `tokens` object. These dictionaries pertain the fields of Accounting and 
+Finance andenhance the NLP capabilities of 
+**NLPStudio**, building upon the extensive resources available with
+[**quanteda.sentiment**](https://github.com/quanteda/quanteda.sentiment). Currently available 
+dictionaries include:
 
-- Loughran & McDonald firm complexity dictionary.
+- *Loughran & McDonald Firm Complexity Dictionary*. (reference: Loughran, T. & McDonald, B. (2024). Measuring Firm Complexity,
+*Journal of Financial and Quantitative Analysis*, Forthcoming).
 
-- Li's forward looking statements dictionary. 
+- *Li's Forward Looking Statements Dictionary*. (reference: Li, F. (2010). The Information 
+Content of Forward-Looking Statements in Corporate Filings—A Naïve Bayesian Machine Learning Approach,
+*Journal of Accounting Research*, 48 (5), 1049--1102).
 
-- Bozanic, Roulstone, and VanBuskirk forward looking statements dictionary. 
+- B*ozanic, Roulstone, and VanBuskirk Forward Looking Statements Dictionary*.
+(reference: Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), Management earnings forecasts and other 
+forward-looking statements, *Journal of Accounting and Economics*, Volume 65, Issue 1, 2018,
+Pages 1-20).
+
+Probably, more dictionaries will be added in future releases. 
+
 
 ## Optimal Usage
 
@@ -64,7 +86,7 @@ the initial parameter and launch the code via the RStudio Background Jobs tab or
 
 ```r
 library(data.table)
-library(edgartools)
+library(NLPStudio)
 library(stringr)
 library(quanteda)
 library(quanteda.textstats)
