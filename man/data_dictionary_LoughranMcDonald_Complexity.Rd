@@ -9,6 +9,8 @@ An object of class \code{dictionary2} of length 1.
 }
 \source{
 \url{https://sraf.nd.edu/complexity/}
+
+\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3645372}
 }
 \usage{
 data_dictionary_LoughranMcDonald_Complexity
@@ -19,6 +21,7 @@ the 2024 version of the Loughran and McDonald Firm Complexity Word List. The lis
 }
 \references{
 Loughran, T. & McDonald, B. (2024). Measuring Firm Complexity,
-\emph{Journal of Financial and Quantitative Analysis}, Forthcoming.
+\emph{Journal of Financial and Quantitative Analysis},
+\href{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3645372}{Forthcoming}.
 }
 \keyword{data}
