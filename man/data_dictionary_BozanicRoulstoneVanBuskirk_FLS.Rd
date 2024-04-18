@@ -21,6 +21,6 @@ The list contains 90 words.
 \references{
 Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), Management earnings forecasts and other
 forward-looking statements, \emph{Journal of Accounting and Economics}, Volume 65, Issue 1, 2018,
-Pages 1-20,
+Pages 1-20.
 }
 \keyword{data}
