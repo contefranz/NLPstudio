@@ -10,7 +10,7 @@ An object of class \code{dictionary2} of length 1.
 \source{
 \url{https://sraf.nd.edu/complexity/}
 
-\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3645372}
+\url{https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/measuring-firm-complexity/D737FD0A697AF699C5AADD62842ACAB8}
 }
 \usage{
 data_dictionary_LoughranMcDonald_Complexity
@@ -20,8 +20,9 @@ A \code{\link[quanteda]{dictionary}} containing the
 the 2024 version of the Loughran and McDonald Firm Complexity Word List. The list contains 53 words.
 }
 \references{
-Loughran, T. & McDonald, B. (2024). Measuring Firm Complexity,
+Loughran, T. & McDonald, B. (2024).
+\href{https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/measuring-firm-complexity/D737FD0A697AF699C5AADD62842ACAB8}{Measuring Firm Complexity},
 \emph{Journal of Financial and Quantitative Analysis},
-\href{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3645372}{Forthcoming}.
+2023:1-28.
 }
 \keyword{data}
