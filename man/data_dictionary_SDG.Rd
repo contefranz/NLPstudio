@@ -10,7 +10,7 @@ An object of class \code{dictionary2} of length 16.
 \source{
 \url{https://www.researchsquare.com/article/rs-2544385/v2}
 
-\link{https://www.sdgmapping.auckland.ac.nz/}
+\url{https://www.sdgmapping.auckland.ac.nz/}
 }
 \usage{
 data_dictionary_SDG

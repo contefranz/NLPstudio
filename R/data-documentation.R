@@ -73,7 +73,7 @@
 #' @source
 #' <https://www.researchsquare.com/article/rs-2544385/v2>
 #'
-#' [https://www.sdgmapping.auckland.ac.nz/]
+#' <https://www.sdgmapping.auckland.ac.nz/>
 #' @references
 #'   Wang, W., Kang, W., & Mu, J. (2023). Mapping research to the sustainable development goals
 #'   _Working Paper_ available [here](https://assets.researchsquare.com/files/rs-2544385/v3/de08997f5c48f22a37cc4f93.pdf?c=1678389566).
