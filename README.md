@@ -1,6 +1,6 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![release](https://img.shields.io/badge/release-v0.0.3-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.3)
+[![release](https://img.shields.io/badge/release-v0.0.4-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.4)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPStudio <img src="man/figures/logo.svg" align="right" height="139" alt="" />
@@ -26,14 +26,17 @@ and utility in financial analytics.
 
 The functionality provided by **NLPStudio** is dynamic and may evolve:
 
-- `create_corpus()`: The main function to create a [**quanteda**](https://quanteda.io/) corpus, 
-facilitating advanced text analysis.
+- `create_corpus()`: The main function to create a [**quanteda**](https://quanteda.io/) corpus from
+a set of JSON files.
 
 - `reshape_corpus()`: Allows users to reshape a [**quanteda**](https://quanteda.io/) corpus in 
 parallel using the [**future**](https://future.futureverse.org/index.html) paradigm for enhanced performance.
 
 - `tokenize_corpus()`: Tokenizes a [**quanteda**](https://quanteda.io/) corpus in parallel, 
 optimizing processing speed and efficiency.
+
+- `singularize_tokens()`: Singularizes a [**quanteda**](https://quanteda.io/) tokens object via 
+parallel hashing using the [**pluralize**](https://github.com/hrbrmstr/pluralize) package.
 
 - `calculate_readability()`: Computes readability metrics for documents using
 [**quanteda.textstats**](https://github.com/quanteda/quanteda.textstats) in parallel through the
@@ -62,17 +65,28 @@ Finance andenhance the NLP capabilities of
 [**quanteda.sentiment**](https://github.com/quanteda/quanteda.sentiment). Currently available 
 dictionaries include:
 
-- *Loughran & McDonald Firm Complexity Dictionary*. (reference: Loughran, T. & McDonald, B. (2024). Measuring Firm Complexity,
-*Journal of Financial and Quantitative Analysis*, Forthcoming).
+- *Loughran & McDonald Firm Complexity Dictionary*. (reference: Loughran, T. & McDonald, B. (2024). 
+[Measuring Firm Complexity](https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/measuring-firm-complexity/D737FD0A697AF699C5AADD62842ACAB8),
+*Journal of Financial and Quantitative Analysis*, 2023:1-28).
 
-- *Li's Forward Looking Statements Dictionary*. (reference: Li, F. (2010). The Information 
-Content of Forward-Looking Statements in Corporate Filings—A Naïve Bayesian Machine Learning Approach,
+- *Li's Forward Looking Statements Dictionary*. (reference: Li, F. (2010). [The Information 
+Content of Forward-Looking Statements in Corporate Filings—A Naïve Bayesian Machine Learning Approach](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1475-679X.2010.00382.x),
 *Journal of Accounting Research*, 48 (5), 1049--1102).
 
-- B*ozanic, Roulstone, and VanBuskirk Forward Looking Statements Dictionary*.
-(reference: Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), Management earnings forecasts and other 
-forward-looking statements, *Journal of Accounting and Economics*, Volume 65, Issue 1, 2018,
+- *Bozanic, Roulstone, and VanBuskirk Forward Looking Statements Dictionary*.
+(reference: Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), [Management earnings forecasts and other 
+forward-looking statements](https://www.sciencedirect.com/science/article/abs/pii/S0165410117300733), *Journal of Accounting and Economics*, Volume 65, Issue 1, 2018,
 Pages 1-20).
+
+- *Cannon, Ling, Wang, and Watanabe CSR Dictionary*.
+(reference: Cannon, J. N., Ling, Z., Wang, Q., & Watanabe, O. V. (2020).
+[10-K disclosure of corporate social responsibility and firms’ competitive advantages](https://www.tandfonline.com/doi/epdf/10.1080/09638180.2019.1670223?src=getftr).
+_European Accounting Review_, 29(1), 85-113).
+
+- *U.N. Sustainable Development Goals (SDG) Mapping Dictionary*.
+(reference: Wang, W., Kang, W., & Mu, J. (2023). 
+[Mapping research to the sustainable development goals](https://assets.researchsquare.com/files/rs-2544385/v3/de08997f5c48f22a37cc4f93.pdf?c=1678389566),
+_Working Paper_.
 
 Probably, more dictionaries will be added in future releases. 
 
@@ -147,7 +161,12 @@ qsave(toks, file = file.path(tokens_folder, fileout), nthreads = nthreads)
 
 cli_alert_success("Corpus correctly saved!")
 
+# SINGULARIZE TOKENS --------------------------------------------------------------------------
 
+toks_single = singularize_tokens(x = toks,
+                                 ncores = 8, 
+                                 remove_numbers = TRUE,
+                                 min_char = 3)
 
 # CALCULATE READABILITY -----------------------------------------------------------------------
 
