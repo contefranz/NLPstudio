@@ -5,11 +5,12 @@
 #' @source 
 #' <https://sraf.nd.edu/complexity/>
 #' 
-#' <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3645372>
+#' <https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/measuring-firm-complexity/D737FD0A697AF699C5AADD62842ACAB8>
 #' @references
-#'   Loughran, T. & McDonald, B. (2024). Measuring Firm Complexity,
+#'   Loughran, T. & McDonald, B. (2024). 
+#'   [Measuring Firm Complexity](https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/measuring-firm-complexity/D737FD0A697AF699C5AADD62842ACAB8),
 #'   \emph{Journal of Financial and Quantitative Analysis}, 
-#'   [Forthcoming](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3645372).
+#'   2023:1-28.
 #' @keywords data
 "data_dictionary_LoughranMcDonald_Complexity"
 
