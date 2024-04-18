@@ -20,6 +20,6 @@ the 2010 version of the Feng Li's Forward Looking Statement Word List. The list 
 \references{
 Li, F. (2010). The Information Content of Forward-Looking Statements in
 Corporate Filings—A Naïve Bayesian Machine Learning Approach,
-\emph{Journal of Accounting Research}, 48 (5), 1049--1102
+\emph{Journal of Accounting Research}, 48 (5), 1049--1102.
 }
 \keyword{data}
