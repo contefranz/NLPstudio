@@ -3,7 +3,7 @@
 [![release](https://img.shields.io/badge/release-v0.0.4-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.4)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
-# NLPStudio <img src="man/figures/logo.svg" align="right" height="139" alt="" />
+# NLPStudio <img src="/Users/grossetti/Desktop/test.svg" align="right" height="139" />
 
 ## Overview
 
