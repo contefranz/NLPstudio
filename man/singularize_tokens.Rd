@@ -2,26 +2,45 @@
 % Please edit documentation in R/singularize_tokens.R
 \name{singularize_tokens}
 \alias{singularize_tokens}
-\title{Build a SEC EDGAR Corpus}
+\title{Fast Tokens Singularization}
 \usage{
-singularize_tokens(x, ncores = 1, ...)
+singularize_tokens(x, ncores = 1, remove_numbers = TRUE, min_char = 1)
 }
 \arguments{
-\item{df_container}{A \code{data.table} containing the raw textual documents
-as built by \code{\link{from_json_to_df}}.}
+\item{x}{A \strong{quanteda} \link{tokens} class object.}
+
+\item{ncores}{Number of cores to dispatch a \code{PSOCK} cluster for parallel processing.
+See \code{\link[=makeCluster]{makeCluster()}} for more information.}
+
+\item{remove_numbers}{Logical. Whether to remove any token containing a number of the regex class
+\verb{\\d}.}
+
+\item{min_char}{Numeric specifying the minimum length in characters for tokens to be kept.
+Default to 1 no removal.}
 }
 \value{
-A quanteda \code{\link[quanteda]{corpus}} object.
+A \strong{quanteda} \link{tokens} class object with singularized tokens.
 }
 \description{
-Build a quanteda corpus from the data.table container.
+Singularize a \strong{quanteda} \link{tokens} class object via parallel hashing using
+the \code{\link[=singularize]{singularize()}} function of \strong{pluralize}.
 }
 \details{
-Even if this function is supposed to be used in conjunction with \code{\link{from_json_to_df}},
-it can also be used more generally when a \code{data.table} containing some textual documents is
-available. At the moment, the requirements are that the input object \code{df_container} must have a column
-\code{"text"} containing the documents and a column \code{"filename"} that contains the document
-filenames.
+By construction, \code{\link[=singularize]{singularize()}} operates on vectors of characters which is not particularly
+efficient when the size of the vocabulary is large. Conversely, a \link{tokens} class object is much
+more efficient as by default it is serialized. To avoid the usage of loops over a potentially
+large \link{tokens} object, \code{singularize_tokens} creates a hash table as a \link{data.table} class object
+containing the vocabulary set as identified by transforming the \link{tokens} object
+to a \link{dfm}.
+
+The singularization via \code{\link[=singularize]{singularize()}} can now be executed in parallel and
+and in-place over the \code{data.table} object via the efficient function \code{\link[=set]{set()}}. This effectively
+adds the singularized form to the hash table which can then be used to replace the original
+tokens with a very efficient lookup via \code{\link[=tokens_replace]{tokens_replace()}}. This last step resembles that of
+lemmatizing.
+
+The real bottleneck is probably the initial creation of the vocabulary set as a call to \code{\link[=dfm]{dfm()}}
+is inevitable.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
