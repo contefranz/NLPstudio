@@ -1,6 +1,6 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![release](https://img.shields.io/badge/release-v0.0.4-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.4)
+[![release](https://img.shields.io/badge/release-v0.0.5-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.5)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPStudio <img src="man/figures/logo.svg" align="right" height="139" />
@@ -34,6 +34,9 @@ parallel using the [**future**](https://future.futureverse.org/index.html) parad
 
 - `tokenize_corpus()`: Tokenizes a [**quanteda**](https://quanteda.io/) corpus in parallel, 
 optimizing processing speed and efficiency.
+
+- `summarize_corpus()`: Summarizes a [**quanteda**](https://quanteda.io/) corpus in parallel, 
+via **quanteda.textstats** `textstat_summary()`.
 
 - `singularize_tokens()`: Singularizes a [**quanteda**](https://quanteda.io/) tokens object via 
 parallel hashing using the [**pluralize**](https://github.com/hrbrmstr/pluralize) package.
@@ -167,6 +170,10 @@ toks_single = singularize_tokens(x = toks,
                                  ncores = 8, 
                                  remove_numbers = TRUE,
                                  min_char = 3)
+
+# SUMMARIZE A CORPUS --------------------------------------------------------------------------
+
+mysummary = summarize_corpus(x = current_corpus, ncores = 6)
 
 # CALCULATE READABILITY -----------------------------------------------------------------------
 
