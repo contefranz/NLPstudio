@@ -1,13 +1,13 @@
 #' Fast Calculation of Readability Measures
 #'
-#' Compute readability measures in parallel with the \strong{future} paradigm. 
+#' Compute readability measures in parallel with the \strong{future} paradigm.
 #'
 #' @param x A \code{\link[quanteda]{corpus}} or a character vector containing the documents to process.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for 
+#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for
 #' the calculation of readability.
 #' @param ... Additional arguments passed to \code{\link[quanteda.textstats]{textstat_readability}}.
 #'
-#' @returns A \code{\link[data.table]{data.table}} with as many columns as passed to 
+#' @returns A \code{\link[data.table]{data.table}} with as many columns as passed to
 #' \code{measure} and \code{doc_id} as the document identifier.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
@@ -22,11 +22,11 @@
 
 
 calculate_readability = function(x, ncores, ...) {
-  
+
   if ( !is.corpus(x) || !is.character(x) ) {
     stop("x must be a quanteda corpus object or a character vector containing the documents")
   }
-  
+
   cli_h2("Calculating readability")
   args = list(...)
   if ( length(args) < 1 ) {
@@ -38,14 +38,14 @@ calculate_readability = function(x, ncores, ...) {
       cli_alert("{args_active[iarg]}")
     }
   }
-  
+
   # define the number of workers
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
-  readability_measures = do.call(c, future_lapply(chunks, textstat_readability, 
+  readability_measures = do.call(c, future_lapply(chunks, textstat_readability,
                                                   future.seed = TRUE, ...))
   plan(sequential)
-  
+
   Nel = length(readability_measures)
   bucket_names = names(readability_measures)
   out = vector("list", Nel)
@@ -58,5 +58,5 @@ calculate_readability = function(x, ncores, ...) {
   out_all = rbindlist(out, fill = TRUE)
   setnames(out_all, "document", "doc_id")
   cli_alert_success("Done")
-  return(out_all)
+  return(out_all[])
 }

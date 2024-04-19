@@ -17,7 +17,7 @@ tokenize_corpus(x, ncores, ...)
 A \code{\link[quanteda]{tokens}} object.
 }
 \description{
-Tokenize a \code{\link[quanteda]{corpus}} in parallel.
+Tokenize a \code{\link[quanteda]{corpus}} in parallel via \strong{\link{future}}.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

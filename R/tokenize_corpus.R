@@ -1,6 +1,6 @@
 #' Fast Corpus Tokenization
 #'
-#' Tokenize a \code{\link[quanteda]{corpus}} in parallel.
+#' Tokenize a \code{\link[quanteda]{corpus}} in parallel via **[future]**.
 #'
 #' @param x A \code{\link[quanteda]{corpus}} as built by \code{create_corpus}.
 #' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for the tokenization.
@@ -34,7 +34,7 @@ tokenize_corpus = function(x, ncores, ...) {
       cli_alert("{args_active[iarg]}")
     }
   }
-  
+
   # define the number of workers
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
