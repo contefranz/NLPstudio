@@ -1,13 +1,14 @@
-Package: edgartools
-Title: Convert SEC Filings Into A Corpus
+Package: NLPstudio
+Title: Work On SEC EDGAR Filings Plus Other Perks
 Version: 0.0.5
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")),
     person("Piergiorgio", "Di Pasquale", , "dipasquale.piergiorgio@gmail.com", 
     role = c("ctb")))
-Description: A set of convenient functions to convert raw JSON files containing SEC filings data to a 
-  quanteda corpus for extensive Natural Language Processing analyses.
+Description: An R package providing a streamlined workflow for processing SEC filings data. It includes
+  functions to efficiently convert raw JSON files into a quanteda corpus, along with a comprehensive suite of
+  tools for advanced Natural Language Processing (NLP) analysis.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
