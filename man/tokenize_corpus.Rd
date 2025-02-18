@@ -7,17 +7,17 @@
 tokenize_corpus(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \code{\link[quanteda]{corpus}} as built by \code{create_corpus}.}
+\item{x}{A \strong{quanteda} \link{corpus} as built by \code{create_corpus}.}
 
-\item{ncores}{The number of \code{\link[future]{multisession}} workers to be allocated for the tokenization.}
+\item{ncores}{The number of \link{multisession} workers to be allocated for the tokenization.}
 
-\item{...}{Additional arguments passed to \code{\link[quanteda]{tokens}}.}
+\item{...}{Additional arguments passed to \link{tokens}.}
 }
 \value{
-A \code{\link[quanteda]{tokens}} object.
+A \link{tokens} object.
 }
 \description{
-Tokenize a \code{\link[quanteda]{corpus}} in parallel via \strong{\link{future}}.
+Tokenize a \link{corpus} in parallel via \strong{\link{future}}.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

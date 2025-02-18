@@ -16,7 +16,7 @@ An object of class \code{dictionary2} of length 1.
 data_dictionary_LoughranMcDonald_Complexity
 }
 \description{
-A \code{\link[quanteda]{dictionary}} containing the
+A \link{dictionary} containing the
 the 2024 version of the Loughran and McDonald Firm Complexity Word List. The list contains 53 words.
 }
 \references{

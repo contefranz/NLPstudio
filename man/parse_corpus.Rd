@@ -7,35 +7,35 @@
 parse_corpus(x, ncores = 1, ...)
 }
 \arguments{
-\item{x}{A \code{\link[quanteda]{corpus}}.}
+\item{x}{A \strong{quanteda} \link{corpus}.}
 
-\item{ncores}{The number of \code{\link[future]{multisession}} workers to be allocated for the
+\item{ncores}{The number of \link{multisession} workers to be allocated for the
 parsing. Default to 1.}
 
-\item{...}{Additional arguments passed to \code{\link[spacyr]{spacy_parse}}.}
+\item{...}{Additional arguments passed to \link{spacy_parse}.}
 }
 \value{
-A \code{\link[data.table]{data.table}} of tokenized, parsed, and annotated tokens.
+A \link{data.table} of tokenized, parsed, and annotated tokens.
 }
 \description{
-Parse a \code{\link[quanteda]{corpus}} in parallel under the \strong{future} paradigm .
-This function is a wrapper of \code{\link[spacyr]{spacy_parse}}. Thus, it is critical to have
-a working installation of \strong{spacyr}. Please refer to the
+Parse a \link{corpus} in parallel under the \strong{\link{future}} paradigm .
+This function is a wrapper of \link{spacy_parse}. Thus, it is critical to have
+a working installation of the \strong{\link{spacyr}} package. Please refer to the
 \href{https://github.com/quanteda/spacyr?tab=readme-ov-file#installing-the-package}{installation guide}
 to troubleshoot issues.
 }
 \details{
-The workhorse of this function is \code{\link[spacyr]{spacy_parse}} so all the usual parameters
-can be passed to \code{parse_corpus} too. It is critical to have a proper installation of the
+The workhorse of this function is \link{spacy_parse} such that all the usual parameters
+can be passed to \code{parse_corpus} as well. It is critical to have a proper installation of the
 \href{https://spacy.io/}{\strong{spaCy}} library and all its components.
 
 In particular, one can pass and use any language model as currently supported by version 3.7 via
-the argument \code{model} in \code{\link[spacyr]{spacy_initialize}}.
-By default, \code{\link[spacyr]{spacy_install}} downloads and uses the smallest English model
-\code{en_core_web_sm}. It is recommended to use \code{\link[spacyr]{spacy_download_langmodel}}
+the argument \code{model} in \link{spacy_initialize}.
+By default, \link{spacy_install} downloads and uses the smallest English model
+\code{en_core_web_sm}. It is recommended to use \link{spacy_download_langmodel}
 to properly download and activate the desired model.
 
-To avoid any issue, \code{parse_corpus} always calls \code{\link[spacyr]{spacy_finalize}} by
+To avoid any issue, \code{parse_corpus} always calls \link{spacy_finalize} by
 invoking \code{on.exit}.
 }
 \seealso{

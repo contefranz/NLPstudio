@@ -16,7 +16,7 @@ An object of class \code{dictionary2} of length 16.
 data_dictionary_SDG
 }
 \description{
-A \code{\link[quanteda]{dictionary}} containing the
+A \link{dictionary} containing the
 key terms to identify SDGs withing research papers as mapped by Wang et al. (2023).
 }
 \details{

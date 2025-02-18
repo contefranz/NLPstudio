@@ -3,10 +3,10 @@
 #' Create a container list with the pointers to all the JSON files detected in the input folder.
 #'
 #' @param root_path Character giving the path to the root folder location (see 'Details').
-#' @param pattern An optional \link[base]{regex}. Only file names which match the regular expression will be returned
-#' as in \code{\link[base]{list.files}}. Default to \code{NULL}.
+#' @param pattern An optional [base::regex]. Only file names which match the regular expression 
+#' will be returned as in [list.files]. Default to `NULL`.
 #' @param fyear Optional numeric vector specifying the time window in years. When \code{NULL},
-#' all the years detected in \code{root_path} are considered. Default to \code{NULL}.
+#' all the years detected in `root_path` are considered. Default to `NULL`.
 #'
 #' @details
 #' The function works in conjunction with the EDGAR crawler structure. In general, this creates three

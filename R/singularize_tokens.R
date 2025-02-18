@@ -4,32 +4,35 @@ if ( getRversion() >= "2.15.1" ) {
 #' Fast Tokens Singularization
 #'
 #' Singularize a **quanteda** [tokens] class object via parallel hashing using 
-#' the [singularize()] function of **pluralize**. 
+#' the [singularize] function of **pluralize**. 
 #'
-#' @param x A **quanteda** [tokens] class object.
-#' @param ncores Number of cores to dispatch a `PSOCK` cluster for parallel processing. 
-#' See [makeCluster()] for more information.
-#' @param remove_numbers Logical. Whether to remove any token containing a number of the regex class
-#' `\d`. 
-#' @param min_char Numeric specifying the minimum length in characters for tokens to be kept. 
-#' Default to 1 no removal. 
-#'
+#' @param x A **quanteda** [tokens] class object containing the tokenized text data.
+#' @param ncores Integer. The number of CPU cores to use for parallel processing via a `PSOCK` cluster. 
+#' Higher values improve performance on large datasets. See [makeCluster] for details.
+#' @param remove_numbers Logical. If `TRUE`, removes tokens that contain any numerical digits (`\d`).
+#' This prevents incorrect singularization of numeric tokens.
+#' @param min_char Integer. The minimum character length required for tokens to be retained. 
+#' Defaults to `1`, meaning no tokens are removed based on length.
+#'   
 #' @details
-#' By construction, [singularize()] operates on vectors of characters which is not particularly
-#' efficient when the size of the vocabulary is large. Conversely, a [tokens] class object is much
-#' more efficient as by default it is serialized. To avoid the usage of loops over a potentially 
-#' large [tokens] object, `singularize_tokens` creates a hash table as a [data.table] class object 
-#' containing the vocabulary set as identified by transforming the [tokens] object 
-#' to a [dfm]. 
-#' 
-#' The singularization via [singularize()] can now be executed in parallel and 
-#' and in-place over the `data.table` object via the efficient function [set()]. This effectively
-#' adds the singularized form to the hash table which can then be used to replace the original 
-#' tokens with a very efficient lookup via [tokens_replace()]. This last step resembles that of
-#' lemmatizing. 
-#' 
-#' The real bottleneck is probably the initial creation of the vocabulary set as a call to [dfm()] 
-#' is inevitable. 
+#' Traditional singularization functions operate on character vectors, which can be inefficient when
+#' dealing with large vocabularies. Instead, `singularize_tokens` optimizes the process by working 
+#' directly on a [tokens] class object, which is inherently serialized 
+#' and memory-efficient. 
+#'
+#' To enhance performance, `singularize_tokens` first extracts the vocabulary by converting the 
+#' [tokens] object into a [dfm] object. It then constructs a hash table using a [data.table], 
+#' pre-allocating space for singularized tokens. 
+#'
+#' The actual singularization is performed in parallel using [pluralize::singularize] across 
+#' multiple processing cores. This parallelization is achieved via [foreach] and [doParallel], 
+#' ensuring efficient in-place updates of  the hash table. 
+#'
+#' Finally, the hash table is leveraged to replace the original tokens using the high-performance 
+#' function [tokens_replace], providing an efficient approach similar to lemmatization. 
+#'
+#' The main computational overhead is in the initial extraction of the vocabulary, 
+#' as the conversion to a [dfm] is unavoidable.
 #'
 #' @returns A **quanteda** [tokens] class object with singularized tokens. 
 #'
@@ -70,7 +73,7 @@ singularize_tokens = function(x, ncores = 1, remove_numbers = TRUE, min_char = 1
   }
   if ( min_char > 1 ) {
     cli_alert_info("Keeping tokens with at least {min_char} characters")
-    # Remove tokens that contain less than 4 characters
+    # Remove tokens that contain less than min_char characters
     regex_min_char = regex(str_c("\\w{", min_char, ",}"), ignore_case = TRUE)
     vocabulary = vocabulary[ str_which(vocabulary, regex_min_char) ]
   } else {

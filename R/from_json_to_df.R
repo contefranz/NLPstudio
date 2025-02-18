@@ -7,11 +7,11 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' Convenient function to covert a container list of JSON files to data.frame structures.
 #'
-#' @param json_list A list of JSON files as built by \code{\link{get_json_files}}.
-#' @param ncores The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.
-#' @param drop_late_filers Logical for late filers removal. Default to \code{FALSE}.
+#' @param json_list A list of JSON files as built by [get_json_files].
+#' @param ncores The number of cores to assign to [makeCluster]. Default to 1.
+#' @param drop_late_filers Logical for late filers removal. Default to `FALSE`.
 #'
-#' @returns A single \code{data.table} containing
+#' @returns A single `data.table` containing
 #' several identification columns in addition to the document itself.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}

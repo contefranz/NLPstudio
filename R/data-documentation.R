@@ -1,6 +1,6 @@
 #' Loughran and McDonald Firm Complexity Dictionary
 #'
-#' A \code{\link[quanteda]{dictionary}} containing the
+#' A [dictionary] containing the
 #' the 2024 version of the Loughran and McDonald Firm Complexity Word List. The list contains 53 words.
 #' @source 
 #' <https://sraf.nd.edu/complexity/>
@@ -16,7 +16,7 @@
 
 #' Feng Li Forward Looking Statement Dictionary
 #'
-#' A \code{\link[quanteda]{dictionary}} containing the
+#' A [dictionary] containing the
 #' the 2010 version of the Feng Li's Forward Looking Statement Word List. The list contains 18 words.
 #' @source <https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1475-679X.2010.00382.x>
 #' @references
@@ -28,7 +28,7 @@
 
 #' Bozanic Roulstone VanBuskirk Forward Looking Statement Dictionary
 #'
-#' A \code{\link[quanteda]{dictionary}} containing the
+#' A [dictionary] containing the
 #' the 2018 version of the Bozanic, Roulstone, and VanBuskirk Forward Looking Statement Word List.
 #' The list contains 90 words.
 #' @source <https://www.sciencedirect.com/science/article/abs/pii/S0165410117300733>
@@ -41,8 +41,8 @@
 
 #' Cannon, Ling, Wang, and Watanabe CSR Dictionary
 #'
-#' A \code{\link[quanteda]{dictionary}} containing the
-#' the 2020 version of the Cannon, Ling, Wang, and Watanabe Corporate Social Responsbility Word List.
+#' A [dictionary] containing the
+#' the 2020 version of the Cannon, Ling, Wang, and Watanabe Corporate Social Responsibility Word List.
 #'
 #' @details
 #' The dictionary contains four categories of unigrams and bigrams:
@@ -61,7 +61,7 @@
 
 #' U.N. Sustainable Development Goals (SDG) Mapping Dictionary
 #'
-#' A \code{\link[quanteda]{dictionary}} containing the
+#' A [dictionary] containing the
 #' key terms to identify SDGs withing research papers as mapped by Wang et al. (2023).
 #'
 #' @details

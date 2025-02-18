@@ -7,11 +7,11 @@
 summarize_corpus(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \link{corpus} to be summarized.}
+\item{x}{A \strong{quanteda} \link{corpus} to be summarized.}
 
 \item{ncores}{The number of \link{multisession} workers to be allocated for the tokenization.}
 
-\item{...}{Additional arguments passed to \code{\link[=dfm]{dfm()}}.}
+\item{...}{Additional arguments passed to \link{dfm}.}
 }
 \value{
 A \link{data.table} class object with detailed information about each document.

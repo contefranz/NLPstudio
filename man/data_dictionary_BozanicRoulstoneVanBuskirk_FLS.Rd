@@ -14,7 +14,7 @@ An object of class \code{dictionary2} of length 1.
 data_dictionary_BozanicRoulstoneVanBuskirk_FLS
 }
 \description{
-A \code{\link[quanteda]{dictionary}} containing the
+A \link{dictionary} containing the
 the 2018 version of the Bozanic, Roulstone, and VanBuskirk Forward Looking Statement Word List.
 The list contains 90 words.
 }

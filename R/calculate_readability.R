@@ -1,14 +1,14 @@
 #' Fast Calculation of Readability Measures
 #'
-#' Compute readability measures in parallel with the \strong{future} paradigm.
+#' Compute readability measures in parallel with the **[future]** paradigm.
 #'
-#' @param x A \code{\link[quanteda]{corpus}} or a character vector containing the documents to process.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for
+#' @param x A **quanteda** [corpus] or a character vector containing the documents to process.
+#' @param ncores The number of [multisession] workers to be allocated for
 #' the calculation of readability.
-#' @param ... Additional arguments passed to \code{\link[quanteda.textstats]{textstat_readability}}.
+#' @param ... Additional arguments passed to [textstat_readability].
 #'
-#' @returns A \code{\link[data.table]{data.table}} with as many columns as passed to
-#' \code{measure} and \code{doc_id} as the document identifier.
+#' @returns A [data.table] with as many columns as passed to
+#' `measure` and `doc_id` as the document identifier.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'

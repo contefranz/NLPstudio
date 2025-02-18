@@ -7,9 +7,9 @@
 from_json_to_df(json_list, ncores = 1, drop_late_filers = FALSE)
 }
 \arguments{
-\item{json_list}{A list of JSON files as built by \code{\link{get_json_files}}.}
+\item{json_list}{A list of JSON files as built by \link{get_json_files}.}
 
-\item{ncores}{The number of cores to assign to \code{\link[parallel]{makeCluster}}. Default to 1.}
+\item{ncores}{The number of cores to assign to \link{makeCluster}. Default to 1.}
 
 \item{drop_late_filers}{Logical for late filers removal. Default to \code{FALSE}.}
 }

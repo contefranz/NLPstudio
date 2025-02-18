@@ -14,8 +14,8 @@ An object of class \code{dictionary2} of length 4.
 data_dictionary_Cannon_Ling_Wang_Watanabe
 }
 \description{
-A \code{\link[quanteda]{dictionary}} containing the
-the 2020 version of the Cannon, Ling, Wang, and Watanabe Corporate Social Responsbility Word List.
+A \link{dictionary} containing the
+the 2020 version of the Cannon, Ling, Wang, and Watanabe Corporate Social Responsibility Word List.
 }
 \details{
 The dictionary contains four categories of unigrams and bigrams:

@@ -13,18 +13,18 @@ define_corpus(x, ...)
 \method{define_corpus}{data.table}(x)
 }
 \arguments{
-\item{x}{Input object, either a character indicating a path to stored data or a data.table as created by \code{\link{from_json_to_df}}.}
+\item{x}{Input object, either a character indicating a path to stored data or a data.table as created by \link{from_json_to_df}.}
 
-\item{...}{Additional arguments passed to \code{\link[readtext]{readtext}}.}
+\item{...}{Additional arguments passed to \link{readtext}.}
 
-\item{ncores}{The number of \code{\link[future]{multisession}} workers to be allocated for
+\item{ncores}{The number of \link{multisession} workers to be allocated for
 the lookup. Default to 1.}
 }
 \value{
 A quanteda \link{corpus} object.
 }
 \description{
-Convert structured text data into a quanteda \code{\link[quanteda]{corpus}}, supporting a variety of formats with parallel processing via \strong{\link{future}}.
+Convert structured text data into a quanteda \link{corpus}, supporting a variety of formats with parallel processing via \strong{\link{future}}.
 }
 \details{
 If \code{x} points directly to a specific file containing the textual data, this is treated as a single-item

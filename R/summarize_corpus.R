@@ -2,9 +2,9 @@
 #'
 #' Summarize a [corpus] in parallel via **[future]**.
 #'
-#' @param x A [corpus] to be summarized.
+#' @param x A **quanteda** [corpus] to be summarized.
 #' @param ncores The number of [multisession] workers to be allocated for the tokenization.
-#' @param ... Additional arguments passed to [dfm()].
+#' @param ... Additional arguments passed to [dfm].
 #'
 #' @returns A [data.table] class object with detailed information about each document.
 #'

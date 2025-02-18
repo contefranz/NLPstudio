@@ -1,13 +1,13 @@
 #' Fast Tokens Lookup
 #'
-#' Lookup a \code{\link[quanteda]{tokens}} object in parallel via **[future]**.
+#' Lookup a [tokens] object in parallel via **[future]**.
 #'
-#' @param x A \code{\link[quanteda]{tokens}} object.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for 
+#' @param x A **quanteda** [tokens] object.
+#' @param ncores The number of [multisession] workers to be allocated for 
 #' the lookup.
 #' @param ... Additional arguments passed to [tokens_lookup].
 #'
-#' @returns A \code{\link[quanteda]{tokens}} object.
+#' @returns A [tokens] object.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'

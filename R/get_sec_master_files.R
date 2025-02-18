@@ -6,12 +6,12 @@ if ( getRversion() >= "2.15.1" ) {
 #' Create a container list with the pointers to all the JSON files detected in the input folder.
 #'
 #' @param root_path Character giving the path to the root folder location (see 'Details').
-#' @param pattern An optional \link[base]{regex}. Only file names which match the regular expression will be returned
-#' as in \code{\link[base]{list.files}}. Default to \code{NULL}.
-#' @param fyear Optional numeric vector specifying the time window in fiscal years. When \code{NULL},
-#' all the fiscal years detected in \code{root_path} are considered. Default to \code{NULL}.
-#' @param drop_late When \code{TRUE}, remove filings referring to distant fiscal period. Default to
-#' \code{FALSE}.
+#' @param pattern An optional [base::regex]. Only file names which match the regular expression 
+#' will be returned as in [list.files]. Default to `NULL`.
+#' @param fyear Optional numeric vector specifying the time window in fiscal years. When `NULL`,
+#' all the fiscal years detected in `root_path` are considered. Default to `NULL`.
+#' @param drop_late When `TRUE`, remove filings referring to distant fiscal period. Default to
+#' `FALSE`.
 #'
 #' @details
 #' The function works in conjunction with the EDGAR crawler structure. In general, this creates three
@@ -21,24 +21,24 @@ if ( getRversion() >= "2.15.1" ) {
 #' all the filings into the root_path and work from that.
 #'
 #' This function works on the metadata files, also called SEC master files. Typically, such data are
-#' stored in a .csv file and are located in \code{root_path} with no sub-directory. It is recommended
-#' to specify at least a \code{pattern} to detect those files.
+#' stored in a .csv file and are located in `root_path` with no sub-directory. It is recommended
+#' to specify at least a `pattern` to detect those files.
 #'
-#' @returns A \code{data.table} containing all the SEC master files as detected by the function
+#' @returns A `data.table` containing all the SEC master files as detected by the function
 #' with the following columns:
 #'
-#' \item{\code{cik}}{The Central Index Key as given by the SEC EDGAR database. Integer.}
-#' \item{\code{cname}}{The company name. Character.}
-#' \item{\code{type}}{The filing type. Character.}
-#' \item{\code{date_filed}}{The filing date on the SEC. IDat.}
-#' \item{\code{fyear_end}}{The fiscal year end date. IDat.}
-#' \item{\code{sic}}{The four-digit SIC industry code. Integer.}
-#' \item{\code{state_of_inc}}{U.S. state of incorporation (abbreviation). Character.}
-#' \item{\code{state_location}}{U.S. state location (abbreviation). Character.}
-#' \item{\code{filing_detail}}{Pointer to filing summary page in HTML. Character.}
-#' \item{\code{filing_html}}{Pointer to filing in HTML. Character.}
-#' \item{\code{filing_txt}}{Pointer to complete submission file in txt. Character.}
-#' \item{\code{filename}}{Filename. Character.}
+#' \item{`cik`}{The Central Index Key as given by the SEC EDGAR database. Integer.}
+#' \item{`cname`}{The company name. Character.}
+#' \item{`type`}{The filing type. Character.}
+#' \item{`date_filed`}{The filing date on the SEC. IDat.}
+#' \item{`fyear_end`}{The fiscal year end date. IDat.}
+#' \item{`sic`}{The four-digit SIC industry code. Integer.}
+#' \item{`state_of_inc`}{U.S. state of incorporation (abbreviation). Character.}
+#' \item{`state_location`}{U.S. state location (abbreviation). Character.}
+#' \item{`filing_detail`}{Pointer to filing summary page in HTML. Character.}
+#' \item{`filing_html`}{Pointer to filing in HTML. Character.}
+#' \item{`filing_txt`}{Pointer to complete submission file in txt. Character.}
+#' \item{`filename`}{Filename. Character.}
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'

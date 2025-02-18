@@ -7,40 +7,43 @@
 singularize_tokens(x, ncores = 1, remove_numbers = TRUE, min_char = 1)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{tokens} class object.}
+\item{x}{A \strong{quanteda} \link{tokens} class object containing the tokenized text data.}
 
-\item{ncores}{Number of cores to dispatch a \code{PSOCK} cluster for parallel processing.
-See \code{\link[=makeCluster]{makeCluster()}} for more information.}
+\item{ncores}{Integer. The number of CPU cores to use for parallel processing via a \code{PSOCK} cluster.
+Higher values improve performance on large datasets. See \link{makeCluster} for details.}
 
-\item{remove_numbers}{Logical. Whether to remove any token containing a number of the regex class
-\verb{\\d}.}
+\item{remove_numbers}{Logical. If \code{TRUE}, removes tokens that contain any numerical digits (\verb{\\d}).
+This prevents incorrect singularization of numeric tokens.}
 
-\item{min_char}{Numeric specifying the minimum length in characters for tokens to be kept.
-Default to 1 no removal.}
+\item{min_char}{Integer. The minimum character length required for tokens to be retained.
+Defaults to \code{1}, meaning no tokens are removed based on length.}
 }
 \value{
 A \strong{quanteda} \link{tokens} class object with singularized tokens.
 }
 \description{
 Singularize a \strong{quanteda} \link{tokens} class object via parallel hashing using
-the \code{\link[=singularize]{singularize()}} function of \strong{pluralize}.
+the \link{singularize} function of \strong{pluralize}.
 }
 \details{
-By construction, \code{\link[=singularize]{singularize()}} operates on vectors of characters which is not particularly
-efficient when the size of the vocabulary is large. Conversely, a \link{tokens} class object is much
-more efficient as by default it is serialized. To avoid the usage of loops over a potentially
-large \link{tokens} object, \code{singularize_tokens} creates a hash table as a \link{data.table} class object
-containing the vocabulary set as identified by transforming the \link{tokens} object
-to a \link{dfm}.
+Traditional singularization functions operate on character vectors, which can be inefficient when
+dealing with large vocabularies. Instead, \code{singularize_tokens} optimizes the process by working
+directly on a \link{tokens} class object, which is inherently serialized
+and memory-efficient.
 
-The singularization via \code{\link[=singularize]{singularize()}} can now be executed in parallel and
-and in-place over the \code{data.table} object via the efficient function \code{\link[=set]{set()}}. This effectively
-adds the singularized form to the hash table which can then be used to replace the original
-tokens with a very efficient lookup via \code{\link[=tokens_replace]{tokens_replace()}}. This last step resembles that of
-lemmatizing.
+To enhance performance, \code{singularize_tokens} first extracts the vocabulary by converting the
+\link{tokens} object into a \link{dfm} object. It then constructs a hash table using a \link{data.table},
+pre-allocating space for singularized tokens.
 
-The real bottleneck is probably the initial creation of the vocabulary set as a call to \code{\link[=dfm]{dfm()}}
-is inevitable.
+The actual singularization is performed in parallel using \link[pluralize:singularize]{pluralize::singularize} across
+multiple processing cores. This parallelization is achieved via \link{foreach} and \link{doParallel},
+ensuring efficient in-place updates of  the hash table.
+
+Finally, the hash table is leveraged to replace the original tokens using the high-performance
+function \link{tokens_replace}, providing an efficient approach similar to lemmatization.
+
+The main computational overhead is in the initial extraction of the vocabulary,
+as the conversion to a \link{dfm} is unavoidable.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

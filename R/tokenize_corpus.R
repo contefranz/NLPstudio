@@ -1,12 +1,12 @@
 #' Fast Corpus Tokenization
 #'
-#' Tokenize a \code{\link[quanteda]{corpus}} in parallel via **[future]**.
+#' Tokenize a [corpus] in parallel via **[future]**.
 #'
-#' @param x A \code{\link[quanteda]{corpus}} as built by \code{create_corpus}.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for the tokenization.
-#' @param ... Additional arguments passed to \code{\link[quanteda]{tokens}}.
+#' @param x A **quanteda** [corpus] as built by `create_corpus`.
+#' @param ncores The number of [multisession] workers to be allocated for the tokenization.
+#' @param ... Additional arguments passed to [tokens].
 #'
-#' @returns A \code{\link[quanteda]{tokens}} object.
+#' @returns A [tokens] object.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'

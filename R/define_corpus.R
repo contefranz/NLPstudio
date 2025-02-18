@@ -4,12 +4,12 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Generate a Quanteda Corpus from Text Data
 #'
-#' Convert structured text data into a quanteda \code{\link[quanteda]{corpus}}, supporting a variety of formats with parallel processing via **[future]**.
+#' Convert structured text data into a quanteda [corpus], supporting a variety of formats with parallel processing via **[future]**.
 #'
-#' @param x Input object, either a character indicating a path to stored data or a data.table as created by \code{\link{from_json_to_df}}.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for 
+#' @param x Input object, either a character indicating a path to stored data or a data.table as created by [from_json_to_df].
+#' @param ncores The number of [multisession] workers to be allocated for 
 #' the lookup. Default to 1.
-#' @param ... Additional arguments passed to \code{\link[readtext]{readtext}}.
+#' @param ... Additional arguments passed to [readtext].
 #' 
 #' @details
 #' If `x` points directly to a specific file containing the textual data, this is treated as a single-item

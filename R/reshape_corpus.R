@@ -1,20 +1,20 @@
 #' Fast Corpus Reshape
 #'
-#' Reshape a \code{\link[quanteda]{corpus}} in parallel under the \strong{future} paradigm.
+#' Reshape a [corpus] in parallel under the **[future]** paradigm.
 #'
-#' @param x A \code{\link[quanteda]{corpus}} as built by \code{create_corpus}.
-#' @param ncores The number of \code{\link[future]{multisession}} workers to be allocated for the reshaping.
-#' @param ... Additional arguments passed to \code{\link[quanteda]{corpus_reshape}} (see 'Details').
+#' @param x A **quanteda** [corpus] as built by `create_corpus`.
+#' @param ncores The number of [multisession] workers to be allocated for the reshaping.
+#' @param ... Additional arguments passed to [corpus_reshape] (see 'Details').
 #'
 #' @details
-#' This function is a wrapper of \code{\link[quanteda]{corpus_reshape}} but it is much faster as it
+#' This function is a wrapper of [corpus_reshape] but it is much faster as it
 #' uses the \href{https://www.futureverse.org/packages-overview.html}{\strong{future}}
 #' paradigm to parallelize the task.
 #'
-#' Use \code{...} to control the reshaping process. For instance, whether to reshape the corpus to
-#' sentences (\code{to = "sentences"}) which is likely the most common usage.
+#' Use `...` to control the reshaping process. For instance, whether to reshape the corpus to
+#' sentences (`to = "sentences"`) which is likely the most common usage.
 #'
-#' @returns A reshaped \code{\link[quanteda]{corpus}} object.
+#' @returns A reshaped [corpus] object.
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'

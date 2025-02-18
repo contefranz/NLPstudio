@@ -9,8 +9,8 @@ get_json_files(root_path, pattern = NULL, fyear = NULL)
 \arguments{
 \item{root_path}{Character giving the path to the root folder location (see 'Details').}
 
-\item{pattern}{An optional \link[base]{regex}. Only file names which match the regular expression will be returned
-as in \code{\link[base]{list.files}}. Default to \code{NULL}.}
+\item{pattern}{An optional \link[base:regex]{base::regex}. Only file names which match the regular expression
+will be returned as in \link{list.files}. Default to \code{NULL}.}
 
 \item{fyear}{Optional numeric vector specifying the time window in years. When \code{NULL},
 all the years detected in \code{root_path} are considered. Default to \code{NULL}.}
