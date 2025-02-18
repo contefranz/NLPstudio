@@ -47,10 +47,5 @@ and apply complex filtering and transformations based on user-defined criteria.
 \author{
 \strong{Maintainer}: Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]
 
-Other contributors:
-\itemize{
-  \item Piergiorgio Di Pasquale \email{dipasquale.piergiorgio@gmail.com} [contributor]
-}
-
 }
 \keyword{internal}

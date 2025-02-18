@@ -1,9 +1,10 @@
-core <- c("quanteda", "quanteda.textstats", "spacyr", "data.table", "stringr", "jsonlite", "foreach", "future")
+core <- c("quanteda", "quanteda.textstats", "spacyr", "readtext", "data.table", 
+          "stringr", "jsonlite", "foreach", "future")
 
 
 .onAttach <- function(...) {
   attached <- NLPstudio_attach()
-  message(NLPstudio_attach_message(attached))
+  packageStartupMessage(NLPstudio_attach_message(attached))
 }
 
 is_attached <- function(x) {
