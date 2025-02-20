@@ -7,7 +7,7 @@
 tokenize_corpus(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{corpus} as built by \code{create_corpus}.}
+\item{x}{A \strong{quanteda} \link{corpus} as built by \code{define_corpus}.}
 
 \item{ncores}{The number of \link{multisession} workers to be allocated for the tokenization.}
 

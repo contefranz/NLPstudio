@@ -2,7 +2,7 @@
 #'
 #' Tokenize a [corpus] in parallel via **[future]**.
 #'
-#' @param x A **quanteda** [corpus] as built by `create_corpus`.
+#' @param x A **quanteda** [corpus] as built by `define_corpus`.
 #' @param ncores The number of [multisession] workers to be allocated for the tokenization.
 #' @param ... Additional arguments passed to [tokens].
 #'
