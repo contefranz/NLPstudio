@@ -14,8 +14,17 @@ if ( getRversion() >= "2.15.1" ) {
 #' selection when `x` is a folder, enabling options such as `recursive = TRUE` to search 
 #' sub-directories or `pattern = "\\.json$"` to filter specific file types.
 #' 
-#' @returns A single `data.table` containing
-#' several identification columns in addition to the document itself.
+#' @details
+#' This function ensures that each document in the output dataset has a unique `"doc_id"`. 
+#' After processing the JSON files, it checks for duplicate entries based on this identifier. 
+#' If duplicates are found, a warning is issued, summarizing the number of redundant 
+#' `"doc_id"` values. Finally, duplicate entries are removed, keeping only the first occurrence of 
+#' each document following the assumption that the anything other than the first entry is probably
+#' an amendment. 
+#' 
+#' The textual document is contained in the column `text`.
+#' 
+#' @returns A single `data.table`. 
 #'
 #' @import data.table foreach
 #' @importFrom stringr str_replace_all
@@ -55,15 +64,20 @@ json_to_tabular <- function(x, ncores = 1, ...) {
   stopCluster(cl)
   
   out = rbindlist(temp, fill = TRUE)
-  ############################################################
-  # TO-DO: 
-  # add a message in case observations are dropped
-  # maybe print cik and fdate or just the doc_id directly???
-  # TO-DO:
-  ############################################################
   setorder(out, cik, fdate)
-  out = unique(out, by = "doc_id")
   
+  dups = duplicated(out, by = "doc_id")
+  
+  if ( any(dups) ) {
+    dups_df = out[ dups, .(doc_id, cik, fdate, accession, description) ]
+    if ( nrow(dups_df) > 10 ) {
+      cli_alert_warning("Detected {nrow(dups_df)} duplicate observations by \"doc_id\". Printing has been silenced.")
+    } else {
+      cli_alert_warning("Detected {nrow(dups_df)} duplicat observations with the following \"doc_id\": {dups_df[ , doc_id]}")
+    }
+    cli_alert_info("Duplicates have been removed!")
+    out = unique(out, by = "doc_id")
+  }
   cli_alert_success("JSON conversion successful!")
   return(out)
 }

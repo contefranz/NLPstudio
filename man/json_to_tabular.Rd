@@ -16,12 +16,21 @@ selection when \code{x} is a folder, enabling options such as \code{recursive = 
 sub-directories or \code{pattern = "\\\\.json$"} to filter specific file types.}
 }
 \value{
-A single \code{data.table} containing
-several identification columns in addition to the document itself.
+A single \code{data.table}.
 }
 \description{
 Converts JSON files into a structured \link{data.table}, handling both single files and entire
 folders. It reads raw JSON, cleans malformed values, and extracts metadata and text content.
 When processing a folder, it leverages parallel computing via \strong{\link{foreach}} to efficiently
 handle multiple files, ensuring fast and reliable conversion.
+}
+\details{
+This function ensures that each document in the output dataset has a unique \code{"doc_id"}.
+After processing the JSON files, it checks for duplicate entries based on this identifier.
+If duplicates are found, a warning is issued, summarizing the number of redundant
+\code{"doc_id"} values. Finally, duplicate entries are removed, keeping only the first occurrence of
+each document following the assumption that the anything other than the first entry is probably
+an amendment.
+
+The textual document is contained in the column \code{text}.
 }
