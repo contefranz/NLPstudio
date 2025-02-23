@@ -1,6 +1,6 @@
 Package: NLPstudio
 Title: Work On SEC EDGAR Filings Plus Other Perks
-Version: 0.0.5
+Version: 0.0.6
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))

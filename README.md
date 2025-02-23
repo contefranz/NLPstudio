@@ -1,30 +1,30 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![release](https://img.shields.io/badge/release-v0.0.5-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.5)
+[![release](https://img.shields.io/badge/release-v0.0.6-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.0.6)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
-# NLPStudio <img src="man/figures/logo.svg" align="right" height="139" />
+# NLPstudio <img src="man/figures/logo.svg" align="right" height="139" />
 
 ## Overview
 
-**NLPStudio** is a robust R package designed to facilitate the transformation of textual data into structured, analyzable corpora within the [__quanteda__](https://quanteda.io/) framework. This package offers a suite of parallel, efficient, and intuitive functions optimized for high-performance management and analysis of various textual datasets. By enhancing the processes of corpus creation, text tokenization, and data transformation, **NLPStudio** utilizes optimized R and C++ code to efficiently handle large volumes of data. 
+**NLPstudio** is a robust R package designed to facilitate the transformation of textual data into structured, analyzable corpora within the [__quanteda__](https://quanteda.io/) framework. This package offers a suite of parallel, efficient, and intuitive functions optimized for high-performance management and analysis of various textual datasets. By enhancing the processes of corpus creation, text tokenization, and data transformation, **NLPstudio** utilizes optimized R and C++ code to efficiently handle large volumes of data. 
 
-In fact, in addition to the seamless integration with **quanteda**, **NLPStudio** also integrates 
+In fact, in addition to the seamless integration with **quanteda**, **NLPstudio** also integrates 
 smoothly with other R and C++ libraries, such as 
 [**data.table**](https://rdatatable.gitlab.io/data.table/) for fast data processing and management and
 [**future**](https://future.futureverse.org/index.html) for efficient parallel processing of large corpora.
 Overall, this ecosystem of libraries ensures all text handling and processing is both rapid and precise. 
-This approach allows **NLPStudio** to deliver unmatched performance and ease of use for social science 
+This approach allows **NLPstudio** to deliver unmatched performance and ease of use for social science 
 researchers, particularly those without deep coding expertise.
 
-While it is adept at processing diverse text sources, **NLPStudio** also includes specialized 
+While it is adept at processing diverse text sources, **NLPstudio** also includes specialized 
 capabilities for managing financial disclosures, such as SEC filings, extending its applicability 
 and utility in financial analytics.
 
 
 ## Core Functions
 
-The functionality provided by **NLPStudio** is dynamic and may evolve:
+The functionality provided by **NLPstudio** is dynamic and may evolve:
 
 - `create_corpus()`: The main function to create a [**quanteda**](https://quanteda.io/) corpus from
 a set of JSON files.
@@ -41,7 +41,11 @@ via **quanteda.textstats** `textstat_summary()`.
 - `singularize_tokens()`: Singularizes a [**quanteda**](https://quanteda.io/) tokens object via 
 parallel hashing using the [**pluralize**](https://github.com/hrbrmstr/pluralize) package.
 
-- `calculate_readability()`: Computes readability metrics for documents using
+- `calculate_readability()`: Computes readability metrics using
+[**quanteda.textstats**](https://github.com/quanteda/quanteda.textstats) in parallel through the
+[**future**](https://future.futureverse.org/index.html) framework.
+
+- `calculate_similarity()`/`calculate_distance()`: Computes similarity and distance measures 
 [**quanteda.textstats**](https://github.com/quanteda/quanteda.textstats) in parallel through the
 [**future**](https://future.futureverse.org/index.html) framework.
 
@@ -61,10 +65,10 @@ for processing.
 
 ## Available Dictionaries
 
-**NLPStudio** includes a selection of pre-compiled **quanteda** dictionaries, ideal for conducting 
+**NLPstudio** includes a selection of pre-compiled **quanteda** dictionaries, ideal for conducting 
 bag-of-words analyses on a `tokens` object. These dictionaries pertain the fields of Accounting and 
 Finance andenhance the NLP capabilities of 
-**NLPStudio**, building upon the extensive resources available with
+**NLPstudio**, building upon the extensive resources available with
 [**quanteda.sentiment**](https://github.com/quanteda/quanteda.sentiment). Currently available 
 dictionaries include:
 
@@ -103,7 +107,7 @@ the initial parameter and launch the code via the RStudio Background Jobs tab or
 
 ```r
 library(data.table)
-library(NLPStudio)
+library(NLPstudio)
 library(stringr)
 library(quanteda)
 library(quanteda.textstats)
@@ -180,6 +184,21 @@ mysummary = summarize_corpus(x = current_corpus, ncores = 6)
 fog_index = calculate_readability(x = current_corpus,
                                   ncores = ncores,
                                   measure = "FOG")
+                                  
+# CALCULATE SIMILARITY -----------------------------------------------------------------------
+
+current_dfm = dfm(toks_single)
+cosine_similarity = calculate_similarity(x = current_dfm,
+                                         ncores = ncores,
+                                         margin = "documents",
+                                         method = "cosine")
+
+# CALCULATE DISTANCE -------------------------------------------------------------------------
+
+euclidean_distance = calculate_distance(x = current_dfm,
+                                        ncores = ncores,
+                                        margin = "documents",
+                                        method = "euclidean")                                  
 
 
 # PARSE CORPUS WITH SPACY ---------------------------------------------------------------------

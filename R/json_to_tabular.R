@@ -1,5 +1,5 @@
 if ( getRversion() >= "2.15.1" ) {
-  utils::globalVariables( c( "file_test", "ifile", "id") )
+  utils::globalVariables( c( "file_test", "ifile", "id", "fdate", "doc_id", "accession", "description") )
 }
 #' Convert JSON Instances to a Tabular Format
 #'
