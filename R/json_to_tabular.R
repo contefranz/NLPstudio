@@ -97,10 +97,14 @@ json_to_tabular_int <- function(x) {
   # Parse the cleaned JSON
   tryCatch({
     data <- fromJSON(json_text, simplifyVector = FALSE)
-    out = as.data.table(data$metadata)
-    out[ , text := data$cleaned_content]
-    setnames(out, "_id", "doc_id")
-    out[ , id := NULL]
+    out = as.data.table(data)
+    # out[ , text := data$cleaned_content]
+    out[ , `:=` (`_id` = NULL, html_content = NULL)]
+    setnames(out, c("id", "cleaned_content"), c("doc_id", "text"))
+    setcolorder(out, neworder = c("doc_id"), before = "text")
+    setcolorder(out, neworder = c("text"), after = "index_url")
+    setcolorder(out, neworder = c("cik"), after = "doc_id")
+    setcolorder(out, neworder = c("fdate", "rdate"), after = "filing_date")
     return(out)
   }, error = function(e) {
     stop("Failed to parse JSON: ", e$message)
