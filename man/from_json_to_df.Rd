@@ -18,7 +18,16 @@ A single \code{data.table} containing
 several identification columns in addition to the document itself.
 }
 \description{
-Convenient function to covert a container list of JSON files to data.frame structures.
+Convenient function to convert a container list of JSON files to data.table.
+}
+\details{
+This function accepts a list of JSON files as detected by \link{get_json_files} that have been downloaded
+by the \emph{edgar-crawler} library. This is a different approach as that of \link{json_to_tabular} and should
+be used directly on the split JSON files coming out of the crawler.
+
+The parallel backend does not work over multiple SEC filings at once. Rather, it speeds up the
+reshaping of the JSON structure within each filing by converting it to a data.table of size
+1 x 20 if the filing is post 2005 and includes the Item 1A.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

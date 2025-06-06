@@ -5,11 +5,21 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Convert JSON to data.frame
 #'
-#' Convenient function to covert a container list of JSON files to data.frame structures.
+#' Convenient function to convert a container list of JSON files to data.table.
 #'
 #' @param json_list A list of JSON files as built by [get_json_files].
 #' @param ncores The number of cores to assign to [makeCluster]. Default to 1.
 #' @param drop_late_filers Logical for late filers removal. Default to `FALSE`.
+#' 
+#' @details
+#' This function accepts a list of JSON files as detected by [get_json_files] that have been downloaded
+#' by the _edgar-crawler_ library. This is a different approach as that of [json_to_tabular] and should
+#' be used directly on the split JSON files coming out of the crawler.
+#'
+#' The parallel backend does not work over multiple SEC filings at once. Rather, it speeds up the
+#' reshaping of the JSON structure within each filing by converting it to a data.table of size 
+#' 1 x 20 if the filing is post 2005 and includes the Item 1A.
+#'
 #'
 #' @returns A single `data.table` containing
 #' several identification columns in addition to the document itself.

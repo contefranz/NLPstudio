@@ -49,19 +49,27 @@ json_to_tabular <- function(x, ncores = 1, ...) {
   
   files_list = list.files(x, full.names = TRUE, ...)
   cli_alert_info("Detected {length(files_list)} JSON files. Working on them...")
-  n_files = length(files_list)
-  it = iter(seq_len(n_files), by = "row")
-  cl = makeCluster(ncores)
-  registerDoParallel(cl)
-  temp = foreach(
-    ifile = it,
-    .packages = c("iterators", "data.table", "stringr", "jsonlite"),
-    .export = "json_to_tabular_int"
-  ) %dopar% {
-    current_file = files_list[ifile]
-    json_to_tabular_int(x = current_file)
+  temp <- vector("list", length(files_list))  # preallocate list to store results
+  
+  for (i in seq_along(files_list)) {
+    current_file <- files_list[i]
+    cli_alert_info("Processing file {i}/{length(files_list)}: {basename(current_file)}")
+    cli_alert("{current_file}")
+    temp[[i]] <- json_to_tabular_int(x = current_file)
   }
-  stopCluster(cl)
+  # n_files = length(files_list)
+  # it = iter(seq_len(n_files), by = "row")
+  # cl = makeCluster(ncores)
+  # registerDoParallel(cl)
+  # temp = foreach(
+  #   ifile = it,
+  #   .packages = c("iterators", "data.table", "stringr", "jsonlite"),
+  #   .export = "json_to_tabular_int"
+  # ) %dopar% {
+  #   current_file = files_list[ifile]
+  #   json_to_tabular_int(x = current_file)
+  # }
+  # stopCluster(cl)
   
   out = rbindlist(temp, fill = TRUE)
   setorder(out, cik, fdate)
@@ -91,8 +99,17 @@ json_to_tabular_int <- function(x) {
   json_text <- paste(json_text, collapse = "\n")
   
   # Clean problematic values
-  json_text <- str_replace_all(json_text, "-000\\d+", "0")     # Fix invalid negative zeros
+  json_text <- str_replace_all(json_text, "-000\\d+", "0")      # Fix invalid negative zeros
   json_text <- str_replace_all(json_text, "\\bNaN\\b", "null")  # Replace NaN with null
+  # Escape inner double quotes that are not already escaped
+  json_text <- str_replace_all(json_text, '(?<!\\\\)"', '\\"')
+  # Replace single backslashes not followed by valid escape characters
+  json_text <- str_replace_all(json_text, '\\\\(?!["\\\\/bfnrtu])', '\\\\\\\\')
+  # Remove comma before a closing object or array
+  json_text <- str_replace_all(json_text, ",\\s*(\\}|\\])", "\\1")
+  # Remove non-printable characters (e.g., ASCII < 32 except tab, newline, carriage return)
+  json_text <- str_replace_all(json_text, "[[:cntrl:]&&[^\\r\\n\\t]]", "")
+  
   
   # Parse the cleaned JSON
   tryCatch({
