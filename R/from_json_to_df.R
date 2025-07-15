@@ -123,6 +123,8 @@ from_json_to_df = function(json_list, ncores = 1, drop_late_filers = FALSE) {
   # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
   cli_alert_info("Final binding")
   bind_bucket = rbindlist(big_bucket)
+  bind_bucket[ , filename := str_remove(filename, ".htm")]
+  bind_bucket[ , filename := str_c(filename, item, sep = "_")]
   cli_alert_success("Conversion has been successful")
   return(bind_bucket[])
 }
