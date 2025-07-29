@@ -1,6 +1,6 @@
 Package: NLPstudio
 Title: Work On SEC EDGAR Filings Plus Other Perks
-Version: 0.0.6
+Version: 0.0.7
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))
@@ -16,6 +16,7 @@ Imports:
     data.table (>= 1.15.4),
     quanteda (>= 4.0.1),
     quanteda.textstats (>= 0.97),
+    text2vec (>= 0.6.4),
     spacyr (>= 1.3.0),
     readtext (>= 0.91),
     pluralize (>= 0.2.1),
@@ -31,5 +32,6 @@ Imports:
     methods (>= 4.3),
     farr (>= 0.3.0),
     glue (>= 1.8.0),
+    ggplot2 (>= 3.5.0),
     cli (>= 3.6.2)
 LazyData: true
