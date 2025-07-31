@@ -1,4 +1,4 @@
-core <- c("quanteda", "quanteda.textstats", "spacyr", "readtext", "data.table", 
+core <- c("quanteda", "quanteda.textstats", "spacyr", "readtext", "data.table", "text2vec",
           "stringr", "jsonlite", "foreach", "future")
 
 

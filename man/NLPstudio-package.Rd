@@ -2,47 +2,53 @@
 % Please edit documentation in R/NLPstudio-package.R
 \docType{package}
 \name{NLPstudio-package}
-\alias{NLPstudio}
 \alias{NLPstudio-package}
-\title{An R package for efficient and high-performance textual data analysis}
+\alias{NLPstudio}
+\title{NLPstudio Package Overview}
 \description{
-NLPStudio provides a suite of parallel, efficient, and easy-to-use functions
-for efficiently managing and analyzing textual data, particularly from financial disclosures.
-It simplifies the processes of corpus creation, text tokenization, and data transformation,
-leveraging optimized R and C++ code to handle large volumes of data swiftly extending the
-already powerful \pkg{quanteda}.
+\strong{NLPstudio} is an R package that provides a modular and high-performance framework for
+conducting scalable natural language processing (NLP) on structured and unstructured text corpora,
+with particular support for financial disclosures such as SEC EDGAR filings.
+
+Built around the \strong{\href{https://quanteda.io/}{quanteda}} ecosystem, the package includes
+parallelized workflows for transforming raw text into structured corpora, and supports tasks
+such as tokenization, document reshaping, part-of-speech parsing, corpus summarization,
+and similarity/distance computations. These features are tightly integrated with
+\strong{\href{https://rdatatable.gitlab.io/data.table/}{data.table}} for efficient memory handling
+and \strong{\href{https://future.futureverse.org/}{future}} for scalable parallelism across machines and platforms.
+
+In addition to core NLP functionality, \strong{NLPstudio} includes a topic modeling pipeline using
+the WarpLDA algorithm implemented in \strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}}.
+The package provides utility functions to extract, rank, and visualize topic-word distributions
+in both long and wide formats, facilitating model inspection and downstream analysis.
+
+To support domain-specific content analysis, \strong{NLPstudio} also ships with a set of curated,
+pre-compiled \strong{\link{quanteda}} dictionaries tailored to financial and regulatory texts. These
+include vocabularies for detecting forward-looking statements, firm complexity, corporate
+social responsibility, and sustainable development themes.
 }
 \details{
-\pkg{NLPStudio} excels in constructing and manipulating textual data
-corpora with high efficiency. Functions such as \code{create_corpus} and
-\code{tokenize_corpus} allow users to quickly assemble and tokenize collections of
-text, supporting various formats and data sources. The package is designed to
-optimize performance, handling even large datasets with speed, thanks to its
-underlying C++ integration for critical operations and explicit parallel processing.
-
-Features include advanced text processing capabilities like
-\code{parse_corpus} for fast and parallel syntactic parsing, and
-\code{calculate_readability}, which applies several readability tests to
-textual data. The package's functionality extends to sophisticated text
-analysis, supporting various NLP tasks that are essential in financial data
-analytics.
-
-\pkg{NLPStudio} integrates smoothly with other R and C++ libraries,
-namely \pkg{data.table}, ensuring that all text handling is both fast and accurate,
-with support for Unicode text. Its efficient design is focused on scalability, allowing for
-processing of very large text datasets effectively in parallel thanks to the
-\pkg{future} paradigm.
-
-The package also includes a range of utility functions like
-\code{get_sec_master_files} and \code{get_json_files} designed to streamline the
-workflow from data retrieval to analysis of SEC EDGAR filings.
-
-Additional utilities provide users with the flexibility to customize
-analyses, such as the ability to adjust document and feature definitions easily,
-and apply complex filtering and transformations based on user-defined criteria.
+The core implementation emphasizes:
+\itemize{
+\item \strong{Parallel corpus construction:} Using \code{create_corpus()}, users can transform raw JSON files
+into a structured \code{quanteda} corpus, preserving metadata and document structure.
+\item \strong{Efficient token manipulation:} Functions such as \code{tokenize_corpus()}, \code{singularize_tokens()},
+and \code{reshape_corpus()} support robust and scalable preprocessing of textual data, using
+parallel backends for speed.
+\item \strong{Document-level analysis:} \code{summarize_corpus()}, \code{calculate_readability()},
+\code{calculate_similarity()}, and \code{calculate_distance()} provide fast and flexible document-level
+metrics using \code{quanteda.textstats}.
+\item \strong{Topic modeling with WarpLDA:} \code{warpLDA()} interfaces with \strong{\link{text2vec}} to fit topic models,
+while \code{get_top_terms()} and \code{plot_top_terms()} support extraction and visualization of model
+outputs. The function \code{plot_dtw()} can be used to inspect the distribution of document-topic
+weights across a fitted model.
+\item \strong{Domain dictionaries:} Pre-loaded dictionaries enable lookup-based bag-of-words analysis
+tailored to Accounting, Finance, and ESG disclosures.
 }
-\seealso{
-\link{quanteda} \link{future} \link{data.table}
+
+The package is especially well-suited for large-scale academic, policy, or regulatory text
+analysis in the social sciences. While originally designed for SEC filing data, the framework
+generalizes well to any structured document corpus within the \strong{\link{quanteda}} framework.
 }
 \author{
 \strong{Maintainer}: Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]
