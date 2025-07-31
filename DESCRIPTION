@@ -1,12 +1,19 @@
 Package: NLPstudio
-Title: Work On SEC EDGAR Filings Plus Other Perks
-Version: 0.0.7
+Title: Parallel NLP Tools for Processing SEC Filings, Corpus Management, Topic Modeling, and Other Perks
+Version: 0.1.0
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))
-Description: An R package providing a streamlined workflow for processing SEC filings data. It includes
-  functions to efficiently convert raw JSON files into a quanteda corpus, along with a comprehensive suite of
-  tools for advanced Natural Language Processing (NLP) analysis.
+Description: Description: NLPstudio provides a streamlined and high-performance workflow for working with 
+  structured and unstructured textual data, particularly SEC EDGAR filings. The package supports 
+  corpus creation from JSON, tokenization, parsing, singularization, and document-level summarization 
+  via quanteda, all with parallel backend support through future and foreach. In addition, 
+  NLPstudio includes tools for computing readability, similarity, and distance measures using 
+  quanteda.textstats. A full WarpLDA topic modeling workflow is integrated, allowing extraction 
+  and visualization of document-topic and topic-word distributions. The package supports export-ready 
+  wide and long formats and includes curated domain dictionaries for financial text analysis. 
+  Built on data.table, quanteda, and future, NLPstudio is intended for scalable text analysis in an 
+  academic context with a particular focus on accounting and finance research domains.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -19,6 +26,7 @@ Imports:
     text2vec (>= 0.6.4),
     spacyr (>= 1.3.0),
     readtext (>= 0.91),
+    tidytext (>= 0.4.2),
     pluralize (>= 0.2.1),
     jsonlite (>= 1.8.8),
     stringr (>= 1.5.1),
