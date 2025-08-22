@@ -4,11 +4,11 @@
 \alias{get_top_terms}
 \title{Extract Topic-Word Probabilities and Terms}
 \usage{
-get_top_terms(phi, n = 10, topics = NULL, format = c("long", "wide"))
+get_top_terms(x, n = 10, topics = NULL, format = c("long", "wide"))
 }
 \arguments{
-\item{phi}{A \code{data.table} representing the topic-word distribution matrix ( \eqn{\phi} ), typically from
-\code{model$phi} after running \code{\link[=warpLDA]{warpLDA()}}. Each row corresponds to a topic, and each column to a term.}
+\item{x}{Either the output of \code{\link[=warpLDA]{warpLDA()}} or a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
+\link[topicmodels:tm-class]{TopicModel-class}.}
 
 \item{n}{Integer. Number of top terms to extract per topic. Default is 10.}
 
@@ -47,5 +47,5 @@ grouping and sorting. The \code{probability} column represents the raw condition
 a word in a given topic (i.e., \eqn{\mathcal{P}(w \mid \phi)})
 }
 \seealso{
-\code{\link[=warpLDA]{warpLDA()}}, \code{\link[=plot_top_terms]{plot_top_terms()}} \code{\link[=plot_dtw]{plot_dtw()}}
+\code{\link[=warpLDA]{warpLDA()}}, \code{\link[=plot_top_terms]{plot_top_terms()}} \code{\link[=plot_dtw]{plot_dtw()}} \link[topicmodels:lda]{LDA()}
 }

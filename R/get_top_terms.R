@@ -7,13 +7,11 @@ if ( getRversion() >= "2.15.1" ) {
 #' distribution matrix (`phi`) returned by [warpLDA()]. It supports both long and wide output
 #' formats, making it suitable for downstream tasks such as inspection, visualization, or export.
 #'
-#' @param phi A `data.table` representing the topic-word distribution matrix ( \eqn{\phi} ), typically from 
-#' `model$phi` after running [warpLDA()]. Each row corresponds to a topic, and each column to a term.
+#' @inheritParams plot_dtw 
 #' @param n Integer. Number of top terms to extract per topic. Default is 10.
 #' @param topics Optional numeric vector specifying which topics to return. If `NULL` (default), all topics are included.
 #' @param format Output format. Either `"long"` (default) for a tidy table, or `"wide"` for a 
 #' spreadsheet-like layout with separate columns for each topic's top terms and probabilities.
-
 #' @returns A `data.table` in either:
 #'
 #' - **Long format**: One row per (topic, term) pair, with columns:
@@ -33,7 +31,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' grouping and sorting. The `probability` column represents the raw conditional probability of observing
 #' a word in a given topic (i.e., \eqn{\mathcal{P}(w \mid \phi)})
 #'
-#' @seealso [warpLDA()], [plot_top_terms()] [plot_dtw()]
+#' @seealso [warpLDA()], [plot_top_terms()] [plot_dtw()] [LDA()][topicmodels::LDA]
 #'
 #' @import data.table
 #' @importFrom utils head
@@ -41,15 +39,22 @@ if ( getRversion() >= "2.15.1" ) {
 #' 
 #' 
 
-get_top_terms <- function(phi, n = 10, topics = NULL, format = c("long", "wide")) {
+get_top_terms <- function(x, n = 10, topics = NULL, format = c("long", "wide")) {
   
   format <- match.arg(format)
   
-  if (!is.data.table(phi)) stop("phi must be a data.table containing topic-word probabilities")
+  if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
+    phi = x$phi
+  } else if ( !is.list(x) && (inherits(x, "VEM") || inherits(x, "Gibbs"))) {
+    phi = data.table(exp(x@beta))
+    setnames(phi, new = x@terms)
+  } else {
+    stop("x is an unrecognized object")
+  }
+  
   if (!is.numeric(n)) stop("n must be numeric")
   
   phi[, topic := .I]
-  
   
   # Optional topic filter
   if (!is.null(topics)) {

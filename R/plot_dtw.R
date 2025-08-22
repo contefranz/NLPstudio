@@ -3,17 +3,17 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Plot Distribution of Document-Topic-Weights
 #'
-#' `plot_dtw()` visualizes the distribution of topic proportions across documents
-#' from a `theta` matrix, typically returned by a topic model such as [warpLDA()].
-#' Each topic is shown as a separate histogram, allowing users to assess the sparsity,
-#' dominance, or spread of each topic across the corpus.
-#' 
-#' @param theta A `data.table` of document-topic proportions, with one row per document and one 
-#' column per topic. The first column must be `doc_id`, and all other columns should contain 
-#' numeric topic weights. 
+#' `plot_dtw()` visualizes the distribution of topic proportions across documents.
+#' It accepts either the output of [warpLDA()] (a list with a `theta` matrix) or
+#' a fitted [topicmodels::LDA] object (VEM or Gibbs). Each topic is shown as a
+#' separate histogram, allowing you to assess sparsity, dominance, and spread
+#' across the corpus.
+#'
+#' @param x Either the output of [warpLDA()] or a fitted [topicmodels::LDA()] object of class 
+#' [TopicModel-class][topicmodels::LDA-class].
 #' @param facet_args A named list of additional arguments passed to [facet_wrap()], 
-#' such as `ncol`, `nrow`, or `strip.position`. By default, `scales = "free_y"` 
-#' is used to allow individual y-axis scaling for each topic. 
+#' such as `ncol`, `nrow`, or `strip.position`. By default, `scales = "free_y"` is used 
+#' to allow per-topic y-axis scaling. 
 #' @param ... Additional arguments passed to [geom_histogram()], 
 #' such as `binwidth`, `fill`, or `color`.
 #'
@@ -22,15 +22,13 @@ if ( getRversion() >= "2.15.1" ) {
 #' histogram using [ggplot2]. Each facet corresponds to a topic and shows the density of the topic
 #' proportions across all documents. This is useful for diagnosing topic quality, sparsity, and 
 #' prevalence.
-#'
-#' The `theta` matrix is expected to follow the structure returned by [warpLDA()], where `doc_id`
-#' is the document identifier and remaining columns represent topic probabilities 
-#' (`Topic001`, `Topic002`, etc.). 
 #' 
-#' If one ensures the presence of the column `doc_id`, then `plot_dtw()` can be used on a 
-#' [TopicModel-class][topicmodels::LDA-class] class object from the package **topicmodels**. 
+#' For `warpLDA()` input, the function uses `x$theta` directly. 
+#' For [TopicModel-class][topicmodels::LDA-class] input, the function constructs a `data.table` from the fitted object 
+#' (e.g., using `x@documents` and `x@gamma`), and then ensures the presence of a `doc_id` column 
+#' and standardized topic column names (e.g., `Topic001`, `Topic002`, `...`).
 #'
-#' @returns A `ggplot` object representing the faceted histogram of topic proportions.
+#' @returns A [ggplot] object representing the faceted histograms of document–topic proportions.
 #'
 #' @seealso [warpLDA()], [topicmodels::LDA()], [geom_histogram()], [facet_wrap()]
 #'
@@ -38,8 +36,17 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom stats as.formula
 #' @export
 
-plot_dtw = function(theta, facet_args = list(scales = "free_y"), ...) {
+plot_dtw = function(x, facet_args = list(scales = "free_y"), ...) {
   
+  # Support for direct output from warpLDA() and LDA_VEM/LDA_Gibbs classes from topicmodels
+  if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
+    theta = x$theta  
+  } else if ( !is.list(x) && (inherits(x, "VEM") || inherits(x, "Gibbs"))) {
+    theta = data.table(rn = x@documents, x@gamma)
+    set_theta_names(theta_dt = theta)
+  } else {
+    stop("x is an unrecognized object")
+  }
   # Melt the data.table to long format
   long_theta = melt(
     theta,
@@ -47,7 +54,6 @@ plot_dtw = function(theta, facet_args = list(scales = "free_y"), ...) {
     variable.name = "topic",
     value.name = "theta"
   )
-  
   long_theta[, topic := factor(topic, levels = unique(topic))]
   
   # Base ggplot object
@@ -62,7 +68,6 @@ plot_dtw = function(theta, facet_args = list(scales = "free_y"), ...) {
   
   # Handle facet_wrap with additional arguments
   facet_args$facets = as.formula("~ topic")
-  # facet_args$scales <- scales
   p = p + do.call(facet_wrap, facet_args)
   
   return(p)
