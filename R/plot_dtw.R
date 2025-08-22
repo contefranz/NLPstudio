@@ -11,6 +11,8 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @param x Either the output of [warpLDA()] or a fitted [topicmodels::LDA()] object of class 
 #' [TopicModel-class][topicmodels::LDA-class].
+#' @param topics Optional numeric vector specifying which topic proportions to plot. 
+#' If `NULL` (default), all topics will be plotted.
 #' @param facet_args A named list of additional arguments passed to [facet_wrap()], 
 #' such as `ncol`, `nrow`, or `strip.position`. By default, `scales = "free_y"` is used 
 #' to allow per-topic y-axis scaling. 
@@ -36,7 +38,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom stats as.formula
 #' @export
 
-plot_dtw = function(x, facet_args = list(scales = "free_y"), ...) {
+plot_dtw = function(x, topics = NULL, facet_args = list(scales = "free_y"), ...) {
   
   # Support for direct output from warpLDA() and LDA_VEM/LDA_Gibbs classes from topicmodels
   if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
@@ -47,6 +49,19 @@ plot_dtw = function(x, facet_args = list(scales = "free_y"), ...) {
   } else {
     stop("x is an unrecognized object")
   }
+  
+  # --- Topic selection ---
+  if (!is.null(topics) && is.numeric(topics)) {
+    topic_cols <- setdiff(names(theta), "doc_id")
+    if (any(topics < 1 | topics > length(topic_cols)))
+      stop(glue::glue("Topic indices must be in the range [1, {length(topic_cols)}]"))
+    sel_cols <- topic_cols[topics]
+    # Subset theta to selected topics
+    theta <- theta[, c("doc_id", sel_cols), with = FALSE]
+  } else {
+    stop("topics must be NULL or a numeric vector of topic indices")
+  }
+  
   # Melt the data.table to long format
   long_theta = melt(
     theta,

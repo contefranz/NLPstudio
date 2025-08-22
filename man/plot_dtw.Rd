@@ -4,11 +4,14 @@
 \alias{plot_dtw}
 \title{Plot Distribution of Document-Topic-Weights}
 \usage{
-plot_dtw(x, facet_args = list(scales = "free_y"), ...)
+plot_dtw(x, topics = NULL, facet_args = list(scales = "free_y"), ...)
 }
 \arguments{
 \item{x}{Either the output of \code{\link[=warpLDA]{warpLDA()}} or a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
 \link[topicmodels:tm-class]{TopicModel-class}.}
+
+\item{topics}{Optional numeric vector specifying which topic proportions to plot.
+If \code{NULL} (default), all topics will be plotted.}
 
 \item{facet_args}{A named list of additional arguments passed to \code{\link[=facet_wrap]{facet_wrap()}},
 such as \code{ncol}, \code{nrow}, or \code{strip.position}. By default, \code{scales = "free_y"} is used
