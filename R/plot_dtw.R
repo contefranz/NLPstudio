@@ -51,16 +51,24 @@ plot_dtw = function(x, topics = NULL, facet_args = list(scales = "free_y"), ...)
   }
   
   # --- Topic selection ---
-  if (!is.null(topics) && is.numeric(topics)) {
-    topic_cols <- setdiff(names(theta), "doc_id")
+  topic_cols <- setdiff(names(theta), "doc_id")
+  
+  if (is.null(topics)) {
+    sel_cols <- topic_cols
+  } else {
+    if (!is.numeric(topics))
+      stop("topics must be NULL or a numeric vector of indices.")
+    if (any(is.na(topics)))
+      stop("topics contains NA.")
     if (any(topics < 1 | topics > length(topic_cols)))
       stop(glue::glue("Topic indices must be in the range [1, {length(topic_cols)}]"))
+    # allow non-integers like 1.0 but forbid fractional indices
+    if (any(topics != floor(topics)))
+      stop("topics must contain integer indices (e.g., 1, 2, 3).")
     sel_cols <- topic_cols[topics]
-    # Subset theta to selected topics
-    theta <- theta[, c("doc_id", sel_cols), with = FALSE]
-  } else {
-    stop("topics must be NULL or a numeric vector of topic indices")
   }
+  
+  theta <- theta[, c("doc_id", sel_cols), with = FALSE]
   
   # Melt the data.table to long format
   long_theta = melt(
