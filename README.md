@@ -1,6 +1,6 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.1.0)
+[![release](https://img.shields.io/badge/release-v0.1.1-blue.svg)](https://github.com/contefranz/edgartools/releases/tag/0.1.1)
  [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.svg" align="right" height="139" />
