@@ -1,3 +1,6 @@
+if ( getRversion() >= "2.15.1" ) {
+  utils::globalVariables( c( "org_ord" ) )
+}
 #' Fast Corpus Summarization
 #'
 #' Summarize a [corpus] in parallel via **[future]**.
@@ -10,6 +13,7 @@
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
+#' @import data.table
 #' @importFrom quanteda is.corpus ndoc
 #' @importFrom quanteda.textstats textstat_summary
 #' @importFrom future plan multisession sequential
@@ -42,6 +46,11 @@ summarize_corpus = function(x, ncores, ...) {
 
   thesummary = do.call(c, future_lapply(chunks, textstat_summary, future.seed = TRUE, ...))
   plan(sequential)
+  
+  # keep original order and check uniqueness
+  doc_order = quanteda::docnames(x)
+  if (anyDuplicated(doc_order))
+    stop("docnames(x) must be unique to serve as 'doc_id'.")
 
 
   cli_alert_info("Reshaping to long format using {ncores} cores")
@@ -55,7 +64,13 @@ summarize_corpus = function(x, ncores, ...) {
     out[[ j ]] = now
   }
   out_all = rbindlist(out, fill = TRUE)
+  
+  cli_alert_info("Establishing consistent document ordering")
+  # enforce identifier name and reorder to input order
   setnames(out_all, "document", "doc_id")
+  out_all[, org_ord := match(doc_id, doc_order)]
+  setorder(out_all, org_ord)
+  out_all[, org_ord := NULL]
 
   cli_alert_success("Summarization complete")
   return(out_all[])
