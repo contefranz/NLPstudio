@@ -7,17 +7,17 @@
 summarize_corpus(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{corpus} to be summarized.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} to be summarized.}
 
-\item{ncores}{The number of \link{multisession} workers to be allocated for the tokenization.}
+\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the tokenization.}
 
-\item{...}{Additional arguments passed to \link{dfm}.}
+\item{...}{Additional arguments passed to \link[quanteda:dfm]{quanteda::dfm}.}
 }
 \value{
-A \link{data.table} class object with detailed information about each document.
+A \link[data.table:data.table]{data.table::data.table} class object with detailed information about each document.
 }
 \description{
-Summarize a \link{corpus} in parallel via \strong{\link{future}}.
+Summarize a \link[quanteda:corpus]{quanteda::corpus} in parallel via \strong{\link[future:future]{future::future}}.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

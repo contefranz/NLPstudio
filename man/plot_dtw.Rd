@@ -13,15 +13,15 @@ plot_dtw(x, topics = NULL, facet_args = list(scales = "free_y"), ...)
 \item{topics}{Optional numeric vector specifying which topic proportions to plot.
 If \code{NULL} (default), all topics will be plotted.}
 
-\item{facet_args}{A named list of additional arguments passed to \code{\link[=facet_wrap]{facet_wrap()}},
+\item{facet_args}{A named list of additional arguments passed to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}},
 such as \code{ncol}, \code{nrow}, or \code{strip.position}. By default, \code{scales = "free_y"} is used
 to allow per-topic y-axis scaling.}
 
-\item{...}{Additional arguments passed to \code{\link[=geom_histogram]{geom_histogram()}},
+\item{...}{Additional arguments passed to \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}},
 such as \code{binwidth}, \code{fill}, or \code{color}.}
 }
 \value{
-A \link{ggplot} object representing the faceted histograms of document–topic proportions.
+A \link[ggplot2:ggplot]{ggplot2::ggplot} object representing the faceted histograms of document–topic proportions.
 }
 \description{
 \code{plot_dtw()} visualizes the distribution of topic proportions across documents.
@@ -32,7 +32,7 @@ across the corpus.
 }
 \details{
 Internally, the function reshapes the \code{theta} matrix to long format and constructs a faceted
-histogram using \link{ggplot2}. Each facet corresponds to a topic and shows the density of the topic
+histogram using \link[ggplot2:ggplot2-package]{ggplot2::ggplot2}. Each facet corresponds to a topic and shows the density of the topic
 proportions across all documents. This is useful for diagnosing topic quality, sparsity, and
 prevalence.
 
@@ -42,5 +42,5 @@ For \link[topicmodels:tm-class]{TopicModel-class} input, the function constructs
 and standardized topic column names (e.g., \code{Topic001}, \code{Topic002}, \code{...}).
 }
 \seealso{
-\code{\link[=warpLDA]{warpLDA()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[=geom_histogram]{geom_histogram()}}, \code{\link[=facet_wrap]{facet_wrap()}}
+\code{\link[=warpLDA]{warpLDA()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}, \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}
 }

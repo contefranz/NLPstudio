@@ -7,7 +7,7 @@
 warpLDA(x, k, return_theta = TRUE, return_phi = TRUE, ...)
 }
 \arguments{
-\item{x}{A sparse document-term matrix of class \linkS4class{dgCMatrix}.}
+\item{x}{A sparse document-term matrix of class \link[Matrix:dgCMatrix-class]{Matrix::dgCMatrix}.}
 
 \item{k}{The number of latent topics to estimate.}
 

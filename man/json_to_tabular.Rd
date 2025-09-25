@@ -19,9 +19,9 @@ sub-directories or \code{pattern = "\\\\.json$"} to filter specific file types.}
 A single \code{data.table}.
 }
 \description{
-Converts JSON files into a structured \link{data.table}, handling both single files and entire
+Converts JSON files into a structured \link[data.table:data.table]{data.table::data.table}, handling both single files and entire
 folders. It reads raw JSON, cleans malformed values, and extracts metadata and text content.
-When processing a folder, it leverages parallel computing via \strong{\link{foreach}} to efficiently
+When processing a folder, it leverages parallel computing via \strong{\link[foreach:foreach]{foreach::foreach}} to efficiently
 handle multiple files, ensuring fast and reliable conversion.
 }
 \details{

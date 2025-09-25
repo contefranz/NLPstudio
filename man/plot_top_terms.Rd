@@ -10,10 +10,10 @@ plot_top_terms(top_terms, facet_args = list(scales = "free_y"), ...)
 \item{top_terms}{A \code{data.table} returned by \code{\link[=get_top_terms]{get_top_terms()}}, containing the columns
 \code{rank}, \code{topic}, \code{term}, and \code{probability}.}
 
-\item{facet_args}{A named list of additional arguments passed to \code{\link[=facet_wrap]{facet_wrap()}}.
+\item{facet_args}{A named list of additional arguments passed to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}.
 By default, \code{scales = "free_y"} is used.}
 
-\item{...}{Additional arguments passed to \code{\link[=geom_col]{geom_col()}}.}
+\item{...}{Additional arguments passed to \code{\link[ggplot2:geom_bar]{ggplot2::geom_col()}}.}
 }
 \value{
 A \code{ggplot} object showing one horizontal bar chart per topic. Each bar reflects
@@ -26,10 +26,10 @@ one topic, and the height of each bar reflects the term's estimated topic-word p
 ( \eqn{\phi} ).
 }
 \details{
-The function uses \strong{\link{ggplot2}} to create a faceted bar chart showing the most relevant terms
+The function uses \strong{\link[ggplot2:ggplot2-package]{ggplot2::ggplot2}} to create a faceted bar chart showing the most relevant terms
 for each topic. Terms are ranked and sorted within each facet by their associated probability
 in the topic-word distribution matrix (\eqn{\phi}). Internally, the term ordering is adjusted using
-\strong{\link{tidytext}} \code{reorder_within()} to ensure per-topic ranking. This function is typically
+\strong{\link[tidytext:tidytext-package]{tidytext::tidytext}} \code{reorder_within()} to ensure per-topic ranking. This function is typically
 used in conjunction with \code{\link[=get_top_terms]{get_top_terms()}} with \code{format = "long"}, which prepares the data for
 suitable visualization.
 }

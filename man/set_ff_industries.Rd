@@ -7,7 +7,7 @@
 set_ff_industries(x, ind, fill_category = FALSE, ...)
 }
 \arguments{
-\item{x}{A \code{data.table} as extracted by a quanteda \link{corpus} object.}
+\item{x}{A \code{data.table} as extracted by a quanteda \link[quanteda:corpus]{quanteda::corpus} object.}
 
 \item{ind}{Fama-French industry grouping (See 'Details').}
 
@@ -16,7 +16,7 @@ set_ff_industries(x, ind, fill_category = FALSE, ...)
 \item{...}{Not used at the moment.}
 }
 \value{
-A \link{corpus} with the Fama-French industries as \code{docvars}.
+A \link[quanteda:corpus]{quanteda::corpus} with the Fama-French industries as \code{docvars}.
 }
 \description{
 This function maps Fama-French industry classifications to a quanteda corpus based on each

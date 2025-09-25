@@ -15,20 +15,20 @@ define_corpus(x, ...)
 \arguments{
 \item{x}{Input object, either a character indicating a path to stored data or a data.table as created by \link{from_json_to_df}.}
 
-\item{...}{Additional arguments passed to \link{readtext}.}
+\item{...}{Additional arguments passed to \link[readtext:readtext]{readtext::readtext}.}
 
-\item{ncores}{The number of \link{multisession} workers to be allocated for
+\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
 the lookup. Default to 1.}
 }
 \value{
-A quanteda \link{corpus} object.
+A quanteda \link[quanteda:corpus]{quanteda::corpus} object.
 }
 \description{
-Convert structured text data into a quanteda \link{corpus}, supporting a variety of formats with parallel processing via \strong{\link{future}}.
+Convert structured text data into a quanteda \link[quanteda:corpus]{quanteda::corpus}, supporting a variety of formats with parallel processing via \strong{\link[future:future]{future::future}}.
 }
 \details{
 If \code{x} points directly to a specific file containing the textual data, this is treated as a single-item
-list. If \code{x} is a folder, \code{define_corpus} looks for the following formats: .txt, .csv, .json, or .xml. This is in compliance with \link{readtext}.
+list. If \code{x} is a folder, \code{define_corpus} looks for the following formats: .txt, .csv, .json, or .xml. This is in compliance with \link[readtext:readtext]{readtext::readtext}.
 
 When passing either a single item or multiple small items, setting \code{ncores > 1} does not necessarily show a tangible improvement in speed. This is why by default \code{ncores = 1}.
 }

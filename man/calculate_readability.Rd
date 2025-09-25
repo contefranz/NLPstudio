@@ -7,19 +7,19 @@
 calculate_readability(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{corpus} or a character vector containing the documents to process.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} or a character vector containing the documents to process.}
 
-\item{ncores}{The number of \link{multisession} workers to be allocated for
+\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
 the calculation of readability.}
 
-\item{...}{Additional arguments passed to \link{textstat_readability}.}
+\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_readability]{quanteda.textstats::textstat_readability}.}
 }
 \value{
-A \link{data.table} with as many columns as passed to
+A \link[data.table:data.table]{data.table::data.table} with as many columns as passed to
 \code{measure} and \code{doc_id} as the document identifier.
 }
 \description{
-Compute readability measures in parallel with the \strong{\link{future}} paradigm.
+Compute readability measures in parallel with the \strong{\link[future:future]{future::future}} paradigm.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

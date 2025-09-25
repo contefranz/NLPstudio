@@ -10,35 +10,35 @@ calculate_similarity(x, ncores, ...)
 calculate_distance(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{corpus} or a character vector containing the documents to process.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} or a character vector containing the documents to process.}
 
-\item{ncores}{The number of \link{multisession} workers to be allocated for
+\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
 the calculation of readability.}
 
-\item{...}{Additional arguments passed to \link{textstat_simil} or \link{textstat_dist}.}
+\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.}
 }
 \value{
-A sparse matrix as S4 class following \linkS4class{textstat_simil} or \linkS4class{textstat_dist}
+A sparse matrix as S4 class following \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}
 from the \strong{Matrix} package.
 }
 \description{
-Compute similarity and distance measures in parallel with the \strong{\link{future}} paradigm.
+Compute similarity and distance measures in parallel with the \strong{\link[future:future]{future::future}} paradigm.
 }
 \details{
-These functions leverage parallel computing via the \strong{\link{future}} framework to efficiently compute
-similarity and distance measures across documents. By splitting the input \link{dfm} into balanced
-chunks, the computation is distributed across multiple CPU cores using \link{future_lapply}.
+These functions leverage parallel computing via the \strong{\link[future:future]{future::future}} framework to efficiently compute
+similarity and distance measures across documents. By splitting the input \link[quanteda:dfm]{quanteda::dfm} into balanced
+chunks, the computation is distributed across multiple CPU cores using \link[future.apply:future_lapply]{future.apply::future_lapply}.
 This ensures scalability even when handling large corpora.
 
 Once the computations are complete, the individual results are internally merged back into a single
 sparse matrix. If a second matrix (\code{y}) is not provided, the output
-is forced into a symmetric structure using \link{forceSymmetric}, ensuring consistency with the
-default behavior of \link{textstat_simil} and \link{textstat_dist}.
+is forced into a symmetric structure using \link[Matrix:forceSymmetric-methods]{Matrix::forceSymmetric}, ensuring consistency with the
+default behavior of \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} and \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.
 
 For memory efficiency, the final similarity or distance matrix is converted into a packed
-symmetric sparse format (\linkS4class{dspMatrix}), which significantly reduces storage requirements while
+symmetric sparse format (\link[Matrix:dsyMatrix-class]{Matrix::dspMatrix}), which significantly reduces storage requirements while
 maintaining computational speed. Finally, the results are wrapped into the appropriate
-\strong{\link{quanteda.textstats}} S4 class (\linkS4class{textstat_simil} or \linkS4class{textstat_dist}), ensuring full
+\strong{\link[quanteda.textstats:quanteda.textstats-package]{quanteda.textstats::quanteda.textstats}} S4 class (\link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}), ensuring full
 compatibility with downstream quanteda functions.
 }
 \examples{

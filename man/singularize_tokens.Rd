@@ -7,7 +7,7 @@
 singularize_tokens(x, ncores = 1, remove_numbers = TRUE, min_char = 1)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{tokens} class object containing the tokenized text data.}
+\item{x}{A \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} class object containing the tokenized text data.}
 
 \item{ncores}{Integer. The number of CPU cores to use for parallel processing via a \code{PSOCK} cluster.
 Higher values improve performance on large datasets. See \link{makeCluster} for details.}
@@ -19,31 +19,31 @@ This prevents incorrect singularization of numeric tokens.}
 Defaults to \code{1}, meaning no tokens are removed based on length.}
 }
 \value{
-A \strong{quanteda} \link{tokens} class object with singularized tokens.
+A \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} class object with singularized tokens.
 }
 \description{
-Singularize a \strong{quanteda} \link{tokens} class object via parallel hashing using
-the \link{singularize} function of \strong{pluralize}.
+Singularize a \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} class object via parallel hashing using
+the \link[pluralize:singularize]{pluralize::singularize} function of \strong{pluralize}.
 }
 \details{
 Traditional singularization functions operate on character vectors, which can be inefficient when
 dealing with large vocabularies. Instead, \code{singularize_tokens} optimizes the process by working
-directly on a \link{tokens} class object, which is inherently serialized
+directly on a \link[quanteda:tokens]{quanteda::tokens} class object, which is inherently serialized
 and memory-efficient.
 
 To enhance performance, \code{singularize_tokens} first extracts the vocabulary by converting the
-\link{tokens} object into a \link{dfm} object. It then constructs a hash table using a \link{data.table},
+\link[quanteda:tokens]{quanteda::tokens} object into a \link[quanteda:dfm]{quanteda::dfm} object. It then constructs a hash table using a \link[data.table:data.table]{data.table::data.table},
 pre-allocating space for singularized tokens.
 
 The actual singularization is performed in parallel using \link[pluralize:singularize]{pluralize::singularize} across
-multiple processing cores. This parallelization is achieved via \link{foreach} and \link{doParallel},
+multiple processing cores. This parallelization is achieved via \link[foreach:foreach]{foreach::foreach} and \link[doParallel:doParallel-package]{doParallel::doParallel},
 ensuring efficient in-place updates of  the hash table.
 
 Finally, the hash table is leveraged to replace the original tokens using the high-performance
-function \link{tokens_replace}, providing an efficient approach similar to lemmatization.
+function \link[quanteda:tokens_replace]{quanteda::tokens_replace}, providing an efficient approach similar to lemmatization.
 
 The main computational overhead is in the initial extraction of the vocabulary,
-as the conversion to a \link{dfm} is unavoidable.
+as the conversion to a \link[quanteda:dfm]{quanteda::dfm} is unavoidable.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

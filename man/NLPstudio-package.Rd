@@ -23,7 +23,7 @@ The package provides utility functions to extract, rank, and visualize topic-wor
 in both long and wide formats, facilitating model inspection and downstream analysis.
 
 To support domain-specific content analysis, \strong{NLPstudio} also ships with a set of curated,
-pre-compiled \strong{\link{quanteda}} dictionaries tailored to financial and regulatory texts. These
+pre-compiled \strong{\link[quanteda:quanteda-package]{quanteda::quanteda}} dictionaries tailored to financial and regulatory texts. These
 include vocabularies for detecting forward-looking statements, firm complexity, corporate
 social responsibility, and sustainable development themes.
 }
@@ -38,7 +38,7 @@ parallel backends for speed.
 \item \strong{Document-level analysis:} \code{summarize_corpus()}, \code{calculate_readability()},
 \code{calculate_similarity()}, and \code{calculate_distance()} provide fast and flexible document-level
 metrics using \code{quanteda.textstats}.
-\item \strong{Topic modeling with WarpLDA:} \code{warpLDA()} interfaces with \strong{\link{text2vec}} to fit topic models,
+\item \strong{Topic modeling with WarpLDA:} \code{warpLDA()} interfaces with \strong{\link[text2vec:text2vec]{text2vec::text2vec}} to fit topic models,
 while \code{get_top_terms()} and \code{plot_top_terms()} support extraction and visualization of model
 outputs. The function \code{plot_dtw()} can be used to inspect the distribution of document-topic
 weights across a fitted model.
@@ -48,7 +48,7 @@ tailored to Accounting, Finance, and ESG disclosures.
 
 The package is especially well-suited for large-scale academic, policy, or regulatory text
 analysis in the social sciences. While originally designed for SEC filing data, the framework
-generalizes well to any structured document corpus within the \strong{\link{quanteda}} framework.
+generalizes well to any structured document corpus within the \strong{\link[quanteda:quanteda-package]{quanteda::quanteda}} framework.
 }
 \author{
 \strong{Maintainer}: Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]

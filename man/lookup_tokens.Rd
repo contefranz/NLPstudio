@@ -7,18 +7,18 @@
 lookup_tokens(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{tokens} object.}
+\item{x}{A \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} object.}
 
-\item{ncores}{The number of \link{multisession} workers to be allocated for
+\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
 the lookup.}
 
-\item{...}{Additional arguments passed to \link{tokens_lookup}.}
+\item{...}{Additional arguments passed to \link[quanteda:tokens_lookup]{quanteda::tokens_lookup}.}
 }
 \value{
-A \link{tokens} object.
+A \link[quanteda:tokens]{quanteda::tokens} object.
 }
 \description{
-Lookup a \link{tokens} object in parallel via \strong{\link{future}}.
+Lookup a \link[quanteda:tokens]{quanteda::tokens} object in parallel via \strong{\link[future:future]{future::future}}.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

@@ -7,20 +7,20 @@
 reshape_corpus(x, ncores, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link{corpus} as built by \code{create_corpus}.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} as built by \code{create_corpus}.}
 
-\item{ncores}{The number of \link{multisession} workers to be allocated for the reshaping.}
+\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the reshaping.}
 
-\item{...}{Additional arguments passed to \link{corpus_reshape} (see 'Details').}
+\item{...}{Additional arguments passed to \link[quanteda:corpus_reshape]{quanteda::corpus_reshape} (see 'Details').}
 }
 \value{
-A reshaped \link{corpus} object.
+A reshaped \link[quanteda:corpus]{quanteda::corpus} object.
 }
 \description{
-Reshape a \link{corpus} in parallel under the \strong{\link{future}} paradigm.
+Reshape a \link[quanteda:corpus]{quanteda::corpus} in parallel under the \strong{\link[future:future]{future::future}} paradigm.
 }
 \details{
-This function is a wrapper of \link{corpus_reshape} but it is much faster as it
+This function is a wrapper of \link[quanteda:corpus_reshape]{quanteda::corpus_reshape} but it is much faster as it
 uses the \href{https://www.futureverse.org/packages-overview.html}{\strong{future}}
 paradigm to parallelize the task.
 
