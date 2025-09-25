@@ -21,6 +21,6 @@ Whether analyzing regulatory filings, research corpora, or policy documents, **N
 [Francesco Grossetti](https://accounting.unibocconi.eu/people/francesco-grossetti) 
 
 _Assistant Professor of Accounting Analytics and Data Science_  
-Bocconi Institute for Data Science and Analytics ([BIDSA](https://www.bidsa.unibocconi.eu/wps/wcm/connect/Site/Bidsa/Home))  
-Accounting Department, Bocconi University.  
+Department of Accounting, Bocconi University  
+Fellow at Bocconi Institute for Data Science and Analytics ([BIDSA](https://www.bidsa.unibocconi.eu/wps/wcm/connect/Site/Bidsa/Home))  
 Contact Francesco at: francesco.grossetti@unibocconi.it.  
