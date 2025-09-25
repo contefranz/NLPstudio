@@ -95,7 +95,7 @@ define_corpus.character <- function(x, ncores = 1, ...) {
 
 #' @rdname define_corpus
 #' @export
-define_corpus.data.table <- function(x) {
+define_corpus.data.table <- function(x, ...) {
   if (!inherits(x, "data.table")) {
     stop("x must be a data.table containing a 'text' and 'filename' column")
   }

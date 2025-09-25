@@ -10,7 +10,7 @@ define_corpus(x, ...)
 
 \method{define_corpus}{character}(x, ncores = 1, ...)
 
-\method{define_corpus}{data.table}(x)
+\method{define_corpus}{data.table}(x, ...)
 }
 \arguments{
 \item{x}{Input object, either a character indicating a path to stored data or a data.table as created by \link{from_json_to_df}.}
