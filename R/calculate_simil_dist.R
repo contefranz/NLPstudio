@@ -94,6 +94,10 @@ calculate_similarity = function(x, ncores, ...) {
   rbind_dfm = getFromNamespace("rbind.dfm", "quanteda")
   out_measures = do.call(rbind_dfm, computation_list_dfm)
   
+  # Ensure ordering matches the original dfm
+  doc_order <- docnames(x)
+  out_measures <- out_measures[doc_order, doc_order]
+  
   # Check whether a second matrix is passed and force symmetry 
   if ( !has_y ) {
     # Ensure symmetry
@@ -156,6 +160,10 @@ calculate_distance = function(x, ncores, ...) {
   # the best practice is to retrieve it dynamically using getFromNamespace()
   rbind_dfm = getFromNamespace("rbind.dfm", "quanteda")
   out_measures = do.call(rbind_dfm, computation_list_dfm)
+  
+  # Ensure ordering matches the original dfm
+  doc_order <- docnames(x)
+  out_measures <- out_measures[doc_order, doc_order]
   
   # Check whether a second matrix is passed and force symmetry 
   if ( !has_y ) {
