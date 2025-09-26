@@ -22,30 +22,31 @@
 
 
 calculate_readability = function(x, ncores, ...) {
-
+  
   if ( !is.corpus(x) || !is.character(x) ) {
     stop("x must be a quanteda corpus object or a character vector containing the documents")
   }
-
+  
   cli_h2("Calculating readability")
   args = list(...)
   if ( length(args) < 1 ) {
     cli_alert_info("quanteda.textstats::textstat_readability() has been called with the default parameters")
   } else {
     cli_alert_info("quanteda.textstats::textstat_readability() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (iarg in seq_along(args_active) ) {
-      cli_alert("{args_active[iarg]}")
+    # args_active = paste0(names(args), " = ", unlist(args))
+    for (nm in names(args)) {
+      val = toString(args[[nm]])
+      cli_alert_info("{nm} = {val}")
     }
   }
-
+  
   # define the number of workers
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
   readability_measures = do.call(c, future_lapply(chunks, textstat_readability,
                                                   future.seed = TRUE, ...))
   plan(sequential)
-
+  
   Nel = length(readability_measures)
   bucket_names = names(readability_measures)
   out = vector("list", Nel)
