@@ -101,7 +101,7 @@ calculate_similarity = function(x, ncores, ...) {
   } 
   
   # Convert to a packed symmetric matrix (dspMatrix) for memory efficiency
-  temp_matrix = as(as(temp_matrix, "unpackedMatrix"), "dspMatrix")
+  temp_matrix = as(temp_matrix, "packedMatrix")
   
   # Wrap into the correct S4 class
   textstat_obj = new("textstat_simil_symm",
@@ -164,8 +164,7 @@ calculate_distance = function(x, ncores, ...) {
   } 
   
   # Convert to a packed symmetric matrix (dspMatrix) for memory efficiency
-  temp_matrix = as(as(temp_matrix, "unpackedMatrix"), "dspMatrix")
-  # temp_matrix = as(as(temp_matrix, "dsyMatrix"), "dspMatrix")
+  temp_matrix = as(temp_matrix, "packedMatrix")
   
   # Wrap into the correct S4 class
   textstat_obj = new("textstat_dist_symm",
