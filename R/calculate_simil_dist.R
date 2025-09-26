@@ -128,7 +128,7 @@ calculate_distance = function(x, ncores, ...) {
     stop("x must be a quanteda dfm object")
   }
   
-  cli_h2("Calculating readability")
+  cli_h2("Calculating distance")
   args = list(...)
   # check if y is defined
   has_y = "y" %in% names(args)
