@@ -51,9 +51,9 @@ define_corpus.character <- function(x, ncores = 1, ...) {
     cli_alert_info("readtext::readtext() has been called with the default parameters")
   } else {
     cli_alert_info("readtext::readtext() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (iarg in seq_along(args_active) ) {
-      cli_alert("{args_active[iarg]}")
+    # args_active = paste0(names(args), " = ", unlist(args))
+    for (nm in names(args)) {
+      cli_alert("{nm} = {toString(args[[nm]])}")
     }
   }
   
