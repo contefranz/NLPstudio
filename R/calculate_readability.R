@@ -23,8 +23,11 @@
 
 calculate_readability = function(x, ncores, ...) {
   
-  if ( !is.corpus(x) || !is.character(x) ) {
+  if ( !is.corpus(x) && !is.character(x) ) {
     stop("x must be a quanteda corpus object or a character vector containing the documents")
+  }
+  if ( is.character(x) && !is.corpus(x) ) {
+    x = corpus(x)
   }
   
   cli_h2("Calculating readability")
@@ -33,10 +36,8 @@ calculate_readability = function(x, ncores, ...) {
     cli_alert_info("quanteda.textstats::textstat_readability() has been called with the default parameters")
   } else {
     cli_alert_info("quanteda.textstats::textstat_readability() has been called with the following parameters")
-    # args_active = paste0(names(args), " = ", unlist(args))
     for (nm in names(args)) {
-      val = toString(args[[nm]])
-      cli_alert_info("{nm} = {val}")
+      cli_alert_info("{nm} = {toString(args[[nm]])}")
     }
   }
   
@@ -46,6 +47,7 @@ calculate_readability = function(x, ncores, ...) {
   readability_measures = do.call(c, future_lapply(chunks, textstat_readability,
                                                   future.seed = TRUE, ...))
   plan(sequential)
+  
   
   Nel = length(readability_measures)
   bucket_names = names(readability_measures)
@@ -57,7 +59,11 @@ calculate_readability = function(x, ncores, ...) {
     out[[ j ]] = now
   }
   out_all = rbindlist(out, fill = TRUE)
-  setnames(out_all, "document", "doc_id")
+  doc_order <- quanteda::docnames(x)
+  data.table::setnames(out_all, "document", "doc_id")
+  out_all[, org_ord := match(doc_id, doc_order)]
+  data.table::setorder(out_all, org_ord)
+  out_all[, org_ord := NULL]  
   cli_alert_success("Done")
   return(out_all[])
 }
