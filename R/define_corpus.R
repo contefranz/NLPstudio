@@ -21,7 +21,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' 
 #' @return A quanteda [corpus] object.
 #' 
-#' @importFrom readtext readtext
 #' @importFrom quanteda corpus
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
@@ -39,6 +38,10 @@ define_corpus <- function(x, ...) {
 #' @rdname define_corpus
 #' @export
 define_corpus.character <- function(x, ncores = 1, ...) {
+  
+  if (!requireNamespace("readtext", quietly = TRUE)) {
+    stop("Package 'readtext' is required for define_corpus.character(). Please install it.")
+  }
   if (!inherits(x, "character")) {
     stop("x must be a character")
   }
@@ -75,8 +78,9 @@ define_corpus.character <- function(x, ncores = 1, ...) {
   cli_alert_info(paste("Reading text data using", ncores, "cores"))
   
   # Read files in parallel
+  read_fun <- getExportedValue("readtext", "readtext")
   read_objects = future_lapply(file_chunks, function(chunk) {
-    readtext::readtext(chunk, ...)
+    read_fun(chunk, ...)
   }, future.seed = TRUE)
   
   # Combine results into a single readtext object
