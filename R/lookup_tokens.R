@@ -33,9 +33,8 @@ lookup_tokens = function(x, ncores, ...) {
     cli_alert_info("quanteda::tokens_lookup() has been called with the default parameters")
   } else {
     cli_alert_info("quanteda::tokens_lookup() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (iarg in seq_along(args_active) ) {
-      cli_alert("{args_active[iarg]}")
+    for (nm in names(args)) {
+      cli_alert("{nm} = {toString(args[[nm]])}")
     }
   }
   
