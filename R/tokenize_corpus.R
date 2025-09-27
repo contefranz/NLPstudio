@@ -10,7 +10,7 @@
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
-#' @importFrom quanteda is.corpus tokens ndoc
+#' @importFrom quanteda is.corpus tokens ndoc docnames
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
 #' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert cli_alert_success cli_alert_danger
@@ -41,6 +41,10 @@ tokenize_corpus = function(x, ncores, ...) {
 
   toks = do.call(c, future_lapply(chunks, tokens, future.seed = TRUE, ...))
   plan(sequential)
+  # ensure original ordering
+  doc_order <- docnames(x)
+  toks <- toks[doc_order]
+  
 
   if ( ndoc(toks) == ndoc(x) ) {
     cli_alert_success("Corpus x has been successfully tokenized")
