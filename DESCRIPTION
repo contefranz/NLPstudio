@@ -41,5 +41,6 @@ Imports:
     farr (>= 0.3.0),
     glue (>= 1.8.0),
     ggplot2 (>= 3.5.0),
+    rlang (>= 1.1.6),
     cli (>= 3.6.2)
 LazyData: true

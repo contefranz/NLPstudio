@@ -1,5 +1,5 @@
 if ( getRversion() >= "2.15.1" ) {
-  utils::globalVariables( c( "topic", "density") )
+  utils::globalVariables( c("doc_id", "topic", "theta", "density") )
 }
 #' Plot Distribution of Document-Topic-Weights
 #'
@@ -13,6 +13,8 @@ if ( getRversion() >= "2.15.1" ) {
 #' [TopicModel-class][topicmodels::LDA-class].
 #' @param topics Optional numeric vector specifying which topic proportions to plot. 
 #' If `NULL` (default), all topics will be plotted.
+#' @param stat Character string, either `"density"` (default) or `"count"`, 
+#' controlling the y-axis statistic in the histogram.
 #' @param facet_args A named list of additional arguments passed to [facet_wrap()], 
 #' such as `ncol`, `nrow`, or `strip.position`. By default, `scales = "free_y"` is used 
 #' to allow per-topic y-axis scaling. 
@@ -36,9 +38,14 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @import ggplot2 data.table
 #' @importFrom stats as.formula
+#' @importFrom rlang sym
+#' @importFrom tools toTitleCase
 #' @export
 
-plot_dtw = function(x, topics = NULL, facet_args = list(scales = "free_y"), ...) {
+plot_dtw = function(x, topics = NULL, stat = c("density", "count"), 
+                    facet_args = list(scales = "free_y"), ...) {
+  
+  stat <- match.arg(stat)
   
   # Support for direct output from warpLDA() and LDA_VEM/LDA_Gibbs classes from topicmodels
   if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
@@ -80,12 +87,12 @@ plot_dtw = function(x, topics = NULL, facet_args = list(scales = "free_y"), ...)
   long_theta[, topic := factor(topic, levels = unique(topic))]
   
   # Base ggplot object
-  p = ggplot(long_theta, aes(x = theta, y = after_stat(density))) +
+  p = ggplot(long_theta, aes(x = theta, y = after_stat(!!sym(stat)))) +
     geom_histogram(...) +
     labs(
       title = "Distribution of Document-Topic Weights",
       x = "Document Topic Proportion",
-      y = "Density"
+      y = toTitleCase(stat)
     ) +
     theme_minimal(base_size = 12)
   
