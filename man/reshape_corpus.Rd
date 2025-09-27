@@ -4,14 +4,16 @@
 \alias{reshape_corpus}
 \title{Fast Corpus Reshape}
 \usage{
-reshape_corpus(x, ncores, ...)
+reshape_corpus(x, ncores, to = "sentences", ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} as built by \code{create_corpus}.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus}.}
 
 \item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the reshaping.}
 
-\item{...}{Additional arguments passed to \link[quanteda:corpus_reshape]{quanteda::corpus_reshape} (see 'Details').}
+\item{to}{Character; type of reshaping. Default is \code{"sentences"}. Passed to \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}}.}
+
+\item{...}{Additional arguments passed to \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}} (see 'Details').}
 }
 \value{
 A reshaped \link[quanteda:corpus]{quanteda::corpus} object.
@@ -20,12 +22,15 @@ A reshaped \link[quanteda:corpus]{quanteda::corpus} object.
 Reshape a \link[quanteda:corpus]{quanteda::corpus} in parallel under the \strong{\link[future:future]{future::future}} paradigm.
 }
 \details{
-This function is a wrapper of \link[quanteda:corpus_reshape]{quanteda::corpus_reshape} but it is much faster as it
-uses the \href{https://www.futureverse.org/packages-overview.html}{\strong{future}}
-paradigm to parallelize the task.
+This function wraps \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}} but executes in parallel using the
+\link[future:future]{future::future} framework. The most common use is reshaping to sentences (\code{to = "sentences"}),
+which enables sentence-level text analysis and alignment with document-level metadata.
 
-Use \code{...} to control the reshaping process. For instance, whether to reshape the corpus to
-sentences (\code{to = "sentences"}) which is likely the most common usage.
+Document order is guaranteed to match the input \code{corpus}. After reshaping,
+documents are reordered to ensure consistency with the original corpus ordering.
+
+Use \code{...} to further control the reshaping process. For instance, one can respahe the corpus to
+paragraphs by passing \code{to = "paragraphs"}.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
