@@ -28,7 +28,7 @@ to troubleshoot issues.
 The workhorse of this function is \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}} such that all the usual parameters
 can be passed to \code{parse_corpus()} as well. It is critical to have a proper installation of the
 \href{https://spacy.io/}{\strong{spaCy}} library and all of its components. \code{parse_corpus()} does not
-initizalize any instance of spaCy so call \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} beforehand.
+initialize any instance of spaCy so call \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} beforehand.
 
 In particular, one can pass and use any language model as currently supported by version 3.7 via
 the argument \code{model} in \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}}.
@@ -36,7 +36,8 @@ By default, \code{\link[spacyr:spacy_install]{spacyr::spacy_install()}} download
 \code{en_core_web_sm}. It is recommended to use \code{\link[spacyr:spacy_download_langmodel]{spacyr::spacy_download_langmodel()}}
 to properly download and activate the desired model.
 
-To avoid any issue, \code{parse_corpus()} always calls \code{\link[spacyr:spacy_finalize]{spacyr::spacy_finalize()}} while closing via \code{on.exit()}.
+To avoid any issue, \code{parse_corpus()} finalizes the session if one is active via \code{\link[spacyr:spacy_finalize]{spacyr::spacy_finalize()}} \code{on.exit()}.
+If no session is active, \code{parse_corpus()} will error on exit.
 }
 \note{
 Although parsing can be parallelized across multiple CPU cores, memory usage
@@ -44,6 +45,10 @@ grows quickly with both the number of cores and the size of the corpus.
 On large corpora, allocating too many workers may exhaust available RAM and
 significantly slow down or even terminate the process. It is recommended to
 increase \code{ncores} gradually and monitor memory consumption.
+
+Note that the returned \link[data.table:data.table]{data.table::data.table} may contain a very large number of rows
+when \code{x} is large, which also can have implications for memory usage and downstream
+processing.
 }
 \seealso{
 \code{\link[spacyr:spacy_install]{spacyr::spacy_install()}} \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}

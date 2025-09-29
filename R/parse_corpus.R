@@ -18,7 +18,7 @@
 #' The workhorse of this function is [spacy_parse()] such that all the usual parameters
 #' can be passed to `parse_corpus()` as well. It is critical to have a proper installation of the
 #' [__spaCy__](https://spacy.io/) library and all of its components. `parse_corpus()` does not
-#' initizalize any instance of spaCy so call [spacy_initialize()] beforehand. 
+#' initialize any instance of spaCy so call [spacy_initialize()] beforehand. 
 #'
 #' In particular, one can pass and use any language model as currently supported by version 3.7 via
 #' the argument `model` in [spacy_initialize()].
@@ -26,7 +26,8 @@
 #' `en_core_web_sm`. It is recommended to use [spacy_download_langmodel()]
 #' to properly download and activate the desired model.
 #'
-#' To avoid any issue, `parse_corpus()` always calls [spacy_finalize()] while closing via `on.exit()`.
+#' To avoid any issue, `parse_corpus()` finalizes the session if one is active via [spacy_finalize()] `on.exit()`.
+#' If no session is active, `parse_corpus()` will error on exit.
 #' 
 #' @note
 #' Although parsing can be parallelized across multiple CPU cores, memory usage
@@ -35,12 +36,15 @@
 #' significantly slow down or even terminate the process. It is recommended to
 #' increase `ncores` gradually and monitor memory consumption.
 #' 
+#' Note that the returned [data.table] may contain a very large number of rows
+#' when `x` is large, which also can have implications for memory usage and downstream
+#' processing.
+#' 
 #' @seealso [spacy_install()] [spacy_initialize()] [spacy_parse()]
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @importFrom quanteda is.corpus ndoc
-#' @importFrom spacyr spacy_parse spacy_finalize
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
 #' @importFrom stringr str_unique str_remove
@@ -69,10 +73,11 @@ parse_corpus = function(x, ncores = 1, ...) {
   }
 
   # define the number of workers
+  parsing_func <- getExportedValue("spacyr", "spacy_parse")
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
-  parsed = do.call(c, future_lapply(chunks, spacy_parse, future.seed = TRUE, ...))
+  parsed = do.call(c, future_lapply(chunks, parsing_func, future.seed = TRUE, ...))
   plan(sequential)
 
   cli_alert("Structuring data")
@@ -95,6 +100,7 @@ parse_corpus = function(x, ncores = 1, ...) {
   }
   out = rbindlist(collector)
   cli_alert_success("Corpus x has been successfully parsed")
-  on.exit(spacy_finalize())
+  parsing_final <- getExportedValue("spacyr", "spacy_finalize")
+  on.exit(parsing_final(), add = TRUE)
   return(out[])
 }
