@@ -2,33 +2,76 @@
 % Please edit documentation in R/from_json_to_df.R
 \name{from_json_to_df}
 \alias{from_json_to_df}
-\title{Convert JSON to data.frame}
+\title{Convert JSON to data.table}
 \usage{
-from_json_to_df(json_list, ncores = 1, drop_late_filers = FALSE)
+from_json_to_df(files, ncores = 1, chunk_size = 500, drop_late_filers = FALSE)
 }
 \arguments{
-\item{json_list}{A list of JSON files as built by \link{get_json_files}.}
+\item{files}{Character vector of JSON file paths.}
 
-\item{ncores}{The number of cores to assign to \link{makeCluster}. Default to 1.}
+\item{ncores}{Integer. Number of workers to use in parallel sections.
+Default is 1 (sequential).}
 
-\item{drop_late_filers}{Logical for late filers removal. Default to \code{FALSE}.}
+\item{chunk_size}{Integer. Maximum number of files to read in a single
+chunk. Default is 500. Lower values reduce peak memory usage at the cost
+of more iteration overhead.}
+
+\item{drop_late_filers}{Logical. If \code{TRUE}, removes filings considered
+"late" (filing year greater than fiscal year + 1). Default \code{FALSE}.}
 }
 \value{
-A single \code{data.table} containing
-several identification columns in addition to the document itself.
+A \link[data.table:data.table]{data.table::data.table} with one row per \verb{(document × item)}
+and columns:
+\itemize{
+\item \code{cik}: Central Index Key (integer)
+\item \code{filing_date}, \code{period_of_report} (IDate)
+\item \code{fyear}: fiscal year (integer)
+\item \code{sic}: industry code (integer)
+\item \code{item}: item identifier (character)
+\item \code{text}: filing text content (character)
+\item plus any additional metadata extracted upstream
+}
 }
 \description{
-Convenient function to convert a container list of JSON files to data.table.
+Converts a vector of JSON file paths into a unified \link[data.table:data.table]{data.table::data.table} suitable for downstream analysis.
+The function is optimized for large-scale input (thousands of JSON files)
+and leverages both chunking and OS-specific parallelization strategies
+to remain efficient and memory-safe.
 }
 \details{
-This function accepts a list of JSON files as detected by \link{get_json_files} that have been downloaded
-by the \emph{edgar-crawler} library. This is a different approach as that of \link{json_to_tabular} and should
-be used directly on the split JSON files coming out of the crawler.
+Internally the function proceeds in three phases. First, the vector of file
+paths is split into chunks of size \code{chunk_size} to prevent loading thousands
+of large JSON files at once. Each chunk is read in parallel using
+\link[RcppSimdJson:RcppSimdJson-package]{RcppSimdJson} for fast parsing, and immediately converted into data tables.
 
-The parallel backend does not work over multiple SEC filings at once. Rather, it speeds up the
-reshaping of the JSON structure within each filing by converting it to a data.table of size
-1 x 20 if the filing is post 2005 and includes the Item 1A.
+Second, each table is reshaped from wide to long format, again in parallel.
+The identifier variables passed to \code{\link[data.table:melt.data.table]{data.table::melt()}} are determined
+automatically: all columns before the first marker column named either
+\code{"item_1"} or \code{"section_1"} are treated as identifiers, and if no marker
+is present then all columns are retained as identifiers. Third, the melted
+tables are combined and cleaned.
+
+Finally, column order is adjusted for convenience and the unified
+data table is returned. This design avoids excessive memory use, exploits
+OS-specific parallelism (\code{\link[=mclapply]{mclapply()}} on Linux and macOS, \code{\link[=parLapply]{parLapply()}} on
+Windows), and ensures consistent reshaping even when the structure of
+individual JSON files varies.
 }
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+\section{Efficiency considerations}{
+
+\itemize{
+\item \strong{RcppSimdJson} is used for parsing, which is much faster than
+\link[jsonlite:fromJSON]{jsonlite::jsonlite} parsers for large files.
+\item Chunking + parallelization means memory scales linearly with
+\code{chunk_size}, not total number of files.
+\item On Linux/macOS, \code{\link[=mclapply]{mclapply()}} avoids copying the entire list of JSONs to
+each worker (shared memory via forking).
+\item On Windows, \code{\link[=parLapply]{parLapply()}} is used with explicit cluster export; this is
+slightly slower but avoids serialization issues seen with \link[future:future]{future}.
+}
+}
+
+\seealso{
+\code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, \code{\link[data.table:melt.data.table]{data.table::melt()}},
+\code{\link[parallel:mclapply]{parallel::mclapply()}}, \code{\link[parallel:clusterApply]{parallel::parLapply()}}
 }

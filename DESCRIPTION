@@ -1,6 +1,6 @@
 Package: NLPstudio
 Title: Parallel NLP Tools for Processing SEC Filings, Corpus Management, Topic Modeling, and Other Perks
-Version: 0.1.3
+Version: 0.1.4
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))
@@ -43,5 +43,7 @@ Suggests:
     spacyr (>= 1.3.0),
     pluralize (>= 0.2.1),
     tidytext (>= 0.4.2),
-    farr (>= 0.3.0)
+    farr (>= 0.3.0),
+    RcppSimdJson (>= 0.1.14),
+    lifecycle (>= 1.0.4)
 LazyData: true

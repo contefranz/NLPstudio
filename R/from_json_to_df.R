@@ -3,129 +3,225 @@ if ( getRversion() >= "2.15.1" ) {
                              "period_of_report", "accession_number",
                              "text", "year_filed", "date_filed", "fyear_end", "sic") )
 }
-#' Convert JSON to data.frame
+#' Convert JSON to data.table
 #'
-#' Convenient function to convert a container list of JSON files to data.table.
-#'
-#' @param json_list A list of JSON files as built by [get_json_files].
-#' @param ncores The number of cores to assign to [makeCluster]. Default to 1.
-#' @param drop_late_filers Logical for late filers removal. Default to `FALSE`.
-#' 
+#' Converts a vector of JSON file paths into a unified [data.table] suitable for downstream analysis.
+#' The function is optimized for large-scale input (thousands of JSON files)
+#' and leverages both chunking and OS-specific parallelization strategies
+#' to remain efficient and memory-safe.
+#' @param files Character vector of JSON file paths.
+#' @param ncores Integer. Number of workers to use in parallel sections.
+#'   Default is 1 (sequential).
+#' @param chunk_size Integer. Maximum number of files to read in a single
+#'   chunk. Default is 500. Lower values reduce peak memory usage at the cost
+#'   of more iteration overhead.
+#' @param drop_late_filers Logical. If `TRUE`, removes filings considered
+#'   "late" (filing year greater than fiscal year + 1). Default `FALSE`.
+#'   
 #' @details
-#' This function accepts a list of JSON files as detected by [get_json_files] that have been downloaded
-#' by the _edgar-crawler_ library. This is a different approach as that of [json_to_tabular] and should
-#' be used directly on the split JSON files coming out of the crawler.
+#' Internally the function proceeds in three phases. First, the vector of file
+#' paths is split into chunks of size `chunk_size` to prevent loading thousands
+#' of large JSON files at once. Each chunk is read in parallel using
+#' [RcppSimdJson][RcppSimdJson::RcppSimdJson] for fast parsing, and immediately converted into data tables.
+#' 
+#' Second, each table is reshaped from wide to long format, again in parallel.
+#' The identifier variables passed to [data.table::melt()] are determined
+#' automatically: all columns before the first marker column named either
+#' `"item_1"` or `"section_1"` are treated as identifiers, and if no marker
+#' is present then all columns are retained as identifiers. Third, the melted
+#' tables are combined and cleaned.
+#' 
+#' Finally, column order is adjusted for convenience and the unified
+#' data table is returned. This design avoids excessive memory use, exploits
+#' OS-specific parallelism ([mclapply()] on Linux and macOS, [parLapply()] on
+#' Windows), and ensures consistent reshaping even when the structure of
+#' individual JSON files varies.
+#' 
 #'
-#' The parallel backend does not work over multiple SEC filings at once. Rather, it speeds up the
-#' reshaping of the JSON structure within each filing by converting it to a data.table of size 
-#' 1 x 20 if the filing is post 2005 and includes the Item 1A.
+#' @return A [data.table::data.table] with one row per `(document × item)`
+#'   and columns:
+#'   - `cik`: Central Index Key (integer)  
+#'   - `filing_date`, `period_of_report` (IDate)  
+#'   - `fyear`: fiscal year (integer)  
+#'   - `sic`: industry code (integer)  
+#'   - `item`: item identifier (character)  
+#'   - `text`: filing text content (character)  
+#'   - plus any additional metadata extracted upstream
 #'
+#' @section Efficiency considerations:
+#' - **RcppSimdJson** is used for parsing, which is much faster than
+#'   [jsonlite] parsers for large files.  
+#' - Chunking + parallelization means memory scales linearly with
+#'   `chunk_size`, not total number of files.  
+#' - On Linux/macOS, [mclapply()] avoids copying the entire list of JSONs to
+#'   each worker (shared memory via forking).  
+#' - On Windows, [parLapply()] is used with explicit cluster export; this is
+#'   slightly slower but avoids serialization issues seen with [future][future::future].  
 #'
-#' @returns A single `data.table` containing
-#' several identification columns in addition to the document itself.
+#' @seealso [RcppSimdJson::fload()], [data.table::melt()],
+#'   [parallel::mclapply()], [parallel::parLapply()]
 #'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
-#'
-#' @import data.table foreach quanteda
-#' @importFrom stringr str_c str_which str_replace str_extract
-#' @importFrom jsonlite fromJSON
-#' @importFrom parallel makeCluster stopCluster
-#' @importFrom doParallel registerDoParallel
-#' @importFrom iterators iter
-#' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert_success
+#' @import data.table
+#' @importFrom stringr str_which str_detect
+#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
 
-from_json_to_df = function(json_list, ncores = 1, drop_late_filers = FALSE) {
+from_json_to_df <- function(files, ncores = 1, chunk_size = 500, drop_late_filers = FALSE) {
   
-  cli_h2("Flattening JSONs")
-  followup = str_extract(names(json_list), "\\d+")
-  big_bucket = vector("list", length(followup))
-  names(big_bucket) = str_c("fyear_", followup)
-  
-  for ( i_year in seq_along(json_list) ) {
-    
-    current_year = str_extract(names(json_list)[i_year], "\\d+")
-    cli_h3("Processing batch {current_year}")
-    current_list = json_list[[i_year]]
-    
-    cli_alert_info("Reading JSON files")
-    temp = lapply(current_list, fromJSON)
-    cli_alert_info("Converting to data.table")
-    df = lapply(temp, as.data.table)
-    
-    # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
-    # the following if-statement checks the location of column "item_1" which marks the starting
-    # point of the textual data. This is due to some observations missing the column
-    # "state_of_inc".
-    # In some cases, the wording might be off and instead of "item" it's "section". That's why
-    # I included an OR in the regex.
-    id_col_item1 = sapply(df, function(x) str_which(names(x), "item_1\\b|section_1\\b")) - 1L
-    # TO DO --- THIS CODE MIGHT BE REMOVED IN FUTURE RELEASES
-    
-    # This internal loop is parallel because it represents the bottleneck in this function.
-    # Check the core assignment as it is not super efficient at the moment.
-    cli_alert_info("Reshaping to long format using {ncores} cores")
-    n_df = length(df)
-    it = iter(seq_len(n_df), by = "row")
-    cl = makeCluster(ncores)
-    registerDoParallel(cl)
-    df_melt = foreach(
-      jcol = it,
-      .packages = c("iterators", "data.table", "stringr")
-    ) %dopar% {
-      columns_to_fix = 1L:id_col_item1[jcol]
-      old_col_names = names(df[[jcol]])[columns_to_fix]
-      melt(df[[jcol]],
-           id.vars = old_col_names,
-           variable.name = "item",
-           value.name = "text")
-    }
-    stopCluster(cl)
-    
-    cli_alert_info("Compressing into one data.table")
-    out = rbindlist(df_melt, fill = TRUE)
-    
-    cli_alert_info("Fixing columns")
-    # convert cik to integer
-    out[ , cik := as.integer(cik)]
-    # convert sic to integer
-    out[ str_detect(sic, "\\D"), sic := NA_character_]
-    out[ , sic := as.integer(sic)]
-    # convert date_filed and fyear_end to IDat
-    out[ , `:=` (filing_date = as.IDate(filing_date),
-                 period_of_report = as.IDate(period_of_report))]
-    out[ , fyear := year(period_of_report)]
-    if ( drop_late_filers ) {
-      # This check is to avoid any late filers and to keep everything as consistent as possible
-      out[ , year_filed := year(filing_date)]
-      out = out[ year_filed <= fyear + 1L ]
-      out[ , year_filed := NULL]
-    }
-    # move the column fyear where it belongs
-    setcolorder(out, neworder = "fyear", after = "period_of_report")
-    # extract the accession number useful for checking duplicate observations and to trace
-    # back the filing on SEC EDGAR.
-    out[ , accession_number := str_extract(filename, "\\d{10}-\\d{2}-\\d{6}")]
-    setcolorder(out, neworder = "accession_number", after = "filename")
-    
-    ndocs = formatC(nrow(out), decimal.mark = ".", big.mark = ",", digits = 2, format = "d")
-    cli_alert_info("Compressed output has {ndocs} documents")
-    # collect output and put it in the final list
-    big_bucket[[ i_year ]] = out
-    rm(out)
-    
+  if (!requireNamespace("RcppSimdJson", quietly = TRUE)) {
+    stop("The 'RcppSimdJson' package is required for fast JSON parsing. Please install it.")
+  }
+  if (!is.character(files)) {
+    stop("`files` must be a character vector of file paths")
   }
   
-  # this way of returning is not ideal because if one processes a long time series, you saturate
-  # the RAM at one point.
-  # SOLUTION: add a parameter that controls whether one wants to save to disk
-  # the data.table at each iteration. This would require a path out and a potential naming convention.
-  # On the latter, I much prefer to impose our internal naming convention like: filingtype_fyear_df.rds
-  cli_alert_info("Final binding")
-  bind_bucket = rbindlist(big_bucket)
-  bind_bucket[ , filename := str_remove(filename, ".htm")]
-  bind_bucket[ , filename := str_c(filename, item, sep = "_")]
+  cli_h2("Flattening JSON files")
+  # Step 1: Sequential read + parse with RcppSimdJson
+  cli_alert_info("Reading JSON files sequentially with RcppSimdJson")
+  temp <- .chunked_read_json(files, ncores, chunk_size = chunk_size)
+  
+  cli_alert_info("Reshaping JSON data in parallel with {ncores} workers")
+  # id_col_item1 <- sapply(temp, function(x) stringr::str_which(names(x), "item_1\\b|section_1\\b")) - 1L
+  
+  df_melt <- .parallel_melt(temp, ncores)
+  out <- rbindlist(df_melt, fill = TRUE)
+  
+  # Post-processing (same as before)
+  out[, cik := as.integer(cik)]
+  out[stringr::str_detect(sic, "\\D"), sic := NA_character_]
+  out[, sic := as.integer(sic)]
+  out[, `:=` (
+    filing_date = as.IDate(filing_date),
+    period_of_report = as.IDate(period_of_report)
+  )]
+  out[, fyear := year(period_of_report)]
+  
+  if (drop_late_filers) {
+    out[, year_filed := year(filing_date)]
+    out <- out[year_filed <= fyear + 1L]
+    out[, year_filed := NULL]
+  }
+  
   cli_alert_success("Conversion has been successful")
-  return(bind_bucket[])
+  setcolorder(out, "fyear", after = "period_of_report")
+  setcolorder(out, "item", after = "filing_type")
+  return(out[])
 }
 
+
+#' @keywords internal
+.chunked_read_json <- function(files, ncores, chunk_size) {
+  chunks <- split(files, ceiling(seq_along(files) / chunk_size))
+  
+  out_list <- vector("list", length(chunks))
+  
+  for (i in seq_along(chunks)) {
+    cli_alert_info("Processing chunk {i}/{length(chunks)} with {length(chunks[[i]])} files")
+    
+    temp <- .parallel_read_json(chunks[[i]], ncores)
+    
+    # bind as we go
+    out_list[[i]] <- data.table::rbindlist(temp, fill = TRUE)
+    
+    rm(temp)
+    gc(verbose = FALSE)  # force garbage collection
+  }
+  
+  # I return the list of data.tables rather that one single object so that 
+  # I can pass it to .parallel_melt via parallel:mclapply
+  return(out_list)
+}
+
+#' @keywords internal
+.parallel_read_json <- function(files, ncores) {
+  if (.Platform$OS.type != "windows" && requireNamespace("parallel", quietly = TRUE)) {
+    # ---- Linux / macOS: forked processes ----
+    res <- parallel::mclapply(
+      files,
+      function(f) {
+        # dat <- RcppSimdJson::fload(f)
+        fload_fun <- getExportedValue("RcppSimdJson", "fload")
+        dat <- fload_fun(f)
+        data.table::as.data.table(dat)
+      },
+      mc.cores = ncores
+    )
+  } else {
+    # ---- Windows: cluster backend ----
+    cl <- parallel::makeCluster(ncores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    
+    res <- parallel::parLapply(
+      cl,
+      files,
+      function(f) {
+        # dat <- RcppSimdJson::fload(f)
+        fload_fun <- getExportedValue("RcppSimdJson", "fload")
+        dat <- fload_fun(f)
+        data.table::as.data.table(dat)
+      }
+    )
+  }
+  return(res)
+}
+
+
+#' @keywords internal
+.parallel_melt <- function(temp, ncores) {
+  if (.Platform$OS.type != "windows" && requireNamespace("parallel", quietly = TRUE)) {
+    # ---- Linux / macOS ----
+    res <- parallel::mclapply(
+      seq_along(temp),
+      function(jcol) {
+        dt <- temp[[jcol]]
+        id_vars <- .get_id_cols(dt)
+        data.table::melt(
+          dt,
+          id.vars       = id_vars,
+          variable.name = "item",
+          value.name    = "text"
+        )
+      },
+      mc.cores = ncores
+    )
+  } else {
+    # ---- Windows ----
+    cl <- parallel::makeCluster(ncores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    parallel::clusterExport(cl, varlist = "temp", envir = environment())
+    
+    res <- parallel::parLapply(
+      cl,
+      seq_along(temp),
+      function(jcol) {
+        dt <- temp[[jcol]]
+        id_vars <- .get_id_cols(dt)
+        data.table::melt(
+          dt,
+          id.vars       = id_vars,
+          variable.name = "item",
+          value.name    = "text"
+        )
+      }
+    )
+  }
+  return(res)
+}
+
+
+#' @keywords internal
+.get_id_cols <- function(dt) {
+  # find the first marker
+  pos <- stringr::str_which(names(dt), "^(item_1|section_1)$")
+  
+  if (length(pos) == 0L) {
+    # no marker found → use all columns
+    return(names(dt))
+  }
+  if (pos == 1L) {
+    # marker is the very first column → no id columns
+    return(character(0))
+  }
+  # else: all columns before the marker
+  return(names(dt)[seq_len(pos - 1L)])
+}

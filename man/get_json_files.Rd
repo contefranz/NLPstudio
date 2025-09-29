@@ -4,28 +4,24 @@
 \alias{get_json_files}
 \title{JSON Files Container}
 \usage{
-get_json_files(root_path, pattern = NULL, fyear = NULL)
+get_json_files(root_path, ...)
 }
 \arguments{
-\item{root_path}{Character giving the path to the root folder location (see 'Details').}
+\item{root_path}{Path to root folder containing JSON files.}
 
-\item{pattern}{An optional \link[base:regex]{base::regex}. Only file names which match the regular expression
-will be returned as in \link{list.files}. Default to \code{NULL}.}
-
-\item{fyear}{Optional numeric vector specifying the time window in years. When \code{NULL},
-all the years detected in \code{root_path} are considered. Default to \code{NULL}.}
+\item{...}{Additional parameters passed to \code{list.files()}.}
 }
 \value{
-A list whose elements are the years. Each element contains the pointers to each JSON file within
-each year.
+A character vector of file paths. (Deprecated.)
 }
 \description{
-Create a container list with the pointers to all the JSON files detected in the input folder.
-}
-\details{
-The function works in conjunction with the EDGAR crawler structure. In general, this creates three
-main folders as containers: (i) the original HTML files, (ii) the metadata of each filing, (iii)
-the extracted items in JSON format. Each of these structures is usually, and conveniently, organized
-by year. This is not an imposition but rather a strong suggestion. Ideally, one could put
-all the filings into the root_path
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+This function is deprecated and will be removed in a future release.
+Please use \code{\link[base:list.files]{base::list.files()}} directly instead:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{files <- list.files(root_path, pattern = "\\\\.json$", recursive = TRUE, full.names = TRUE)
+}\if{html}{\out{</div>}}
+
+Then pass the resulting character vector of file paths to \code{\link[=from_json_to_df]{from_json_to_df()}}.
 }

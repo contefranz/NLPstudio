@@ -45,6 +45,7 @@
 #' }
 #'
 #' @import data.table
+#' @importFrom quanteda is.dfm as.dfm
 #' @importFrom quanteda.textstats textstat_simil textstat_dist
 #' @importFrom Matrix forceSymmetric 
 #' @importFrom methods as new

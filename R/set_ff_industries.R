@@ -48,7 +48,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' It provides the Fama–French industry classification mappings via [farr::get_ff_ind()].
 #'
 #' @import data.table foreach
-#' @importFrom quanteda is.corpus corpus
+#' @importFrom quanteda is.corpus corpus docvars
 #' @importFrom stats setNames
 #' @importFrom glue glue
 #' @importFrom stringr str_glue
