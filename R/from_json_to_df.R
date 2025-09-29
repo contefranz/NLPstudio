@@ -130,6 +130,7 @@ from_json_to_df <- function(files, ncores = 1, chunk_size = 500, drop_late_filer
   return(out_list)
 }
 
+#' @importFrom parallel mclapply parLapply makeCluster stopCluster
 #' @keywords internal
 .parallel_read_json <- function(files, ncores) {
   if (.Platform$OS.type != "windows" && requireNamespace("parallel", quietly = TRUE)) {
@@ -163,7 +164,7 @@ from_json_to_df <- function(files, ncores = 1, chunk_size = 500, drop_late_filer
   return(res)
 }
 
-
+#' @importFrom parallel mclapply parLapply makeCluster stopCluster
 #' @keywords internal
 .parallel_melt <- function(temp, ncores) {
   if (.Platform$OS.type != "windows" && requireNamespace("parallel", quietly = TRUE)) {
