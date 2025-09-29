@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Parse a [corpus] in parallel under the **[future]** paradigm .
-#' This function is a wrapper of [spacy_parse]. Thus, it is critical to have
+#' This function is a wrapper of [spacy_parse()]. Thus, it is critical to have
 #' a working installation of the **[spacyr]** package. Please refer to the
 #' [installation guide](https://github.com/quanteda/spacyr?tab=readme-ov-file#installing-the-package)
 #' to troubleshoot issues.
@@ -10,29 +10,36 @@
 #' @param x A **quanteda** [corpus].
 #' @param ncores The number of [multisession] workers to be allocated for the
 #' parsing. Default to 1.
-#' @param ... Additional arguments passed to [spacy_parse].
+#' @param ... Additional arguments passed to [spacy_parse()].
 #'
 #' @returns A [data.table] of tokenized, parsed, and annotated tokens.
 #'
 #' @details
-#' The workhorse of this function is [spacy_parse] such that all the usual parameters
-#' can be passed to `parse_corpus` as well. It is critical to have a proper installation of the
-#' [__spaCy__](https://spacy.io/) library and all its components.
+#' The workhorse of this function is [spacy_parse()] such that all the usual parameters
+#' can be passed to `parse_corpus()` as well. It is critical to have a proper installation of the
+#' [__spaCy__](https://spacy.io/) library and all of its components. `parse_corpus()` does not
+#' initizalize any instance of spaCy so call [spacy_initialize()] beforehand. 
 #'
 #' In particular, one can pass and use any language model as currently supported by version 3.7 via
-#' the argument `model` in [spacy_initialize].
-#' By default, [spacy_install] downloads and uses the smallest English model
-#' `en_core_web_sm`. It is recommended to use [spacy_download_langmodel]
+#' the argument `model` in [spacy_initialize()].
+#' By default, [spacy_install()] downloads and uses the smallest English model
+#' `en_core_web_sm`. It is recommended to use [spacy_download_langmodel()]
 #' to properly download and activate the desired model.
 #'
-#' To avoid any issue, `parse_corpus` always calls [spacy_finalize] by
-#' invoking `on.exit`.
-#'
+#' To avoid any issue, `parse_corpus()` always calls [spacy_finalize()] while closing via `on.exit()`.
+#' 
+#' @note
+#' Although parsing can be parallelized across multiple CPU cores, memory usage
+#' grows quickly with both the number of cores and the size of the corpus.
+#' On large corpora, allocating too many workers may exhaust available RAM and
+#' significantly slow down or even terminate the process. It is recommended to
+#' increase `ncores` gradually and monitor memory consumption.
+#' 
 #' @seealso [spacy_install()] [spacy_initialize()] [spacy_parse()]
 #'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
-#' @importFrom quanteda is.corpus
+#' @importFrom quanteda is.corpus ndoc
 #' @importFrom spacyr spacy_parse spacy_finalize
 #' @importFrom future plan multisession sequential
 #' @importFrom future.apply future_lapply
@@ -43,6 +50,9 @@
 
 parse_corpus = function(x, ncores = 1, ...) {
 
+  if (!requireNamespace("spacyr", quietly = TRUE)) {
+    stop("Package 'spacyr' is required for parse_corpus(). Please install it.")
+  }
   if ( !is.corpus(x) ) {
     stop("x must be a quanteda corpus object")
   }
@@ -53,9 +63,8 @@ parse_corpus = function(x, ncores = 1, ...) {
     cli_alert_info("spacyr::spacy_parse() has been called with the default parameters")
   } else {
     cli_alert_info("spacyr::spacy_parse() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (iarg in seq_along(args_active) ) {
-      cli_alert("{args_active[iarg]}")
+    for (nm in names(args)) {
+      cli_alert("{nm} = {toString(args[[nm]])}")
     }
   }
 
