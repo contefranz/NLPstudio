@@ -50,7 +50,7 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @section Efficiency considerations:
 #' - **RcppSimdJson** is used for parsing, which is much faster than
-#'   [jsonlite] parsers for large files.  
+#'   `jsonlite` parsers for large files.  
 #' - Chunking + parallelization means memory scales linearly with
 #'   `chunk_size`, not total number of files.  
 #' - On Linux/macOS, [mclapply()] avoids copying the entire list of JSONs to
@@ -81,8 +81,6 @@ from_json_to_df <- function(files, ncores = 1, chunk_size = 500, drop_late_filer
   temp <- .chunked_read_json(files, ncores, chunk_size = chunk_size)
   
   cli_alert_info("Reshaping JSON data in parallel with {ncores} workers")
-  # id_col_item1 <- sapply(temp, function(x) stringr::str_which(names(x), "item_1\\b|section_1\\b")) - 1L
-  
   df_melt <- .parallel_melt(temp, ncores)
   out <- rbindlist(df_melt, fill = TRUE)
   

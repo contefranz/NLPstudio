@@ -61,7 +61,7 @@ individual JSON files varies.
 
 \itemize{
 \item \strong{RcppSimdJson} is used for parsing, which is much faster than
-\link[jsonlite:fromJSON]{jsonlite::jsonlite} parsers for large files.
+\code{jsonlite} parsers for large files.
 \item Chunking + parallelization means memory scales linearly with
 \code{chunk_size}, not total number of files.
 \item On Linux/macOS, \code{\link[=mclapply]{mclapply()}} avoids copying the entire list of JSONs to

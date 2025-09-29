@@ -24,7 +24,6 @@ Imports:
     quanteda (>= 4.0.1),
     quanteda.textstats (>= 0.97),
     text2vec (>= 0.6.4),
-    jsonlite (>= 1.8.8),
     stringr (>= 1.5.1),
     foreach (>= 1.5.2),
     iterators (>= 1.0.14),
