@@ -3,37 +3,40 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Visualize Topic-Word Probabilities
 #'
-#' This function plots the top-ranked terms for each topic based on the long-format output from
-#' [get_top_terms()]. It produces a faceted horizontal bar chart where each facet represents 
-#' one topic, and the height of each bar reflects the term's estimated topic-word probability 
-#' ( \eqn{\phi} ).
-#'
-#' @param top_terms A `data.table` returned by [get_top_terms()], containing the columns 
-#' `rank`, `topic`, `term`, and `probability`.
-#' @param facet_args A named list of additional arguments passed to [facet_wrap()]. 
-#' By default, `scales = "free_y"` is used.
-#' @param ... Additional arguments passed to [geom_col()].
+#' Create a faceted bar chart of the highest-probability terms for each topic
+#' using the long-format output from [get_top_terms()] via **[ggplot2][ggplot2::ggplot2]**. Each facet corresponds
+#' to one topic, and bars represent the estimated topic–word probabilities
+#' (\eqn{\phi}).
+#' @param top_terms A [data.table][data.table::data.table] returned by
+#'   [get_top_terms()] with `format = "long"`. Must contain the columns
+#'   `rank`, `topic`, `term`, and `probability`.
+#' @param facet_args A named list of additional arguments passed to [facet_wrap()][ggplot2::facet_wrap]. 
+#' Defaults to `list(scales = "free_y")`, which allows each facet to have its own y-axis scale.
+#' @param ... Additional arguments passed to [geom_col()][ggplot2::geom_col].
 #'
 #' @details
-#' The function uses **[ggplot2]** to create a faceted bar chart showing the most relevant terms 
-#' for each topic. Terms are ranked and sorted within each facet by their associated probability 
-#' in the topic-word distribution matrix (\eqn{\phi}). Internally, the term ordering is adjusted using 
-#' **[tidytext]** `reorder_within()` to ensure per-topic ranking. This function is typically 
-#' used in conjunction with [get_top_terms()] with `format = "long"`, which prepares the data for 
-#' suitable visualization.
+#' The function visualizes topic–word probabilities in a tidy, per-topic
+#' format. Terms are ranked within each topic by descending probability
+#' and reordered internally using [tidytext::reorder_within] to ensure
+#' correct sorting within facets. Typically, this function is used in
+#' combination with [get_top_terms()] (with `format = "long"`) to prepare
+#' the input data.
 #'
-#' @returns A `ggplot` object showing one horizontal bar chart per topic. Each bar reflects 
-#' a term’s estimated contribution to that topic.
+#' @returns A [ggplot][ggplot2::ggplot] object: a faceted horizontal bar chart with
+#'   one facet per topic. Each bar shows the contribution of a term to that
+#'   topic, as estimated by the topic–word distribution matrix (\eqn{\phi}).
 #'
 #' @seealso [get_top_terms()], [plot_dtw()]
 #'
 #' @import ggplot2
 #' @import data.table
-#' @importFrom tidytext reorder_within scale_y_reordered
 #' @export
 
 plot_top_terms = function(top_terms, facet_args = list(scales = "free_y"), ...) {
   
+  if (!requireNamespace("tidytext", quietly = TRUE)) {
+    stop("Package 'tidytext' is required for plot_top_terms(). Please install it.", call. = FALSE)
+  }
   # Detect long format structure
   required_cols <- c("rank", "topic", "term", "probability")
   if (!all(required_cols %in% names(top_terms))) {
@@ -42,6 +45,10 @@ plot_top_terms = function(top_terms, facet_args = list(scales = "free_y"), ...) 
   }  
   # Ensure 'topic' is a factor so facet order is preserved
   top_terms[, topic := factor(topic, levels = sort(unique(topic)))]
+  
+  # Look up tidytext functions
+  reorder_within <- getExportedValue("tidytext", "reorder_within")
+  scale_y_reordered <- getExportedValue("tidytext", "scale_y_reordered")
   
   # Reorder term within each topic by descending probability
   top_terms[, term := reorder_within(term, probability, topic)]

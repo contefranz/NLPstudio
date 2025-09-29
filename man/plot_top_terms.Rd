@@ -7,31 +7,33 @@
 plot_top_terms(top_terms, facet_args = list(scales = "free_y"), ...)
 }
 \arguments{
-\item{top_terms}{A \code{data.table} returned by \code{\link[=get_top_terms]{get_top_terms()}}, containing the columns
+\item{top_terms}{A \link[data.table:data.table]{data.table} returned by
+\code{\link[=get_top_terms]{get_top_terms()}} with \code{format = "long"}. Must contain the columns
 \code{rank}, \code{topic}, \code{term}, and \code{probability}.}
 
-\item{facet_args}{A named list of additional arguments passed to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}.
-By default, \code{scales = "free_y"} is used.}
+\item{facet_args}{A named list of additional arguments passed to \link[ggplot2:facet_wrap]{facet_wrap()}.
+Defaults to \code{list(scales = "free_y")}, which allows each facet to have its own y-axis scale.}
 
-\item{...}{Additional arguments passed to \code{\link[ggplot2:geom_bar]{ggplot2::geom_col()}}.}
+\item{...}{Additional arguments passed to \link[ggplot2:geom_bar]{geom_col()}.}
 }
 \value{
-A \code{ggplot} object showing one horizontal bar chart per topic. Each bar reflects
-a term’s estimated contribution to that topic.
+A \link[ggplot2:ggplot]{ggplot} object: a faceted horizontal bar chart with
+one facet per topic. Each bar shows the contribution of a term to that
+topic, as estimated by the topic–word distribution matrix (\eqn{\phi}).
 }
 \description{
-This function plots the top-ranked terms for each topic based on the long-format output from
-\code{\link[=get_top_terms]{get_top_terms()}}. It produces a faceted horizontal bar chart where each facet represents
-one topic, and the height of each bar reflects the term's estimated topic-word probability
-( \eqn{\phi} ).
+Create a faceted bar chart of the highest-probability terms for each topic
+using the long-format output from \code{\link[=get_top_terms]{get_top_terms()}} via \strong{\link[ggplot2:ggplot2-package]{ggplot2}}. Each facet corresponds
+to one topic, and bars represent the estimated topic–word probabilities
+(\eqn{\phi}).
 }
 \details{
-The function uses \strong{\link[ggplot2:ggplot2-package]{ggplot2::ggplot2}} to create a faceted bar chart showing the most relevant terms
-for each topic. Terms are ranked and sorted within each facet by their associated probability
-in the topic-word distribution matrix (\eqn{\phi}). Internally, the term ordering is adjusted using
-\strong{\link[tidytext:tidytext-package]{tidytext::tidytext}} \code{reorder_within()} to ensure per-topic ranking. This function is typically
-used in conjunction with \code{\link[=get_top_terms]{get_top_terms()}} with \code{format = "long"}, which prepares the data for
-suitable visualization.
+The function visualizes topic–word probabilities in a tidy, per-topic
+format. Terms are ranked within each topic by descending probability
+and reordered internally using \link[tidytext:reorder_within]{tidytext::reorder_within} to ensure
+correct sorting within facets. Typically, this function is used in
+combination with \code{\link[=get_top_terms]{get_top_terms()}} (with \code{format = "long"}) to prepare
+the input data.
 }
 \seealso{
 \code{\link[=get_top_terms]{get_top_terms()}}, \code{\link[=plot_dtw]{plot_dtw()}}
