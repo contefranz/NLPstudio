@@ -36,6 +36,7 @@ define_corpus <- function(x, ...) {
 
 
 #' @rdname define_corpus
+#' @method define_corpus character
 #' @export
 define_corpus.character <- function(x, ncores = 1, ...) {
   
@@ -98,6 +99,7 @@ define_corpus.character <- function(x, ncores = 1, ...) {
 
 
 #' @rdname define_corpus
+#' @method define_corpus data.table
 #' @export
 define_corpus.data.table <- function(x, ...) {
   if (!inherits(x, "data.table")) {
