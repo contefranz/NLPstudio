@@ -1,15 +1,20 @@
 if ( getRversion() >= "2.15.1" ) {
   utils::globalVariables( c("sic_min", "sic_max", "ff_ind", "ff_ind_short_desc", "ff_ind_desc") )
 }
-#' Pull Fama-French Industries and Map Them to a Corpus
+#' Map Fama–French Industries to a Corpus
 #'
-#' This function maps Fama-French industry classifications to a quanteda corpus based on each 
-#' document’s SIC code.
+#' Assign Fama–French industry classifications to each document in a
+#' [corpus][quanteda::corpus] object based on its SIC code. Industry groupings
+#' are drawn from the datasets provided in the [**farr**](https://cran.r-project.org/web/packages/farr/index.html) 
+#' package.
 #'
-#' @param x A `data.table` as extracted by a quanteda [corpus] object.
-#' @param ind Fama-French industry grouping (See 'Details').
-#' @param fill_category Should unmatched industries be labelled as `Unclassified`? Default to `FALSE`.
-#' @param ... Not used at the moment.
+#' @param x A [corpus][quanteda::corpus] object with a `sic` column in its
+#'   document variables (`docvars`).
+#' @param ind Character. One of `"12"`, `"17"`, `"30"`, `"38"`, `"48"`, or
+#'   `"49"`, specifying which Fama–French industry grouping to apply. See 'Details'.
+#' @param fill_category Logical. If `TRUE`, documents with unmatched SIC codes
+#'   are assigned to a new category labelled `"Unclassified"`. Defaults to `FALSE`.
+#' @param ... Currently unused.
 #' 
 #' @details
 #' The Fama-French industry classifications are available in several versions, with the most 
@@ -24,10 +29,25 @@ if ( getRversion() >= "2.15.1" ) {
 #' Each scheme groups SIC codes into economically meaningful categories with varying levels of 
 #' detail, allowing users to tailor industry aggregation to their research needs.
 #' 
-#' @returns A [corpus] with the Fama-French industries as `docvars`.
+#' Supported industry schemes are:
+#' - **FF12**, **FF17**, **FF30**, **FF38**, **FF48**, **FF49**  
+#' Each scheme aggregates SIC codes into economically meaningful industry
+#' groups of different granularity.
+#'
+#' For documents whose `sic` does not match any range in the selected scheme:
+#' - If `fill_category = FALSE` (default), the FF variables will be `NA`.
+#' - If `fill_category = TRUE`, a fallback `"Unclassified"` category is created.
+#' 
+#' @return A [corpus][quanteda::corpus] object with additional `docvars`:
+#' - `ff_ind`: Numeric industry identifier.
+#' - `ff_ind_short_desc`: Short description.
+#' - `ff_ind_desc`: Full description.
+#'
+#' @note This function requires the [**farr**](https://cran.r-project.org/web/packages/farr/index.html) 
+#' package, which must be installed separately. 
+#' It provides the Fama–French industry classification mappings via [farr::get_ff_ind()].
 #'
 #' @import data.table foreach
-#' @importFrom farr get_ff_ind
 #' @importFrom quanteda is.corpus corpus
 #' @importFrom stats setNames
 #' @importFrom glue glue
@@ -37,15 +57,18 @@ if ( getRversion() >= "2.15.1" ) {
 
 set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
   
-  # Negate it! 
-  `%nin%` = Negate(`%in%`)
-  
+  if (!requireNamespace("farr", quietly = TRUE)) {
+    stop("Package 'farr' is required for set_ff_industries(). Please install it.", call. = FALSE)
+  }
   if (!is.corpus(x)) {
     stop("x must be a corpus")
   }
   if (!is.numeric(ind)) {
     stop("ind must be a numeric value")
   }
+  
+  # Negate it! 
+  `%nin%` = Negate(`%in%`)
   
   corp_dt = data.table(doc_id = docnames(x), docvars(x), text = as.character(x))
   setcolorder(corp_dt, neworder = "item", after = "filing_type")
@@ -60,7 +83,8 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
   ind = as.numeric(ind)
   
   cli_alert_info("Pulling {ind} Fama-French industries")
-  ff = farr::get_ff_ind(ind = ind)
+  get_ff_ind <- getExportedValue("farr", "get_ff_ind")
+  ff = get_ff_ind(ind = ind)
   setDT(ff)
   
   # Build column expression list from input data structure

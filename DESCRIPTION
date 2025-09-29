@@ -34,7 +34,6 @@ Imports:
     future.apply (>= 1.11.2),
     Matrix (>= 1.7),
     methods (>= 4.3),
-    farr (>= 0.3.0),
     glue (>= 1.8.0),
     ggplot2 (>= 3.5.0),
     rlang (>= 1.1.6),
@@ -43,5 +42,6 @@ Suggests:
     readtext (>= 0.91),
     spacyr (>= 1.3.0),
     pluralize (>= 0.2.1),
-    tidytext (>= 0.4.2)
+    tidytext (>= 0.4.2),
+    farr (>= 0.3.0)
 LazyData: true

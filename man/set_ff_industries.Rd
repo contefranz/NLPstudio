@@ -2,25 +2,35 @@
 % Please edit documentation in R/set_ff_industries.R
 \name{set_ff_industries}
 \alias{set_ff_industries}
-\title{Pull Fama-French Industries and Map Them to a Corpus}
+\title{Map Fama–French Industries to a Corpus}
 \usage{
 set_ff_industries(x, ind, fill_category = FALSE, ...)
 }
 \arguments{
-\item{x}{A \code{data.table} as extracted by a quanteda \link[quanteda:corpus]{quanteda::corpus} object.}
+\item{x}{A \link[quanteda:corpus]{corpus} object with a \code{sic} column in its
+document variables (\code{docvars}).}
 
-\item{ind}{Fama-French industry grouping (See 'Details').}
+\item{ind}{Character. One of \code{"12"}, \code{"17"}, \code{"30"}, \code{"38"}, \code{"48"}, or
+\code{"49"}, specifying which Fama–French industry grouping to apply. See 'Details'.}
 
-\item{fill_category}{Should unmatched industries be labelled as \code{Unclassified}? Default to \code{FALSE}.}
+\item{fill_category}{Logical. If \code{TRUE}, documents with unmatched SIC codes
+are assigned to a new category labelled \code{"Unclassified"}. Defaults to \code{FALSE}.}
 
-\item{...}{Not used at the moment.}
+\item{...}{Currently unused.}
 }
 \value{
-A \link[quanteda:corpus]{quanteda::corpus} with the Fama-French industries as \code{docvars}.
+A \link[quanteda:corpus]{corpus} object with additional \code{docvars}:
+\itemize{
+\item \code{ff_ind}: Numeric industry identifier.
+\item \code{ff_ind_short_desc}: Short description.
+\item \code{ff_ind_desc}: Full description.
+}
 }
 \description{
-This function maps Fama-French industry classifications to a quanteda corpus based on each
-document’s SIC code.
+Assign Fama–French industry classifications to each document in a
+\link[quanteda:corpus]{corpus} object based on its SIC code. Industry groupings
+are drawn from the datasets provided in the \href{https://cran.r-project.org/web/packages/farr/index.html}{\strong{farr}}
+package.
 }
 \details{
 The Fama-French industry classifications are available in several versions, with the most
@@ -34,4 +44,22 @@ applications. A 38-industry classification (FF38) has been introduced more recen
 occasionally used by Kenneth French in the construction of anomaly portfolios and other datasets.
 Each scheme groups SIC codes into economically meaningful categories with varying levels of
 detail, allowing users to tailor industry aggregation to their research needs.
+
+Supported industry schemes are:
+\itemize{
+\item \strong{FF12}, \strong{FF17}, \strong{FF30}, \strong{FF38}, \strong{FF48}, \strong{FF49}
+Each scheme aggregates SIC codes into economically meaningful industry
+groups of different granularity.
+}
+
+For documents whose \code{sic} does not match any range in the selected scheme:
+\itemize{
+\item If \code{fill_category = FALSE} (default), the FF variables will be \code{NA}.
+\item If \code{fill_category = TRUE}, a fallback \code{"Unclassified"} category is created.
+}
+}
+\note{
+This function requires the \href{https://cran.r-project.org/web/packages/farr/index.html}{\strong{farr}}
+package, which must be installed separately.
+It provides the Fama–French industry classification mappings via \code{\link[farr:get_ff_ind]{farr::get_ff_ind()}}.
 }
