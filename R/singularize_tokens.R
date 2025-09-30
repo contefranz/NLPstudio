@@ -3,20 +3,22 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Fast Tokens Singularization
 #'
-#' Singularize tokens from a **quanteda** [tokens] object using parallel hashing.
-#' Internally relies on the [singularize()] function from the **pluralize** package.
+#' Singularize tokens from a **quanteda** [tokens] object using a parallel
+#' hashing strategy. Internally relies on the [singularize()] function from
+#' the **pluralize** package. Short tokens can optionally be removed.
 #'
 #' @param x A [tokens][quanteda::tokens] object containing tokenized text.
-#' @param ncores Integer. Number of CPU cores to use for parallel processing
-#'   via a `PSOCK` cluster (see [parallel::makeCluster()]). Defaults to 1.
+#' @param ncores Integer. Number of CPU cores to use for parallel processing.
+#'   On Linux and macOS, [parallel::mclapply()] is used; on Windows,
+#'   [parallel::parLapply()] with a PSOCK cluster is used. Defaults to 1.
 #'   On small datasets, parallelization may add overhead without speed gains.
 #' @param remove_numbers Logical. If `TRUE` (default), removes tokens that
 #'   contain any digits. This avoids producing incorrect singular forms
-#'   for numeric tokens (e.g., `"000s"` to `"000"`).
+#'   for numeric tokens (e.g., `"000s"` would become `"000"`).
 #' @param min_char Integer. Minimum number of characters a token must have
 #'   to be retained in the output. Tokens shorter than this threshold are
 #'   removed entirely. Defaults to 1.
-#'   
+#'
 #' @details
 #' Traditional singularization functions operate on character vectors,
 #' which is inefficient for large vocabularies. In contrast,
@@ -25,22 +27,25 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' The function first extracts the vocabulary by converting the tokens
 #' to a [dfm][quanteda::dfm], then builds a hash table of tokens and
-#' their singularized forms. The actual singularization is performed
-#' in parallel using [pluralize::singularize()] across multiple cores
-#' (via [foreach], [doParallel], and [parallel]).
+#' their singularized forms. Singularization is carried out in parallel
+#' across chunks of the vocabulary, with each token mapped to its
+#' singular equivalent using [pluralize::singularize()]. The results are
+#' combined into a single mapping and then applied back to the token
+#' object with [quanteda::tokens_replace()], producing a singularized
+#' token stream.
 #'
-#' Finally, the hash table is applied back to the original tokens with
-#' [quanteda::tokens_replace()], producing a singularized token stream.
-#' This approach is conceptually similar to lemmatization.
+#' This approach is conceptually similar to lemmatization, but optimized
+#' for vocabulary-level replacement. The main computational cost is the
+#' initial `dfm` conversion, which is unavoidable.
 #'
-#' The main computational cost is the initial `dfm` conversion, which
-#' is unavoidable.
-#' 
-#' @return A [tokens][quanteda::tokens] object with singularized tokens.
+#' @return A [quanteda::tokens] object with plural tokens replaced by their
+#' singular forms and short tokens removed according to `min_char`.
+#'
 #' @note The function requires the **pluralize** package, which should be
 #'   installed separately if not already available.
-#'   
+#'
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#'
 #' @examples
 #' \dontrun{
 #' library(NLPstudio)
@@ -56,14 +61,11 @@ if ( getRversion() >= "2.15.1" ) {
 #' }
 #'
 #' @import data.table
-#' @importFrom quanteda is.tokens dfm featnames tokens_replace
+#' @importFrom quanteda is.tokens dfm featnames tokens_replace tokens_remove
 #' @importFrom stringr str_remove str_detect str_c regex
-#' @importFrom parallel makeCluster stopCluster
-#' @importFrom doParallel registerDoParallel
-#' @importFrom iterators iter
+#' @importFrom parallel makeCluster stopCluster mclapply parLapply
 #' @importFrom cli cli_h2 cli_alert_info cli_alert_warning cli_alert_success
 #' @export
-
 
 singularize_tokens = function(x, ncores = 1, remove_numbers = TRUE, min_char = 1) {
   
@@ -83,13 +85,13 @@ singularize_tokens = function(x, ncores = 1, remove_numbers = TRUE, min_char = 1
   
   cli_h2("Singularizing tokens")
   cli_alert_info("Building DFM and extracting vocabulary")
-  xdfm = dfm(x)
-  vocabulary = sort(featnames(xdfm))
+  xdfm <- dfm(x)
+  vocabulary <- sort(featnames(xdfm))
   if ( remove_numbers ) {
     cli_alert_info("Removing tokens containing any number")
     # Remove numbers or elements that contain any number because singularize plays dumb.
     # If it finds the string "000s" it will convert it to "000". This
-    vocabulary = vocabulary[ !str_detect(vocabulary, "\\d")]
+    vocabulary <- vocabulary[ !str_detect(vocabulary, "\\d")]
   }
   if (min_char > 1) {
     cli::cli_alert_info("Removing tokens shorter than {min_char} characters")
@@ -101,40 +103,56 @@ singularize_tokens = function(x, ncores = 1, remove_numbers = TRUE, min_char = 1
   }  
   cli_alert_info("Defining the singular tokens hash table")
   # Define the hash table for the vocabulary in which I already pre-allocate the new column
-  hash_vocabulary = data.table(feature = vocabulary, single = "")
-  chunks = split(hash_vocabulary, rep_len(1L:ncores, nrow(hash_vocabulary)))
-  Nchunks = length(chunks)
-  it = iter(seq_len(Nchunks), by = "row")
-  cl = makeCluster(ncores)
-  registerDoParallel(cl)
+  hash_vocabulary <- data.table(feature = vocabulary, single = "")
+  chunks <- split(hash_vocabulary, rep_len(1L:ncores, nrow(hash_vocabulary)))
   
-  big_list = foreach(
-    ichunk = it,
-    .packages = c("iterators", "data.table", "quanteda", "pluralize"),
-    .export = ".singularize"
-  ) %dopar% {
-    
-    current_chunk = chunks[[ichunk]]
-    for ( ifeat in seq_len(nrow(current_chunk)) ) {
-      set(x = current_chunk, i = ifeat, j = "single", value = .singularize(current_chunk[ifeat]))
+  worker_fun <- function(current_chunk) {
+    singularize_fun <- getExportedValue("pluralize", "singularize")
+    for (ifeat in seq_len(nrow(current_chunk))) {
+      data.table::set(
+        x = current_chunk,
+        i = ifeat,
+        j = "single",
+        value = .singularize(current_chunk[ifeat])
+      )
     }
     current_chunk
   }
   
+  if (.Platform$OS.type != "windows" && requireNamespace("parallel", quietly = TRUE)) {
+    big_list <- parallel::mclapply(chunks, .singularize_chunk, mc.cores = ncores)
+  } else {
+    cl <- parallel::makeCluster(ncores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    big_list <- parallel::parLapply(cl, chunks, .singularize_chunk)
+  }  
   # collapsing in one data.table
-  hash_single = rbindlist(big_list)
-  hash_single = hash_single[ feature != single ]
+  hash_single <- rbindlist(big_list)
+  hash_single <- hash_single[ feature != single ]
   
-  cli_alert_info("Hashing singular tokens")
-  out = tokens_replace(x,
-                       pattern = hash_single$feature,
-                       replacement = hash_single$single,
-                       valuetype = "fixed")
-  cli_alert_success("Singularization complete")
-  on.exit(stopCluster(cl))
+  cli::cli_alert_info("Hashing singular tokens")
+  out <- quanteda::tokens_replace(
+    x,
+    pattern = hash_single$feature,
+    replacement = hash_single$single,
+    valuetype = "fixed"
+  )
+  cli::cli_alert_success("Singularization complete")
   return(out)
 }
 
+#' @keywords internal
+.singularize_chunk <- function(current_chunk) {
+  for (ifeat in seq_len(nrow(current_chunk))) {
+    data.table::set(
+      x = current_chunk,
+      i = ifeat,
+      j = "single",
+      value = .singularize(current_chunk[ifeat])
+    )
+  }
+  current_chunk
+}
 
 #' @keywords internal
 .singularize = function(row) {

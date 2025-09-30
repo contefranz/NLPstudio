@@ -1,5 +1,4 @@
-core <- c("quanteda", "quanteda.textstats", "data.table", "text2vec",
-          "stringr", "foreach", "future")
+core <- c("quanteda", "quanteda.textstats", "data.table", "text2vec", "stringr", "future")
 
 
 .onAttach <- function(...) {

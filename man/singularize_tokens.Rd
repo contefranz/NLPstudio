@@ -9,24 +9,27 @@ singularize_tokens(x, ncores = 1, remove_numbers = TRUE, min_char = 1)
 \arguments{
 \item{x}{A \link[quanteda:tokens]{tokens} object containing tokenized text.}
 
-\item{ncores}{Integer. Number of CPU cores to use for parallel processing
-via a \code{PSOCK} cluster (see \code{\link[parallel:makeCluster]{parallel::makeCluster()}}). Defaults to 1.
+\item{ncores}{Integer. Number of CPU cores to use for parallel processing.
+On Linux and macOS, \code{\link[parallel:mclapply]{parallel::mclapply()}} is used; on Windows,
+\code{\link[parallel:clusterApply]{parallel::parLapply()}} with a PSOCK cluster is used. Defaults to 1.
 On small datasets, parallelization may add overhead without speed gains.}
 
 \item{remove_numbers}{Logical. If \code{TRUE} (default), removes tokens that
 contain any digits. This avoids producing incorrect singular forms
-for numeric tokens (e.g., \code{"000s"} to \code{"000"}).}
+for numeric tokens (e.g., \code{"000s"} would become \code{"000"}).}
 
 \item{min_char}{Integer. Minimum number of characters a token must have
 to be retained in the output. Tokens shorter than this threshold are
 removed entirely. Defaults to 1.}
 }
 \value{
-A \link[quanteda:tokens]{tokens} object with singularized tokens.
+A \link[quanteda:tokens]{quanteda::tokens} object with plural tokens replaced by their
+singular forms and short tokens removed according to \code{min_char}.
 }
 \description{
-Singularize tokens from a \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} object using parallel hashing.
-Internally relies on the \code{\link[pluralize:singularize]{pluralize::singularize()}} function from the \strong{pluralize} package.
+Singularize tokens from a \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} object using a parallel
+hashing strategy. Internally relies on the \code{\link[pluralize:singularize]{pluralize::singularize()}} function from
+the \strong{pluralize} package. Short tokens can optionally be removed.
 }
 \details{
 Traditional singularization functions operate on character vectors,
@@ -36,16 +39,16 @@ taking advantage of its efficient internal representation.
 
 The function first extracts the vocabulary by converting the tokens
 to a \link[quanteda:dfm]{dfm}, then builds a hash table of tokens and
-their singularized forms. The actual singularization is performed
-in parallel using \code{\link[pluralize:singularize]{pluralize::singularize()}} across multiple cores
-(via \link[foreach:foreach]{foreach::foreach}, \link[doParallel:doParallel-package]{doParallel::doParallel}, and \link{parallel}).
+their singularized forms. Singularization is carried out in parallel
+across chunks of the vocabulary, with each token mapped to its
+singular equivalent using \code{\link[pluralize:singularize]{pluralize::singularize()}}. The results are
+combined into a single mapping and then applied back to the token
+object with \code{\link[quanteda:tokens_replace]{quanteda::tokens_replace()}}, producing a singularized
+token stream.
 
-Finally, the hash table is applied back to the original tokens with
-\code{\link[quanteda:tokens_replace]{quanteda::tokens_replace()}}, producing a singularized token stream.
-This approach is conceptually similar to lemmatization.
-
-The main computational cost is the initial \code{dfm} conversion, which
-is unavoidable.
+This approach is conceptually similar to lemmatization, but optimized
+for vocabulary-level replacement. The main computational cost is the
+initial \code{dfm} conversion, which is unavoidable.
 }
 \note{
 The function requires the \strong{pluralize} package, which should be

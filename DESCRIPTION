@@ -7,7 +7,7 @@ Authors@R: c(
 Description: Description: NLPstudio provides a streamlined and high-performance workflow for working with 
   structured and unstructured textual data, particularly SEC EDGAR filings. The package supports 
   corpus creation from JSON, tokenization, parsing, singularization, and document-level summarization 
-  via quanteda, all with parallel backend support through future and foreach. In addition, 
+  via quanteda, all with parallel backend support through future and parallel. In addition, 
   NLPstudio includes tools for computing readability, similarity, and distance measures using 
   quanteda.textstats. A full WarpLDA topic modeling workflow is integrated, allowing extraction 
   and visualization of document-topic and topic-word distributions. The package supports export-ready 
@@ -25,9 +25,6 @@ Imports:
     quanteda.textstats (>= 0.97),
     text2vec (>= 0.6.4),
     stringr (>= 1.5.1),
-    foreach (>= 1.5.2),
-    iterators (>= 1.0.14),
-    doParallel (>= 1.0.17),
     parallel (>= 4.3.3),
     future (>= 1.33.2),
     future.apply (>= 1.11.2),
