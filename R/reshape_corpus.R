@@ -15,7 +15,6 @@
 #'
 #' @details
 #' More details discussing the parallel strategy are given in [tokenize_corpus()].
-
 #' @note
 #' By default, `socket = "PSOCK"`. Using `socket = "FORK"` on Linux/macOS
 #' may be faster but is discouraged when tokenizing large corpora with

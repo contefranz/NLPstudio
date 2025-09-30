@@ -4,71 +4,50 @@
 \alias{singularize_tokens}
 \title{Fast Tokens Singularization}
 \usage{
-singularize_tokens(x, ncores = 1, remove_numbers = TRUE, min_char = 1)
+singularize_tokens(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  remove_numbers = TRUE,
+  min_char = 1
+)
 }
 \arguments{
-\item{x}{A \link[quanteda:tokens]{tokens} object containing tokenized text.}
+\item{x}{A \link[quanteda:tokens]{quanteda::tokens} object containing tokenized text.}
 
-\item{ncores}{Integer. Number of CPU cores to use for parallel processing.
-On Linux and macOS, \code{\link[parallel:mclapply]{parallel::mclapply()}} is used; on Windows,
-\code{\link[parallel:clusterApply]{parallel::parLapply()}} with a PSOCK cluster is used. Defaults to 1.
-On small datasets, parallelization may add overhead without speed gains.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
+
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
 
 \item{remove_numbers}{Logical. If \code{TRUE} (default), removes tokens that
-contain any digits. This avoids producing incorrect singular forms
-for numeric tokens (e.g., \code{"000s"} would become \code{"000"}).}
+contain any digits. This avoids producing incorrect singular forms (e.g.,
+\code{"000s"} → \code{"000"}).}
 
-\item{min_char}{Integer. Minimum number of characters a token must have
-to be retained in the output. Tokens shorter than this threshold are
-removed entirely. Defaults to 1.}
+\item{min_char}{Integer. Minimum number of characters a token must have to
+be retained. Tokens shorter than this threshold are removed entirely.
+Defaults to 1.}
 }
 \value{
-A \link[quanteda:tokens]{quanteda::tokens} object with plural tokens replaced by their
-singular forms and short tokens removed according to \code{min_char}.
+A \link[quanteda:tokens]{quanteda::tokens} object with singularized tokens.
 }
 \description{
 Singularize tokens from a \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} object using a parallel
-hashing strategy. Internally relies on the \code{\link[pluralize:singularize]{pluralize::singularize()}} function from
-the \strong{pluralize} package. Short tokens can optionally be removed.
+hashing strategy. Internally relies on \code{\link[pluralize:singularize]{pluralize::singularize()}}. Short
+tokens can optionally be removed.
 }
 \details{
-Traditional singularization functions operate on character vectors,
-which is inefficient for large vocabularies. In contrast,
-\code{singularize_tokens()} works directly on a \link[quanteda:tokens]{quanteda::tokens} object,
-taking advantage of its efficient internal representation.
-
-The function first extracts the vocabulary by converting the tokens
-to a \link[quanteda:dfm]{dfm}, then builds a hash table of tokens and
-their singularized forms. Singularization is carried out in parallel
-across chunks of the vocabulary, with each token mapped to its
-singular equivalent using \code{\link[pluralize:singularize]{pluralize::singularize()}}. The results are
-combined into a single mapping and then applied back to the token
-object with \code{\link[quanteda:tokens_replace]{quanteda::tokens_replace()}}, producing a singularized
-token stream.
-
-This approach is conceptually similar to lemmatization, but optimized
-for vocabulary-level replacement. The main computational cost is the
-initial \code{dfm} conversion, which is unavoidable.
+More details discussing the parallel strategy are given in \code{\link[=tokenize_corpus]{tokenize_corpus()}}.
 }
 \note{
-The function requires the \strong{pluralize} package, which should be
-installed separately if not already available.
-}
-\examples{
-\dontrun{
-library(NLPstudio)
-
-# Example tokens with plural words and short tokens
-toks <- tokens("cats dogs a xx houses")
-
-# Singularize and remove tokens shorter than 3 characters
-singular_toks <- singularize_tokens(toks, min_char = 3)
-singular_toks
-# Output will keep "cat", "dog", "house"
-# and remove "a", "xx"
-}
-
-}
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+Requires the \strong{pluralize} package. On Linux/macOS, \code{"FORK"} may be
+faster but can be unstable with quanteda’s C++/OpenMP internals. Use \code{"PSOCK"}
+for maximum stability. On Windows, \code{"FORK"} is not available.
 }
