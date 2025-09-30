@@ -101,23 +101,14 @@ singularize_tokens = function(x, ncores = 1, remove_numbers = TRUE, min_char = 1
       valuetype = "regex"
     )
   }  
-  cli_alert_info("Defining the singular tokens hash table")
+  if (ncores < 2) {
+    cli_alert_info("Defining the singular tokens hash table sequentially")
+  } else {
+    cli_alert_info("Defining the singular tokens hash table in parallel with {ncores} cores")
+  }
   # Define the hash table for the vocabulary in which I already pre-allocate the new column
   hash_vocabulary <- data.table(feature = vocabulary, single = "")
   chunks <- split(hash_vocabulary, rep_len(1L:ncores, nrow(hash_vocabulary)))
-  
-  worker_fun <- function(current_chunk) {
-    singularize_fun <- getExportedValue("pluralize", "singularize")
-    for (ifeat in seq_len(nrow(current_chunk))) {
-      data.table::set(
-        x = current_chunk,
-        i = ifeat,
-        j = "single",
-        value = .singularize(current_chunk[ifeat])
-      )
-    }
-    current_chunk
-  }
   
   if (.Platform$OS.type != "windows" && requireNamespace("parallel", quietly = TRUE)) {
     big_list <- parallel::mclapply(chunks, .singularize_chunk, mc.cores = ncores)
