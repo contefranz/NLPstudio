@@ -4,22 +4,50 @@
 \alias{lookup_tokens}
 \title{Fast Tokens Lookup}
 \usage{
-lookup_tokens(x, ncores, ...)
+lookup_tokens(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:tokens]{quanteda::tokens} object.}
+\item{x}{A \code{\link[quanteda:corpus]{quanteda::corpus()}} object.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
-the lookup.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
 
-\item{...}{Additional arguments passed to \link[quanteda:tokens_lookup]{quanteda::tokens_lookup}.}
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
+
+\item{...}{Additional arguments passed to \code{\link[quanteda:tokens_lookup]{quanteda::tokens_lookup()}}.}
 }
 \value{
-A \link[quanteda:tokens]{quanteda::tokens} object.
+A \code{\link[quanteda:tokens]{quanteda::tokens()}} object with lookups applied and
+documents in the same order as the input.
 }
 \description{
-Lookup a \link[quanteda:tokens]{quanteda::tokens} object in parallel via \strong{\link[future:future]{future::future}}.
+Lookup tokens in parallel using backends from the \strong{parallel}
+package. By default, lookup is parallelized with PSOCK clusters
+(\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for stable cross-platform performance
+and dynamic load balancing. Optionally, FORK-based parallelism
+(\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this
+can lead to instability with quanteda (see \emph{Note}).
 }
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+\details{
+More details discussing the parallel strategy are given in \code{\link[=tokenize_corpus]{tokenize_corpus()}}.
+}
+\note{
+By default, \code{socket = "PSOCK"}. Using \code{socket = "FORK"} on Linux/macOS
+may be faster but is discouraged when tokenizing large corpora with
+quanteda, as it can lead to undefined behavior. If you insist on using
+\code{socket = "FORK"}, consider setting environment variables such as
+\code{OMP_NUM_THREADS=1} and/or \code{quanteda_options(threads = 1)}) to reduce conflicts.
+On Windows, setting \code{socket = "FORK"} will result in an error.
 }
