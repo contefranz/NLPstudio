@@ -4,21 +4,49 @@
 \alias{summarize_corpus}
 \title{Fast Corpus Summarization}
 \usage{
-summarize_corpus(x, ncores, ...)
+summarize_corpus(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} to be summarized.}
+\item{x}{A \code{\link[quanteda:corpus]{quanteda::corpus()}} object.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the tokenization.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
 
-\item{...}{Additional arguments passed to \link[quanteda:dfm]{quanteda::dfm}.}
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
+
+\item{...}{Additional arguments passed to [quanteda.textstats::textstat_summary().}
 }
 \value{
-A \link[data.table:data.table]{data.table::data.table} class object with detailed information about each document.
+A \link[data.table:data.table]{data.table::data.table} object with detailed information about each document.
 }
 \description{
-Summarize a \link[quanteda:corpus]{quanteda::corpus} in parallel via \strong{\link[future:future]{future::future}}.
+Summarize a \code{\link[quanteda:corpus]{quanteda::corpus()}} in parallel using backends from the
+\strong{parallel} package. By default, summarization is parallelized with
+PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for stable cross-platform
+performance and dynamic load balancing. Optionally, FORK-based
+parallelism (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS,
+but this can lead to instability with quanteda (see \emph{Note}).
 }
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+\details{
+More details discussing the parallel strategy are given in \code{\link[=tokenize_corpus]{tokenize_corpus()}}.
+}
+\note{
+By default, \code{socket = "PSOCK"}. Using \code{socket = "FORK"} on Linux/macOS
+may be faster but is discouraged when tokenizing large corpora with
+quanteda, as it can lead to undefined behavior. If you insist on using
+\code{socket = "FORK"}, consider setting environment variables such as
+\code{OMP_NUM_THREADS=1} and/or \code{quanteda_options(threads = 1)}) to reduce conflicts.
+On Windows, setting \code{socket = "FORK"} will result in an error.
 }

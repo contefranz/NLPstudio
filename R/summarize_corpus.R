@@ -3,75 +3,88 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Fast Corpus Summarization
 #'
-#' Summarize a [corpus] in parallel via **[future]**.
+#' Summarize a [quanteda::corpus()] in parallel using backends from the
+#' **parallel** package. By default, summarization is parallelized with
+#' PSOCK clusters ([parallel::clusterApplyLB()]) for stable cross-platform
+#' performance and dynamic load balancing. Optionally, FORK-based
+#' parallelism ([parallel::mclapply()]) may be requested on Linux/macOS,
+#' but this can lead to instability with quanteda (see *Note*).
 #'
-#' @param x A **quanteda** [corpus] to be summarized.
-#' @param ncores The number of [multisession] workers to be allocated for the tokenization.
-#' @param ... Additional arguments passed to [dfm].
-#'
-#' @returns A [data.table] class object with detailed information about each document.
-#'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#' @inheritParams tokenize_corpus
+#' @param ... Additional arguments passed to [quanteda.textstats::textstat_summary().
+#' 
+#' @details
+#' More details discussing the parallel strategy are given in [tokenize_corpus()].
+#' 
+#' @note
+#' By default, `socket = "PSOCK"`. Using `socket = "FORK"` on Linux/macOS
+#' may be faster but is discouraged when tokenizing large corpora with
+#' quanteda, as it can lead to undefined behavior. If you insist on using
+#' `socket = "FORK"`, consider setting environment variables such as
+#' `OMP_NUM_THREADS=1` and/or `quanteda_options(threads = 1)`) to reduce conflicts. 
+#' On Windows, setting `socket = "FORK"` will result in an error.
+
+#' @returns A [data.table] object with detailed information about each document.
 #'
 #' @import data.table
-#' @importFrom quanteda is.corpus ndoc
+#' @importFrom quanteda is.corpus docnames ndoc
 #' @importFrom quanteda.textstats textstat_summary
-#' @importFrom future plan multisession sequential
-#' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert cli_alert_success cli_alert_danger
+#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
+#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
-
-
-summarize_corpus = function(x, ncores, ...) {
-
-  if ( !is.corpus(x) ) {
+summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
+  if (!quanteda::is.corpus(x)) {
     stop("x must be a quanteda corpus object")
   }
-
-  cli_h2("Summarizing corpus")
-  args = list(...)
-  if ( length(args) < 1 ) {
-    cli_alert_info("quanteda.textstats::textstat_summary() has been called with the default parameters")
-  } else {
-    cli_alert_info("quanteda.textstats::textstat_summary() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (iarg in seq_along(args_active) ) {
-      cli_alert("{args_active[iarg]}")
+  socket <- match.arg(socket)
+  
+  # Split corpus into nchunks by doc IDs
+  doc_ids <- quanteda::docnames(x)
+  groups  <- split(doc_ids, rep_len(seq_len(max(1L, nchunks)), length(doc_ids)))
+  chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
+  chunks  <- Filter(Negate(is.null), chunks)
+  
+  # Sequential fallback
+  if (length(chunks) <= 1L || ncores < 2L) {
+    cli::cli_alert_info("Summarizing sequentially")
+    out <- quanteda.textstats::textstat_summary(x, ...)
+    data.table::setDT(out)
+    return(out)
+  }
+  
+  cli::cli_alert_info("Summarizing {length(chunks)} chunks in parallel with {ncores} cores")
+  
+  if (socket == "FORK") {
+    if (.Platform$OS.type == "windows") {
+      stop("socket = 'FORK' is not supported on Windows. Use 'PSOCK'.")
     }
+    warning("FORK sockets may be unstable with quanteda. Consider using 'PSOCK'.")
+    summaries <- parallel::mclapply(chunks, .summarize_chunk, mc.cores = ncores, ...)
+  } else {
+    cl <- parallel::makeCluster(ncores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    parallel::clusterExport(cl, varlist = c(".summarize_chunk"), envir = environment())
+    summaries <- parallel::clusterApplyLB(cl, chunks, .summarize_chunk, ...)
   }
-
-  # define the number of workers
-  plan(multisession, workers = ncores)
-  chunks = split(x, rep_len(1L:ncores, ndoc(x)))
-
-  thesummary = do.call(c, future_lapply(chunks, textstat_summary, future.seed = TRUE, ...))
-  plan(sequential)
   
-  # keep original order and check uniqueness
-  doc_order = quanteda::docnames(x)
-  if (anyDuplicated(doc_order))
-    stop("docnames(x) must be unique to serve as 'doc_id'.")
-
-
-  cli_alert_info("Reshaping to long format using {ncores} cores")
-  Nel = length(thesummary)
-  bucket_names = names(thesummary)
-  out = vector("list", Nel)
-  for ( j in seq_len(Nel) ) {
-    where = str_which(bucket_names, str_c("^", j, "\\."))
-    now = as.data.table(thesummary[where])
-    setnames(now, str_remove(names(now), "^\\d+\\."))
-    out[[ j ]] = now
+  out <- data.table::rbindlist(summaries, fill = TRUE)
+  # Ensure we have doc_id column
+  if (!"doc_id" %in% names(out)) {
+    stop("textstat_summary() output does not contain 'doc_id' or 'document'")
   }
-  out_all = rbindlist(out, fill = TRUE)
+  # restore order
+  out <- out[match(doc_ids, out$doc_id)]  
   
-  cli_alert_info("Establishing consistent document ordering")
-  # enforce identifier name and reorder to input order
-  setnames(out_all, "document", "doc_id")
-  out_all[, org_ord := match(doc_id, doc_order)]
-  setorder(out_all, org_ord)
-  out_all[, org_ord := NULL]
+  cli::cli_alert_success("Corpus summarization complete")
+  return(out)
+}
 
-  cli_alert_success("Summarization complete")
-  return(out_all[])
+#' @keywords internal
+.summarize_chunk <- function(corp_chunk, ...) {
+  out <- quanteda.textstats::textstat_summary(corp_chunk, ...)
+  data.table::setDT(out)
+  if ("document" %in% names(out)) {
+    data.table::setnames(out, "document", "doc_id")
+  }
+  out
 }
