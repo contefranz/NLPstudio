@@ -18,8 +18,8 @@ contain any digits. This avoids producing incorrect singular forms
 for numeric tokens (e.g., \code{"000s"} to \code{"000"}).}
 
 \item{min_char}{Integer. Minimum number of characters a token must have
-to be retained. Defaults to 1, meaning no tokens are removed based
-on length.}
+to be retained in the output. Tokens shorter than this threshold are
+removed entirely. Defaults to 1.}
 }
 \value{
 A \link[quanteda:tokens]{tokens} object with singularized tokens.
@@ -50,6 +50,21 @@ is unavoidable.
 \note{
 The function requires the \strong{pluralize} package, which should be
 installed separately if not already available.
+}
+\examples{
+\dontrun{
+library(NLPstudio)
+
+# Example tokens with plural words and short tokens
+toks <- tokens("cats dogs a xx houses")
+
+# Singularize and remove tokens shorter than 3 characters
+singular_toks <- singularize_tokens(toks, min_char = 3)
+singular_toks
+# Output will keep "cat", "dog", "house"
+# and remove "a", "xx"
+}
+
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

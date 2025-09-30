@@ -14,8 +14,8 @@ if ( getRversion() >= "2.15.1" ) {
 #'   contain any digits. This avoids producing incorrect singular forms
 #'   for numeric tokens (e.g., `"000s"` to `"000"`).
 #' @param min_char Integer. Minimum number of characters a token must have
-#'   to be retained. Defaults to 1, meaning no tokens are removed based
-#'   on length.
+#'   to be retained in the output. Tokens shorter than this threshold are
+#'   removed entirely. Defaults to 1.
 #'   
 #' @details
 #' Traditional singularization functions operate on character vectors,
@@ -41,6 +41,19 @@ if ( getRversion() >= "2.15.1" ) {
 #'   installed separately if not already available.
 #'   
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#' @examples
+#' \dontrun{
+#' library(NLPstudio)
+#'
+#' # Example tokens with plural words and short tokens
+#' toks <- tokens("cats dogs a xx houses")
+#'
+#' # Singularize and remove tokens shorter than 3 characters
+#' singular_toks <- singularize_tokens(toks, min_char = 3)
+#' singular_toks
+#' # Output will keep "cat", "dog", "house"
+#' # and remove "a", "xx"
+#' }
 #'
 #' @import data.table
 #' @importFrom quanteda is.tokens dfm featnames tokens_replace
@@ -78,15 +91,14 @@ singularize_tokens = function(x, ncores = 1, remove_numbers = TRUE, min_char = 1
     # If it finds the string "000s" it will convert it to "000". This
     vocabulary = vocabulary[ !str_detect(vocabulary, "\\d")]
   }
-  if ( min_char > 1 ) {
-    cli_alert_info("Keeping tokens with at least {min_char} characters")
-    # Remove tokens that contain less than min_char characters
-    regex_min_char = regex(str_c("\\w{", min_char, ",}"), ignore_case = TRUE)
-    vocabulary = vocabulary[ str_which(vocabulary, regex_min_char) ]
-  } else {
-    cli_alert_warning("You set min_char = {min_char} --> All tokens will be kept!")
-  }
-  
+  if (min_char > 1) {
+    cli::cli_alert_info("Removing tokens shorter than {min_char} characters")
+    x <- quanteda::tokens_remove(
+      x,
+      pattern = paste0("^.{1,", min_char - 1, "}$"),
+      valuetype = "regex"
+    )
+  }  
   cli_alert_info("Defining the singular tokens hash table")
   # Define the hash table for the vocabulary in which I already pre-allocate the new column
   hash_vocabulary = data.table(feature = vocabulary, single = "")
