@@ -4,13 +4,23 @@
 \alias{tokenize_corpus}
 \title{Fast Corpus Tokenization}
 \usage{
-tokenize_corpus(x, ncores = 1, socket = c("PSOCK", "FORK"), ...)
+tokenize_corpus(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 }
 \arguments{
 \item{x}{A \code{\link[quanteda:corpus]{quanteda::corpus()}} object.}
 
 \item{ncores}{Integer. Number of CPU cores to use for parallel
 processing. Defaults to 1 (sequential).}
+
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
 
 \item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
 (default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
@@ -25,7 +35,7 @@ with the same number and order of documents as the input corpus.
 \description{
 Tokenize a \code{\link[quanteda:corpus]{quanteda::corpus()}} in parallel using backends from the
 \strong{parallel} package. By default, tokenization is parallelized with
-PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::parLapply()}}) for stability across
+PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for stability across
 platforms. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this
 can lead to crashes or silent failures because \code{quanteda} uses C++
@@ -36,6 +46,31 @@ The corpus is first split into balanced chunks of documents depending on \code{n
 Each chunk is tokenized in parallel by \code{\link[quanteda:tokens]{quanteda::tokens()}}, and the
 resulting token objects are combined. Original document order is
 restored before returning the result.
+The corpus is split into \code{nchunks} balanced chunks by document IDs.
+With PSOCK backends, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}} is used to assign
+chunks dynamically across \code{ncores} workers. This improves utilization
+when document sizes are highly variable. With FORK, \code{\link[parallel:mclapply]{parallel::mclapply()}}
+is used, which distributes chunks upfront.
+
+Choosing the relationship between \code{ncores} and \code{nchunks} has important
+performance implications:
+\itemize{
+\item When \code{nchunks == ncores} (the default), each worker processes exactly
+one chunk. This minimizes splitting overhead and is appropriate when
+documents are relatively homogeneous in length.
+\item When \code{nchunks > ncores}, there are more chunks than workers. Workers
+receive chunks dynamically and pick up additional work as soon as
+they finish their current assignment. This improves load balancing
+when documents vary widely in size or complexity, but introduces
+some overhead from managing more tasks.
+\item When \code{nchunks < ncores}, some workers will remain idle because there
+are not enough chunks to fully occupy all cores. This reduces overhead
+but wastes available parallel resources so it's not a recommended setting.
+}
+
+In practice, setting \code{nchunks} slightly larger than \code{ncores} (e.g.,
+2–4x) often gives the best balance between parallel efficiency and
+scheduling overhead for large, heterogeneous corpora.
 
 On small corpora, parallelization may add overhead compared to
 sequential tokenization. For large corpora, using multiple cores with
