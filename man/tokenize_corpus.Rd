@@ -4,21 +4,68 @@
 \alias{tokenize_corpus}
 \title{Fast Corpus Tokenization}
 \usage{
-tokenize_corpus(x, ncores, ...)
+tokenize_corpus(x, ncores = 1, socket = c("PSOCK", "FORK"), ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} as built by \code{define_corpus}.}
+\item{x}{A \code{\link[quanteda:corpus]{quanteda::corpus()}} object.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the tokenization.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
 
-\item{...}{Additional arguments passed to \link[quanteda:tokens]{quanteda::tokens}.}
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
+
+\item{...}{Additional arguments passed to \code{\link[quanteda:tokens]{quanteda::tokens()}}.}
 }
 \value{
-A \link[quanteda:tokens]{quanteda::tokens} object.
+A \code{\link[quanteda:tokens]{quanteda::tokens()}} object containing tokenized documents
+with the same number and order of documents as the input corpus.
 }
 \description{
-Tokenize a \link[quanteda:corpus]{quanteda::corpus} in parallel via \strong{\link[future:future]{future::future}}.
+Tokenize a \code{\link[quanteda:corpus]{quanteda::corpus()}} in parallel using backends from the
+\strong{parallel} package. By default, tokenization is parallelized with
+PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::parLapply()}}) for stability across
+platforms. Optionally, FORK-based parallelism
+(\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this
+can lead to crashes or silent failures because \code{quanteda} uses C++
+and OpenMP internally.
 }
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+\details{
+The corpus is first split into balanced chunks of documents depending on \code{ncores}.
+Each chunk is tokenized in parallel by \code{\link[quanteda:tokens]{quanteda::tokens()}}, and the
+resulting token objects are combined. Original document order is
+restored before returning the result.
+
+On small corpora, parallelization may add overhead compared to
+sequential tokenization. For large corpora, using multiple cores with
+the PSOCK backend typically yields the best balance of performance and
+reliability. Although FORK can be faster by avoiding serialization,
+it is less stable when combined with quanteda’s use of C++/OpenMP.
+}
+\note{
+By default, \code{socket = "PSOCK"}. Using \code{socket = "FORK"} on Linux/macOS
+may be faster but is discouraged when tokenizing large corpora with
+quanteda, as it can lead to undefined behavior. If you insist on using
+\code{socket = "FORK"}, consider setting environment variables such as
+\code{OMP_NUM_THREADS=1} and/or \code{quanteda_options(threads = 1)}) to reduce conflicts.
+On Windows, setting \code{socket = "FORK"} will result in an error.
+}
+\examples{
+\dontrun{
+library(NLPstudio)
+corp <- quanteda::corpus(
+  c("Cats are running", "Dogs were barking")
+)
+
+# Sequential
+toks_seq <- tokenize_corpus(corp)
+
+# Parallel with PSOCK
+toks_psock <- tokenize_corpus(corp, ncores = 2, socket = "PSOCK")
+
+# Parallel with FORK (Linux/macOS only, not recommended)
+toks_fork <- tokenize_corpus(corp, ncores = 2, socket = "FORK")
+}
+
 }

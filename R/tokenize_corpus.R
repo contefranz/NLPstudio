@@ -1,57 +1,128 @@
+if (getRversion() >= "2.15.1") {
+  utils::globalVariables(c("doc_id"))
+}
+
 #' Fast Corpus Tokenization
 #'
-#' Tokenize a [corpus] in parallel via **[future]**.
+#' Tokenize a [quanteda::corpus()] in parallel using backends from the
+#' **parallel** package. By default, tokenization is parallelized with
+#' PSOCK clusters ([parallel::parLapply()]) for stability across
+#' platforms. Optionally, FORK-based parallelism
+#' ([parallel::mclapply()]) may be requested on Linux/macOS, but this
+#' can lead to crashes or silent failures because `quanteda` uses C++
+#' and OpenMP internally.
 #'
-#' @param x A **quanteda** [corpus] as built by `define_corpus`.
-#' @param ncores The number of [multisession] workers to be allocated for the tokenization.
-#' @param ... Additional arguments passed to [tokens].
+#' @param x A [quanteda::corpus()] object.
+#' @param ncores Integer. Number of CPU cores to use for parallel
+#'   processing. Defaults to 1 (sequential).
+#' @param socket Character. Parallel backend to use. One of `"PSOCK"`
+#'   (default, recommended) or `"FORK"`. On Windows, `"FORK"` is not
+#'   supported and will trigger an error.
+#' @param ... Additional arguments passed to [quanteda::tokens()].
+#' 
+#' @details
+#' The corpus is first split into balanced chunks of documents depending on `ncores`.
+#' Each chunk is tokenized in parallel by [quanteda::tokens()], and the
+#' resulting token objects are combined. Original document order is
+#' restored before returning the result.
 #'
-#' @returns A [tokens] object.
+#' On small corpora, parallelization may add overhead compared to
+#' sequential tokenization. For large corpora, using multiple cores with
+#' the PSOCK backend typically yields the best balance of performance and
+#' reliability. Although FORK can be faster by avoiding serialization,
+#' it is less stable when combined with quanteda’s use of C++/OpenMP.
 #'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#' @note
+#' By default, `socket = "PSOCK"`. Using `socket = "FORK"` on Linux/macOS
+#' may be faster but is discouraged when tokenizing large corpora with
+#' quanteda, as it can lead to undefined behavior. If you insist on using
+#' `socket = "FORK"`, consider setting environment variables such as
+#' `OMP_NUM_THREADS=1` and/or `quanteda_options(threads = 1)`) to reduce conflicts. 
+#' On Windows, setting `socket = "FORK"` will result in an error.
+#'
+#' @return A [quanteda::tokens()] object containing tokenized documents
+#' with the same number and order of documents as the input corpus.
+#'
+#' @examples
+#' \dontrun{
+#' library(NLPstudio)
+#' corp <- quanteda::corpus(
+#'   c("Cats are running", "Dogs were barking")
+#' )
+#'
+#' # Sequential
+#' toks_seq <- tokenize_corpus(corp)
+#'
+#' # Parallel with PSOCK
+#' toks_psock <- tokenize_corpus(corp, ncores = 2, socket = "PSOCK")
+#'
+#' # Parallel with FORK (Linux/macOS only, not recommended)
+#' toks_fork <- tokenize_corpus(corp, ncores = 2, socket = "FORK")
+#' }
 #'
 #' @importFrom quanteda is.corpus tokens ndoc docnames
-#' @importFrom future plan multisession sequential
-#' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert cli_alert_success cli_alert_danger
+#' @importFrom parallel makeCluster stopCluster parLapply clusterExport mclapply
+#' @importFrom cli cli_h2 cli_alert_info cli_alert_success cli_alert_danger
 #' @export
-
-
-tokenize_corpus = function(x, ncores, ...) {
-
-  if ( !is.corpus(x) ) {
+tokenize_corpus <- function(x, ncores = 1, socket = c("PSOCK", "FORK"), ...) {
+  
+  if (!quanteda::is.corpus(x)) {
     stop("x must be a quanteda corpus object")
   }
-
-  cli_h2("Tokenizing corpus")
-  args = list(...)
-  if ( length(args) < 1 ) {
-    cli_alert_info("quanteda::tokens() has been called with the default parameters")
+  
+  socket <- match.arg(socket)
+  args <- list(...)
+  
+  if (length(args) < 1) {
+    cli::cli_alert_info("quanteda::tokens() has been called with default parameters")
   } else {
-    cli_alert_info("quanteda::tokens() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (iarg in seq_along(args_active) ) {
-      cli_alert("{args_active[iarg]}")
+    cli::cli_alert_info("quanteda::tokens() has been called with user parameters")
+    args_active <- paste0(names(args), " = ", unlist(args))
+    for (iarg in seq_along(args_active)) {
+      cli::cli_alert("{args_active[iarg]}")
     }
   }
-
-  # define the number of workers
-  plan(multisession, workers = ncores)
-  chunks = split(x, rep_len(1L:ncores, ndoc(x)))
-
-  toks = do.call(c, future_lapply(chunks, tokens, future.seed = TRUE, ...))
-  plan(sequential)
-  # ensure original ordering
-  doc_order <- docnames(x)
-  toks <- toks[doc_order]
   
-
-  if ( ndoc(toks) == ndoc(x) ) {
-    cli_alert_success("Corpus x has been successfully tokenized")
+  # Split into balanced chunks by doc IDs (never split the object itself first)
+  doc_ids <- quanteda::docnames(x)
+  groups  <- split(doc_ids, rep_len(seq_len(max(1L, ncores)), length(doc_ids)))
+  chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
+  chunks  <- Filter(Negate(is.null), chunks)
+  if (length(chunks) <= 1L) {
+    cli::cli_alert_info("Tokenizing sequentially")
+    toks <- quanteda::tokens(x, ...)
   } else {
-    cli_alert_danger("Tokenization failed")
-    stop("Different document numbers")
+    # socket-specific parallelization
+    cli_alert_info("Tokenizing in parallel using {ncores} cores via {socket}")
+    if (socket == "FORK") {
+      if (.Platform$OS.type == "windows") {
+        stop("socket = \"FORK\" is not supported on Windows. Use socket = \"PSOCK\" instead.")
+      }
+      warning("quanteda and FORK sockets may conflict. Consider using socket = \"PSOCK\".")
+      toks_list <- parallel::mclapply(chunks, FUN = .tokenize_chunk, mc.cores = ncores, ...)
+    } else {
+      cl <- parallel::makeCluster(ncores)
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+      parallel::clusterExport(cl, varlist = c(".tokenize_chunk"), envir = environment())
+      toks_list <- parallel::parLapply(cl, chunks, .tokenize_chunk, ...)
+    }  
   }
-
+  
+  # Combine tokens
+  toks <- Reduce(c, toks_list)
+  # Ensure original ordering
+  toks <- toks[doc_ids]
+  
+  if (quanteda::ndoc(toks) == quanteda::ndoc(x)) {
+    cli::cli_alert_success("Corpus successfully tokenized")
+  } else {
+    cli::cli_alert_danger("Tokenization failed")
+    stop("Different document numbers between input and output")
+  }
   return(toks)
+}
+
+#' @keywords internal
+.tokenize_chunk <- function(corp_chunk, ...) {
+  quanteda::tokens(corp_chunk, ...)
 }
