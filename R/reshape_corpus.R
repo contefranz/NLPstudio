@@ -1,76 +1,79 @@
 #' Fast Corpus Reshape
 #'
-#' Reshape a [corpus] in parallel under the **[future]** paradigm.
+#' Reshape a [quanteda::corpus()] into smaller units (typically sentences or
+#' paragraphs) using parallel backends from the **parallel** package.
+#' By default, reshaping is parallelized with PSOCK clusters
+#' ([parallel::clusterApplyLB()]) for cross-platform stability and dynamic
+#' load balancing. Optionally, FORK-based parallelism
+#' ([parallel::mclapply()]) may be requested on Linux/macOS, but this can
+#' lead to instability with quanteda (see *Note*).
 #'
-#' @param x A **quanteda** [corpus].
-#' @param ncores The number of [multisession] workers to be allocated for the reshaping.
-#' @param to Character; type of reshaping. Default is `"sentences"`. Passed to [corpus_reshape()].
-#' @param ... Additional arguments passed to [corpus_reshape()] (see 'Details').
+#' @inheritParams tokenize_corpus
+#' @param to Character. Reshape target, passed to
+#'   [quanteda::corpus_reshape()]. Defaults to `"sentences"`.
+#' @param ... Additional arguments passed to [quanteda::corpus_reshape()].
 #'
 #' @details
-#' This function wraps [quanteda::corpus_reshape()] but executes in parallel using the
-#' [future] framework. The most common use is reshaping to sentences (`to = "sentences"`),
-#' which enables sentence-level text analysis and alignment with document-level metadata.
+#' More details discussing the parallel strategy are given in [tokenize_corpus()].
+
+#' @note
+#' By default, `socket = "PSOCK"`. Using `socket = "FORK"` on Linux/macOS
+#' may be faster but is discouraged when tokenizing large corpora with
+#' quanteda, as it can lead to undefined behavior. If you insist on using
+#' `socket = "FORK"`, consider setting environment variables such as
+#' `OMP_NUM_THREADS=1` and/or `quanteda_options(threads = 1)`) to reduce conflicts. 
+#' On Windows, setting `socket = "FORK"` will result in an error.
 #'
-#' Document order is guaranteed to match the input `corpus`. After reshaping,
-#' documents are reordered to ensure consistency with the original corpus ordering.
+#' @return A reshaped [quanteda::corpus()] with the same document variables
+#' and reshaped text units as defined by `to`.
 #'
-#' Use `...` to further control the reshaping process. For instance, one can respahe the corpus to
-#' paragraphs by passing `to = "paragraphs"`.
-#'
-#' @returns A reshaped [corpus] object.
-#'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
-#'
-#' @importFrom quanteda is.corpus corpus_reshape ndoc
-#' @importFrom future plan multisession sequential
-#' @importFrom stringr str_remove
-#' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success cli_alert_danger
+#' @importFrom quanteda is.corpus docnames ndoc corpus_reshape
+#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
+#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
-
-
-reshape_corpus = function(x, ncores, to = "sentences", ...) {
-
-  if ( !is.corpus(x) ) {
+reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
+  
+  if (!quanteda::is.corpus(x)) {
     stop("x must be a quanteda corpus object")
   }
+  socket <- match.arg(socket)
   
-  cli_h2("Reshaping corpus")
-  args = list(...)
-  if ( length(args) < 1 ) {
-    cli_alert_info("quanteda::corpus_reshape() has been called with the default parameters")
-  } else {
-    cli_alert_info("quanteda::corpus_reshape() has been called with the following parameters")
-    args_active = paste0(names(args), " = ", unlist(args))
-    for (nm in names(args)) {
-      cli_alert("{nm} = {toString(args[[nm]])}")
+  # Split corpus into nchunks by doc IDs
+  doc_ids <- quanteda::docnames(x)
+  groups  <- split(doc_ids, rep_len(seq_len(max(1L, nchunks)), length(doc_ids)))
+  chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
+  chunks  <- Filter(Negate(is.null), chunks)
+  
+  # Sequential fallback
+  if (length(chunks) <= 1L || ncores < 2L) {
+    cli::cli_alert_info("Reshaping sequentially")
+    corp <- quanteda::corpus_reshape(x, to = to, ...)
+    return(corp)
+  }
+  
+  cli::cli_alert_info("Reshaping {length(chunks)} chunks in parallel with {ncores} cores")
+  
+  if (socket == "FORK") {
+    if (.Platform$OS.type == "windows") {
+      stop("socket = 'FORK' is not supported on Windows. Use 'PSOCK'.")
     }
-  }
-
-  # define the number of workers
-  plan(multisession, workers = ncores)
-  chunks = split(x, rep_len(1L:ncores, ndoc(x)))
-
-  reshaped <- do.call(c, future_lapply(
-    chunks, corpus_reshape, to = to, future.seed = TRUE, ...
-  ))
-  plan(sequential)
-  
-  # enforce original document ordering
-  orig_docs <- docnames(x)
-  reshaped <- reshaped[order(match(
-    str_remove(docnames(reshaped), "\\.\\d+$"), orig_docs
-  ))]
-
-  doc_names = sort(docnames(x))
-  doc_names_reshaped = sort(unique(str_remove(docnames(reshaped), "\\.\\d+")))
-  if ( all(doc_names == doc_names_reshaped) ) {
-    cli_alert_success("Corpus x has been successfully reshaped")
+    warning("FORK sockets may be unstable with quanteda. Consider using 'PSOCK'.")
+    corp_list <- parallel::mclapply(chunks, .reshape_chunk, mc.cores = ncores, to = to, ...)
   } else {
-    cli_alert_danger("Reshaping failed")
-    stop("Likely failed to process some sentences leading to dropping a document")
+    cl <- parallel::makeCluster(ncores)
+    on.exit(parallel::stopCluster(cl), add = TRUE)
+    parallel::clusterExport(cl, varlist = c(".reshape_chunk"), envir = environment())
+    corp_list <- parallel::clusterApplyLB(cl, chunks, .reshape_chunk, to = to, ...)
   }
+  cli::cli_alert_info("Combining the chunks")
+  # Combine corpora
+  corp <- Reduce(c, corp_list)
+  
+  cli::cli_alert_success("Corpus successfully reshaped")
+  return(corp)
+}
 
-  return(reshaped)
+#' @keywords internal
+.reshape_chunk <- function(corp_chunk, to, ...) {
+  quanteda::corpus_reshape(corp_chunk, to = to, ...)
 }

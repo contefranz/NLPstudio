@@ -30,8 +30,6 @@ social responsibility, and sustainable development themes.
 \details{
 The core implementation emphasizes:
 \itemize{
-\item \strong{Parallel corpus construction:} Using \code{create_corpus()}, users can transform raw JSON files
-into a structured \code{quanteda} corpus, preserving metadata and document structure.
 \item \strong{Efficient token manipulation:} Functions such as \code{tokenize_corpus()}, \code{singularize_tokens()},
 and \code{reshape_corpus()} support robust and scalable preprocessing of textual data, using
 parallel backends for speed.

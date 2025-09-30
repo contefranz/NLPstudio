@@ -4,34 +4,55 @@
 \alias{reshape_corpus}
 \title{Fast Corpus Reshape}
 \usage{
-reshape_corpus(x, ncores, to = "sentences", ...)
+reshape_corpus(
+  x,
+  to = "sentences",
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus}.}
+\item{x}{A \code{\link[quanteda:corpus]{quanteda::corpus()}} object.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the reshaping.}
+\item{to}{Character. Reshape target, passed to
+\code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}}. Defaults to \code{"sentences"}.}
 
-\item{to}{Character; type of reshaping. Default is \code{"sentences"}. Passed to \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}}.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
 
-\item{...}{Additional arguments passed to \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}} (see 'Details').}
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
+
+\item{...}{Additional arguments passed to \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}}.}
 }
 \value{
-A reshaped \link[quanteda:corpus]{quanteda::corpus} object.
+A reshaped \code{\link[quanteda:corpus]{quanteda::corpus()}} with the same document variables
+and reshaped text units as defined by \code{to}.
 }
 \description{
-Reshape a \link[quanteda:corpus]{quanteda::corpus} in parallel under the \strong{\link[future:future]{future::future}} paradigm.
+Reshape a \code{\link[quanteda:corpus]{quanteda::corpus()}} into smaller units (typically sentences or
+paragraphs) using parallel backends from the \strong{parallel} package.
+By default, reshaping is parallelized with PSOCK clusters
+(\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for cross-platform stability and dynamic
+load balancing. Optionally, FORK-based parallelism
+(\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this can
+lead to instability with quanteda (see \emph{Note}).
 }
 \details{
-This function wraps \code{\link[quanteda:corpus_reshape]{quanteda::corpus_reshape()}} but executes in parallel using the
-\link[future:future]{future::future} framework. The most common use is reshaping to sentences (\code{to = "sentences"}),
-which enables sentence-level text analysis and alignment with document-level metadata.
-
-Document order is guaranteed to match the input \code{corpus}. After reshaping,
-documents are reordered to ensure consistency with the original corpus ordering.
-
-Use \code{...} to further control the reshaping process. For instance, one can respahe the corpus to
-paragraphs by passing \code{to = "paragraphs"}.
+More details discussing the parallel strategy are given in \code{\link[=tokenize_corpus]{tokenize_corpus()}}.
 }
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+\note{
+By default, \code{socket = "PSOCK"}. Using \code{socket = "FORK"} on Linux/macOS
+may be faster but is discouraged when tokenizing large corpora with
+quanteda, as it can lead to undefined behavior. If you insist on using
+\code{socket = "FORK"}, consider setting environment variables such as
+\code{OMP_NUM_THREADS=1} and/or \code{quanteda_options(threads = 1)}) to reduce conflicts.
+On Windows, setting \code{socket = "FORK"} will result in an error.
 }

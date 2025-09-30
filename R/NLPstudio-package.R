@@ -25,8 +25,6 @@
 #' @details
 #' The core implementation emphasizes:
 #' 
-#' - **Parallel corpus construction:** Using `create_corpus()`, users can transform raw JSON files 
-#' into a structured `quanteda` corpus, preserving metadata and document structure.
 #' - **Efficient token manipulation:** Functions such as `tokenize_corpus()`, `singularize_tokens()`, 
 #' and `reshape_corpus()` support robust and scalable preprocessing of textual data, using 
 #' parallel backends for speed.
