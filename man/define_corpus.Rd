@@ -2,33 +2,61 @@
 % Please edit documentation in R/define_corpus.R
 \name{define_corpus}
 \alias{define_corpus}
-\alias{define_corpus.character}
 \alias{define_corpus.data.table}
-\title{Generate a Quanteda Corpus from Text Data}
+\title{Generate a Quanteda Corpus from a Data Table}
 \usage{
 define_corpus(x, ...)
-
-\method{define_corpus}{character}(x, ncores = 1, ...)
 
 \method{define_corpus}{data.table}(x, ...)
 }
 \arguments{
-\item{x}{Input object, either a character indicating a path to stored data or a data.table as created by \link{from_json_to_df}.}
+\item{x}{A \link[data.table:data.table]{data.table::data.table} with at least two columns:
+\code{text} (character vector of document texts) and \code{filename} (character
+vector of source file names). Usually this is the output of
+\code{\link[=from_json_to_df]{from_json_to_df()}}.}
 
-\item{...}{Additional arguments passed to \link[readtext:readtext]{readtext::readtext}.}
-
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
-the lookup. Default to 1.}
+\item{...}{Currently not used.}
 }
 \value{
-A quanteda \link[quanteda:corpus]{quanteda::corpus} object.
+A \code{\link[quanteda:corpus]{quanteda::corpus()}} object with a set of document-level variables (i.e., \code{docvars}).
 }
 \description{
-Convert structured text data into a quanteda \link[quanteda:corpus]{quanteda::corpus}, supporting a variety of formats with parallel processing via \strong{\link[future:future]{future::future}}.
+\code{define_corpus()} builds a \code{\link[quanteda:corpus]{quanteda::corpus()}} from structured text data
+contained in a \link[data.table:data.table]{data.table::data.table}, typically created by
+\code{\link[=from_json_to_df]{from_json_to_df()}}. The method ensures that each document has a unique
+identifier and attaches it as a document variable.
 }
 \details{
-If \code{x} points directly to a specific file containing the textual data, this is treated as a single-item
-list. If \code{x} is a folder, \code{define_corpus} looks for the following formats: .txt, .csv, .json, or .xml. This is in compliance with \link[readtext:readtext]{readtext::readtext}.
+The function constructs a \code{doc_id_corpus} variable by combining the
+\code{filename} (stripped of extensions \code{.htm} or \code{.txt}) with the \code{item}
+column. This identifier is used as the document ID when building the
+quanteda corpus. If duplicate IDs are detected, a warning is issued.
 
-When passing either a single item or multiple small items, setting \code{ncores > 1} does not necessarily show a tangible improvement in speed. This is why by default \code{ncores = 1}.
+After the corpus is built, temporary columns (\code{filename2} and
+\code{doc_id_corpus}) are removed from the input table, so that only the corpus
+object is returned.
+
+Although one could call \code{\link[quanteda:corpus]{quanteda::corpus()}} directly on the output of
+\code{\link[=from_json_to_df]{from_json_to_df()}}, it is recommended to use \code{define_corpus()}. This
+ensures consistent handling of document IDs, automatic duplicate checks,
+and integration with the rest of the \strong{NLPstudio} pipeline.
+}
+\examples{
+\dontrun{
+# Suppose you have a folder with EDGAR JSON filings
+files <- list.files("data/json_filings", pattern = "\\\\.json$", full.names = TRUE)
+
+# Convert JSONs to a structured data.table
+dt <- from_json_to_df(files, ncores = 2, chunk_size = 200)
+
+# Build a quanteda corpus with stable document IDs
+corp <- define_corpus(dt)
+
+# Inspect the corpus
+summary(corp)
+docvars(corp)[1:5, ]
+}
+}
+\seealso{
+\code{\link[quanteda:corpus]{quanteda::corpus()}}, \code{\link[quanteda:docvars]{quanteda::docvars()}}
 }

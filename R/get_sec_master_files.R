@@ -1,5 +1,5 @@
 if ( getRversion() >= "2.15.1" ) {
-  utils::globalVariables( c("fyear_end", "sic", "filing_html") )
+  utils::globalVariables( c("fyear_end", "sic", "filing_html", "filing_detail", "filing_txt") )
 }
 #' SEC Master Files Container
 #'

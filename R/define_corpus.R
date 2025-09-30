@@ -1,101 +1,59 @@
 if ( getRversion() >= "2.15.1" ) {
-  utils::globalVariables( c("cik", "filing_detail", "filing_txt", "temp", "filename",
-                            "doc_id_corpus", "checkdup", "filename2") )
+  utils::globalVariables( c("cik", "filename", "doc_id_corpus", "checkdup", "filename2") )
 }
-#' Generate a Quanteda Corpus from Text Data
+#' Generate a Quanteda Corpus from a Data Table
 #'
-#' Convert structured text data into a quanteda [corpus], supporting a variety of formats with parallel processing via **[future]**.
-#'
-#' @param x Input object, either a character indicating a path to stored data or a data.table as created by [from_json_to_df].
-#' @param ncores The number of [multisession] workers to be allocated for 
-#' the lookup. Default to 1.
-#' @param ... Additional arguments passed to [readtext].
+#' `define_corpus()` builds a [quanteda::corpus()] from structured text data
+#' contained in a [data.table::data.table], typically created by
+#' [from_json_to_df()]. The method ensures that each document has a unique
+#' identifier and attaches it as a document variable.
 #' 
+#' @param x A [data.table::data.table] with at least two columns:
+#'   `text` (character vector of document texts) and `filename` (character
+#'   vector of source file names). Usually this is the output of
+#'   [from_json_to_df()].
+#' @param ... Currently not used.
+#'
 #' @details
-#' If `x` points directly to a specific file containing the textual data, this is treated as a single-item
-#' list. If `x` is a folder, `define_corpus` looks for the following formats: .txt, .csv, .json, or .xml. This is in compliance with [readtext].
+#' The function constructs a `doc_id_corpus` variable by combining the
+#' `filename` (stripped of extensions `.htm` or `.txt`) with the `item`
+#' column. This identifier is used as the document ID when building the
+#' quanteda corpus. If duplicate IDs are detected, a warning is issued.
+#'
+#' After the corpus is built, temporary columns (`filename2` and
+#' `doc_id_corpus`) are removed from the input table, so that only the corpus
+#' object is returned.
 #' 
-#' When passing either a single item or multiple small items, setting `ncores > 1` does not necessarily show a tangible improvement in speed. This is why by default `ncores = 1`.
+#' Although one could call [quanteda::corpus()] directly on the output of
+#' [from_json_to_df()], it is recommended to use `define_corpus()`. This
+#' ensures consistent handling of document IDs, automatic duplicate checks,
+#' and integration with the rest of the **NLPstudio** pipeline.
 #' 
-#' 
-#' 
-#' @return A quanteda [corpus] object.
-#' 
+#' @return A [quanteda::corpus()] object with a set of document-level variables (i.e., `docvars`).
+#'
+#' @examples
+#' \dontrun{
+#' # Suppose you have a folder with EDGAR JSON filings
+#' files <- list.files("data/json_filings", pattern = "\\.json$", full.names = TRUE)
+#'
+#' # Convert JSONs to a structured data.table
+#' dt <- from_json_to_df(files, ncores = 2, chunk_size = 200)
+#'
+#' # Build a quanteda corpus with stable document IDs
+#' corp <- define_corpus(dt)
+#'
+#' # Inspect the corpus
+#' summary(corp)
+#' docvars(corp)[1:5, ]
+#' }
+#' @seealso [corpus()], [docvars()]
+#' @import data.table
 #' @importFrom quanteda corpus
-#' @importFrom future plan multisession sequential
-#' @importFrom future.apply future_lapply
-#' @importFrom cli cli_h2 cli_h3 cli_alert_info cli_alert cli_alert_success cli_alert_danger
-
+#' @importFrom cli cli_h2
 #' @export
 define_corpus <- function(x, ...) {
   UseMethod("define_corpus")
 }
-
-
-# CHARACTER CLASS - READING FROM PATH VIA READTEXT --------------------------------------------
-
-
-#' @rdname define_corpus
-#' @method define_corpus character
-#' @export
-define_corpus.character <- function(x, ncores = 1, ...) {
-  
-  if (!requireNamespace("readtext", quietly = TRUE)) {
-    stop("Package 'readtext' is required for define_corpus.character(). Please install it.")
-  }
-  if (!inherits(x, "character")) {
-    stop("x must be a character")
-  }
-  
-  args = list(...)
-  # exclude the dictionary as argument as it prints out all the tokens in it
-  # Just report anything else by redefining args
-  # args = args[!sapply(args, is.dictionary)]
-  if ( length(args) < 1 ) {
-    cli_alert_info("readtext::readtext() has been called with the default parameters")
-  } else {
-    cli_alert_info("readtext::readtext() has been called with the following parameters")
-    # args_active = paste0(names(args), " = ", unlist(args))
-    for (nm in names(args)) {
-      cli_alert("{nm} = {toString(args[[nm]])}")
-    }
-  }
-  
-  # define the number of workers
-  plan(multisession, workers = ncores)
-  
-  
-  # If input is a directory, list all text-based files
-  if (dir.exists(x)) {
-    files <- list.files(x, full.names = TRUE, recursive = TRUE,
-                        pattern = "\\.(txt|csv|json|xml)$")  # Add more extensions if needed
-  } else {
-    files <- x  # If a single file is passed, treat it as a single-item list
-  }
-  
-  # Split the file list into chunks for parallel processing
-  file_chunks <- split(files, rep_len(1L:ncores, length(files)))
-  
-  cli_alert_info(paste("Reading text data using", ncores, "cores"))
-  
-  # Read files in parallel
-  read_fun <- getExportedValue("readtext", "readtext")
-  read_objects = future_lapply(file_chunks, function(chunk) {
-    read_fun(chunk, ...)
-  }, future.seed = TRUE)
-  
-  # Combine results into a single readtext object
-  combined_readtext = do.call(rbind, read_objects)
-  
-  plan(sequential)  # Reset the plan
-  
-  cli_h2("Building corpus from readtext object")
-  on.exit(cli_alert_success("Corpus created!"))
-  return(quanteda::corpus(combined_readtext))
-  
-}
-
-# DATA.TABLE BASED ON JSON CONTAINER ----------------------------------------------------------
 
 
 #' @rdname define_corpus
