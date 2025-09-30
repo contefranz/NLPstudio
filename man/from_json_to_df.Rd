@@ -4,17 +4,27 @@
 \alias{from_json_to_df}
 \title{Convert JSON to data.table}
 \usage{
-from_json_to_df(files, ncores = 1, chunk_size = 500, drop_late_filers = FALSE)
+from_json_to_df(
+  files,
+  ncores = 1,
+  chunk_size = 500,
+  socket = c("PSOCK", "FORK"),
+  drop_late_filers = FALSE
+)
 }
 \arguments{
 \item{files}{Character vector of JSON file paths.}
 
-\item{ncores}{Integer. Number of workers to use in parallel sections.
-Default is 1 (sequential).}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
 
 \item{chunk_size}{Integer. Maximum number of files to read in a single
 chunk. Default is 500. Lower values reduce peak memory usage at the cost
 of more iteration overhead.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
 
 \item{drop_late_filers}{Logical. If \code{TRUE}, removes filings considered
 "late" (filing year greater than fiscal year + 1). Default \code{FALSE}.}
@@ -33,45 +43,50 @@ and columns:
 }
 }
 \description{
-Converts a vector of JSON file paths into a unified \link[data.table:data.table]{data.table::data.table} suitable for downstream analysis.
-The function is optimized for large-scale input (thousands of JSON files)
-and leverages both chunking and OS-specific parallelization strategies
-to remain efficient and memory-safe.
+Converts a vector of JSON file paths into a unified \link[data.table:data.table]{data.table::data.table}
+suitable for downstream analysis. The function is optimized for large-scale
+input (thousands of JSON files) and leverages both chunking and user-selected
+parallel backends to remain efficient and memory-safe.
 }
 \details{
-Internally the function proceeds in three phases. First, the vector of file
-paths is split into chunks of size \code{chunk_size} to prevent loading thousands
-of large JSON files at once. Each chunk is read in parallel using
-\link[RcppSimdJson:RcppSimdJson-package]{RcppSimdJson} for fast parsing, and immediately converted into data tables.
+Internally the function proceeds in three phases:
+\enumerate{
+\item \strong{Read & parse} – The input file paths are split into groups of size
+\code{chunk_size}. Each group is read in parallel with
+\code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, and converted to data tables.
+\item \strong{Reshape} – Each parsed table is reshaped from wide to long format in
+parallel. Identifier variables for \code{\link[data.table:melt.data.table]{data.table::melt()}} are determined
+automatically: any columns beginning with \code{"item_"} or \code{"section_"}
+are treated as measure variables, and all others are treated as identifier
+variables. If no such columns are found, all columns are treated as
+identifiers.
+\item \strong{Combine & clean} – Melted tables are bound together, date columns
+converted, fiscal year (\code{fyear}) derived, late filers optionally dropped,
+and column order standardized.
+}
 
-Second, each table is reshaped from wide to long format, again in parallel.
-The identifier variables passed to \code{\link[data.table:melt.data.table]{data.table::melt()}} are determined
-automatically: all columns before the first marker column named either
-\code{"item_1"} or \code{"section_1"} are treated as identifiers, and if no marker
-is present then all columns are retained as identifiers. Third, the melted
-tables are combined and cleaned.
-
-Finally, column order is adjusted for convenience and the unified
-data table is returned. This design avoids excessive memory use, exploits
-OS-specific parallelism (\code{\link[=mclapply]{mclapply()}} on Linux and macOS, \code{\link[=parLapply]{parLapply()}} on
-Windows), and ensures consistent reshaping even when the structure of
-individual JSON files varies.
+Parallel backends are controlled with the \code{socket} argument:
+\itemize{
+\item When \code{socket = "PSOCK"}, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}} is used, which
+dynamically balances work across workers and is portable across operating
+systems.
+\item When \code{socket = "FORK"}, \code{\link[parallel:mclapply]{parallel::mclapply()}} is used, which can be
+faster on Linux/macOS because it avoids copying large objects to workers.
+}
 }
 \section{Efficiency considerations}{
 
 \itemize{
-\item \strong{RcppSimdJson} is used for parsing, which is much faster than
-\code{jsonlite} parsers for large files.
-\item Chunking + parallelization means memory scales linearly with
-\code{chunk_size}, not total number of files.
-\item On Linux/macOS, \code{\link[=mclapply]{mclapply()}} avoids copying the entire list of JSONs to
-each worker (shared memory via forking).
-\item On Windows, \code{\link[=parLapply]{parLapply()}} is used with explicit cluster export; this is
-slightly slower but avoids serialization issues seen with \link[future:future]{future}.
+\item \strong{RcppSimdJson} is used for parsing, which is significantly faster than
+base or jsonlite parsers on large files.
+\item Chunking + parallelization ensures memory scales with \code{chunk_size}, not
+total number of files.
+\item \code{socket = "FORK"} is generally preferred on Linux/macOS for speed, while
+\code{socket = "PSOCK"} is more portable and provides dynamic load balancing.
 }
 }
 
 \seealso{
 \code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, \code{\link[data.table:melt.data.table]{data.table::melt()}},
-\code{\link[parallel:mclapply]{parallel::mclapply()}}, \code{\link[parallel:clusterApply]{parallel::parLapply()}}
+\code{\link[parallel:mclapply]{parallel::mclapply()}}, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}
 }
