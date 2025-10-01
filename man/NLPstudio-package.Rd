@@ -6,47 +6,67 @@
 \alias{NLPstudio}
 \title{NLPstudio Package Overview}
 \description{
-\strong{NLPstudio} is an R package that provides a modular and high-performance framework for
-conducting scalable natural language processing (NLP) on structured and unstructured text corpora,
-with particular support for financial disclosures such as SEC EDGAR filings.
+\strong{NLPstudio} is an R package that provides a modular and high-performance
+framework for conducting scalable natural language processing (NLP) on both
+structured and unstructured corpora, with particular support for financial
+disclosures such as SEC EDGAR filings.
 
-Built around the \strong{\href{https://quanteda.io/}{quanteda}} ecosystem, the package includes
-parallelized workflows for transforming raw text into structured corpora, and supports tasks
-such as tokenization, document reshaping, part-of-speech parsing, corpus summarization,
-and similarity/distance computations. These features are tightly integrated with
-\strong{\href{https://rdatatable.gitlab.io/data.table/}{data.table}} for efficient memory handling
-and \strong{\href{https://future.futureverse.org/}{future}} for scalable parallelism across machines and platforms.
+Built around the \strong{\href{https://quanteda.io/}{quanteda}} ecosystem,
+the package includes parallelized workflows for transforming raw text into
+structured corpora, and supports tasks such as tokenization and singularization, document
+reshaping, part-of-speech parsing, corpus summarization, and similarity or
+distance computations. These features are tightly integrated with
+\strong{\href{https://rdatatable.gitlab.io/data.table/}{data.table}} for efficient
+memory handling and with \strong{parallel} backends for scalable multicore
+processing.
 
-In addition to core NLP functionality, \strong{NLPstudio} includes a topic modeling pipeline using
-the WarpLDA algorithm implemented in \strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}}.
-The package provides utility functions to extract, rank, and visualize topic-word distributions
-in both long and wide formats, facilitating model inspection and downstream analysis.
+In addition to core NLP functionality, \strong{NLPstudio} provides a topic modeling
+pipeline based on the WarpLDA algorithm from
+\strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}}. Utility
+functions allow users to extract, rank, and visualize topic–word distributions
+in both long and wide formats, facilitating model inspection and downstream
+analysis.
 
-To support domain-specific content analysis, \strong{NLPstudio} also ships with a set of curated,
-pre-compiled \strong{\link[quanteda:quanteda-package]{quanteda::quanteda}} dictionaries tailored to financial and regulatory texts. These
-include vocabularies for detecting forward-looking statements, firm complexity, corporate
-social responsibility, and sustainable development themes.
+To support domain-specific content analysis, \strong{NLPstudio} ships with curated,
+pre-compiled \strong{quanteda} dictionaries tailored to financial and regulatory
+texts. These include vocabularies for detecting forward-looking statements,
+firm complexity, corporate social responsibility, and sustainable development
+themes.
 }
 \details{
 The core implementation emphasizes:
 \itemize{
-\item \strong{Efficient token manipulation:} Functions such as \code{tokenize_corpus()}, \code{singularize_tokens()},
-and \code{reshape_corpus()} support robust and scalable preprocessing of textual data, using
-parallel backends for speed.
-\item \strong{Document-level analysis:} \code{summarize_corpus()}, \code{calculate_readability()},
-\code{calculate_similarity()}, and \code{calculate_distance()} provide fast and flexible document-level
-metrics using \code{quanteda.textstats}.
-\item \strong{Topic modeling with WarpLDA:} \code{warpLDA()} interfaces with \strong{\link[text2vec:text2vec]{text2vec::text2vec}} to fit topic models,
-while \code{get_top_terms()} and \code{plot_top_terms()} support extraction and visualization of model
-outputs. The function \code{plot_dtw()} can be used to inspect the distribution of document-topic
-weights across a fitted model.
-\item \strong{Domain dictionaries:} Pre-loaded dictionaries enable lookup-based bag-of-words analysis
-tailored to Accounting, Finance, and ESG disclosures.
+\item \strong{Efficient token manipulation:}
+Functions such as \code{tokenize_corpus()}, \code{singularize_tokens()}, and
+\code{reshape_corpus()} support robust preprocessing of text at scale.
+All use a consistent interface with \code{ncores} and \code{nchunks}, and support
+both \code{"PSOCK"} (dynamic load balancing, portable) and \code{"FORK"} (fast
+forking on Linux/macOS) backends.
+\item \strong{Document-level analysis:}
+\code{summarize_corpus()}, \code{calculate_readability()}, \code{calculate_similarity()},
+and \code{calculate_distance()} provide fast document-level metrics and
+statistics built on \code{quanteda.textstats}.
+\item \strong{Topic modeling:}
+\code{warpLDA()} interfaces with \strong{text2vec} to fit topic models, while
+\code{get_top_terms()} and \code{plot_top_terms()} support extraction and
+visualization of model outputs. The function \code{plot_dtw()} can be used to
+inspect the distribution of document–topic weights across a fitted model.
+\link[topicmodels:tm-class]{TopicModel-class}
+of \strong{\href{https://cran.r-project.org/web/packages/topicmodels/index.html}{topicmodels}}
+is also supported.
+\item \strong{Corpus ingestion:}
+\code{from_json_to_df()} converts SEC-style JSON filings into tidy
+data.tables, with chunking controlled by \code{nchunks} and optional
+\code{max_chunk_size} to prevent memory spikes.
+\item \strong{Domain dictionaries:}
+Pre-loaded dictionaries enable lookup-based bag-of-words analysis tailored
+to accounting, finance, and ESG disclosures.
 }
 
-The package is especially well-suited for large-scale academic, policy, or regulatory text
-analysis in the social sciences. While originally designed for SEC filing data, the framework
-generalizes well to any structured document corpus within the \strong{\link[quanteda:quanteda-package]{quanteda::quanteda}} framework.
+The package is well-suited for large-scale academic, policy, and regulatory
+text analysis in the social sciences. While originally designed for SEC filing
+data, the framework generalizes to any structured document corpus within the
+\strong{quanteda} environment.
 }
 \author{
 \strong{Maintainer}: Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]
