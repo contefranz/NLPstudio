@@ -38,7 +38,6 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @import ggplot2 data.table
 #' @importFrom stats as.formula
-#' @importFrom rlang sym
 #' @importFrom tools toTitleCase
 #' @export
 
@@ -87,7 +86,7 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
   long_theta[, topic := factor(topic, levels = unique(topic))]
   
   # Base ggplot object
-  p = ggplot(long_theta, aes(x = theta, y = after_stat(!!sym(stat)))) +
+  p = ggplot(long_theta, aes(x = theta, y = after_stat(.data[[stat]]))) +
     geom_histogram(...) +
     labs(
       title = "Distribution of Document-Topic Weights",

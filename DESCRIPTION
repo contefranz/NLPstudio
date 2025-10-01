@@ -32,7 +32,6 @@ Imports:
     methods (>= 4.3),
     glue (>= 1.8.0),
     ggplot2 (>= 3.5.0),
-    rlang (>= 1.1.6),
     cli (>= 3.6.2)
 Suggests:
     spacyr (>= 1.3.0),
