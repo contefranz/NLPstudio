@@ -7,9 +7,10 @@
 from_json_to_df(
   files,
   ncores = 1,
-  chunk_size = 500,
+  nchunks = ncores,
   socket = c("PSOCK", "FORK"),
-  drop_late_filers = FALSE
+  drop_late_filers = FALSE,
+  ...
 )
 }
 \arguments{
@@ -18,9 +19,9 @@ from_json_to_df(
 \item{ncores}{Integer. Number of CPU cores to use for parallel
 processing. Defaults to 1 (sequential).}
 
-\item{chunk_size}{Integer. Maximum number of files to read in a single
-chunk. Default is 500. Lower values reduce peak memory usage at the cost
-of more iteration overhead.}
+\item{nchunks}{Integer. Number of chunks to split the input file vector into.
+Defaults to \code{ncores}. Increasing \code{nchunks} above \code{ncores} improves load
+balancing at the cost of some scheduling overhead.}
 
 \item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
 (default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
@@ -28,6 +29,10 @@ supported and will trigger an error.}
 
 \item{drop_late_filers}{Logical. If \code{TRUE}, removes filings considered
 "late" (filing year greater than fiscal year + 1). Default \code{FALSE}.}
+
+\item{...}{Additional arguments passed to internal helpers. Currently supports
+\code{max_chunk_size} (integer, default 500), which caps the maximum number of
+files per chunk to prevent memory spikes.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with one row per \verb{(document × item)}
@@ -51,8 +56,9 @@ parallel backends to remain efficient and memory-safe.
 \details{
 Internally the function proceeds in three phases:
 \enumerate{
-\item \strong{Read & parse} – The input file paths are split into groups of size
-\code{chunk_size}. Each group is read in parallel with
+\item \strong{Read & parse} – The input file paths are divided into \code{nchunks} groups.
+If any group exceeds \code{max_chunk_size} files, it is further split to enforce
+this cap. Each sub-chunk is read in parallel with
 \code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, and converted to data tables.
 \item \strong{Reshape} – Each parsed table is reshaped from wide to long format in
 parallel. Identifier variables for \code{\link[data.table:melt.data.table]{data.table::melt()}} are determined
@@ -79,8 +85,8 @@ faster on Linux/macOS because it avoids copying large objects to workers.
 \itemize{
 \item \strong{RcppSimdJson} is used for parsing, which is significantly faster than
 base or jsonlite parsers on large files.
-\item Chunking + parallelization ensures memory scales with \code{chunk_size}, not
-total number of files.
+\item Chunking is controlled by \code{nchunks} for load balancing, while \code{max_chunk_size}
+provides an upper bound on files per chunk to prevent memory overload.
 \item \code{socket = "FORK"} is generally preferred on Linux/macOS for speed, while
 \code{socket = "PSOCK"} is more portable and provides dynamic load balancing.
 }

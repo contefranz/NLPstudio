@@ -1,7 +1,7 @@
 if ( getRversion() >= "2.15.1" ) {
   utils::globalVariables( c( "jcol", "item", "fyear", ".", "filing_date",
                              "period_of_report", "accession_number",
-                             "text", "year_filed", "date_filed", "fyear_end", "sic") )
+                             "text", "year_filed", "date_filed", "fyear_end", "sic", "chunk_size") )
 }
 #' Convert JSON to data.table
 #'
@@ -12,17 +12,21 @@ if ( getRversion() >= "2.15.1" ) {
 #' 
 #' @inheritParams tokenize_corpus
 #' @param files Character vector of JSON file paths.
-#' @param chunk_size Integer. Maximum number of files to read in a single
-#'   chunk. Default is 500. Lower values reduce peak memory usage at the cost
-#'   of more iteration overhead.
+#' @param nchunks Integer. Number of chunks to split the input file vector into.
+#'   Defaults to `ncores`. Increasing `nchunks` above `ncores` improves load
+#'   balancing at the cost of some scheduling overhead.
 #' @param drop_late_filers Logical. If `TRUE`, removes filings considered
 #'   "late" (filing year greater than fiscal year + 1). Default `FALSE`.
-#'   
+#' @param ... Additional arguments passed to internal helpers. Currently supports
+#'   `max_chunk_size` (integer, default 500), which caps the maximum number of
+#'   files per chunk to prevent memory spikes.
+
 #' @details
 #' Internally the function proceeds in three phases:
 #'
-#' 1. **Read & parse** – The input file paths are split into groups of size
-#'   `chunk_size`. Each group is read in parallel with
+#' 1. **Read & parse** – The input file paths are divided into `nchunks` groups.
+#'   If any group exceeds `max_chunk_size` files, it is further split to enforce
+#'   this cap. Each sub-chunk is read in parallel with
 #'   [RcppSimdJson::fload()], and converted to data tables.
 #'
 #' 2. **Reshape** – Each parsed table is reshaped from wide to long format in
@@ -57,8 +61,8 @@ if ( getRversion() >= "2.15.1" ) {
 #' @section Efficiency considerations:
 #' - **RcppSimdJson** is used for parsing, which is significantly faster than
 #'   base or jsonlite parsers on large files.
-#' - Chunking + parallelization ensures memory scales with `chunk_size`, not
-#'   total number of files.
+#' - Chunking is controlled by `nchunks` for load balancing, while `max_chunk_size`
+#'   provides an upper bound on files per chunk to prevent memory overload.
 #' - `socket = "FORK"` is generally preferred on Linux/macOS for speed, while
 #'   `socket = "PSOCK"` is more portable and provides dynamic load balancing.
 #'   
@@ -70,7 +74,8 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @importFrom parallel mclapply clusterApplyLB makeCluster stopCluster
 #' @export
-from_json_to_df <- function(files, ncores = 1, chunk_size = 500, socket = c("PSOCK", "FORK"), drop_late_filers = FALSE) {
+from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
+                            socket = c("PSOCK", "FORK"), drop_late_filers = FALSE, ...) {
   
   if (!requireNamespace("RcppSimdJson", quietly = TRUE)) {
     stop("The 'RcppSimdJson' package is required for fast JSON parsing. Please install it.")
@@ -79,9 +84,16 @@ from_json_to_df <- function(files, ncores = 1, chunk_size = 500, socket = c("PSO
     stop("`files` must be a character vector of file paths")
   }
   
-  socket <- match.arg(socket)
-  
   cli_h2("Flattening JSON files")
+  
+  socket <- match.arg(socket)
+  args <- list(...)
+  max_chunk_size <- args$max_chunk_size %||% 500   # fallback if not supplied
+  # build groups
+  groups <- split(files, rep_len(seq_len(nchunks), length(files)))
+  # enforce max_chunk_size
+  groups <- lapply(groups, function(g) split(g, ceiling(seq_along(g)/max_chunk_size)))
+  groups <- unlist(groups, recursive = FALSE)
   
   # Phase 1: Read
   cli_alert_info("Reading JSON files with RcppSimdJson")
