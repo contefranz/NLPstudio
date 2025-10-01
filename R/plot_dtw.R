@@ -50,6 +50,9 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
   if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
     theta = x$theta  
   } else if ( !is.list(x) && (inherits(x, "VEM") || inherits(x, "Gibbs"))) {
+    if (!requireNamespace("topicmodels", quietly = TRUE)) {
+      stop("Package 'topicmodels' must be installed to handle VEM/Gibbs objects.", call. = FALSE)
+    }
     theta = data.table(rn = x@documents, x@gamma)
     set_theta_names(theta_dt = theta)
   } else {
