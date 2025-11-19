@@ -112,6 +112,12 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
     }
   }
   
+  # Single-doc fast path
+  if (quanteda::ndoc(x) == 1L) {
+    cli::cli_alert_info("Corpus has one document — running sequentially")
+    return(quanteda::tokens(x, ...))
+  }
+  
   # Split into balanced chunks by doc IDs (never split the object itself first)
   doc_ids <- quanteda::docnames(x)
   groups  <- split(doc_ids, rep_len(seq_len(max(1L, nchunks)), length(doc_ids)))
