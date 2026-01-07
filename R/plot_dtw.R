@@ -4,13 +4,12 @@ if ( getRversion() >= "2.15.1" ) {
 #' Plot Distribution of Document-Topic-Weights
 #'
 #' `plot_dtw()` visualizes the distribution of topic proportions across documents.
-#' It accepts either the output of [warpLDA()] (a list with a `theta` matrix) or
-#' a fitted [topicmodels::LDA] object (VEM or Gibbs). Each topic is shown as a
+#' It accepts different model classes. Each topic is shown as a
 #' separate histogram, allowing you to assess sparsity, dominance, and spread
 #' across the corpus.
 #'
-#' @param x Either the output of [warpLDA()] or a fitted [topicmodels::LDA()] object of class 
-#' [TopicModel-class][topicmodels::LDA-class].
+#' @param x Either the output of [warpLDA()], a fitted [topicmodels::LDA()] object of class 
+#' [TopicModel-class][topicmodels::LDA-class], or a sequential LDA fitted by [textmodel_seqlda()].
 #' @param topics Optional numeric vector specifying which topic proportions to plot. 
 #' If `NULL` (default), all topics will be plotted.
 #' @param stat Character string, either `"density"` (default) or `"count"`, 
@@ -34,7 +33,7 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @returns A [ggplot] object representing the faceted histograms of document–topic proportions.
 #'
-#' @seealso [warpLDA()], [topicmodels::LDA()], [geom_histogram()], [facet_wrap()]
+#' @seealso [warpLDA()], [topicmodels::LDA()], [seededlda::textmodel_seqlda()], [geom_histogram()]
 #'
 #' @import ggplot2 data.table
 #' @importFrom stats as.formula
@@ -54,6 +53,9 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
       stop("Package 'topicmodels' must be installed to handle VEM/Gibbs objects.", call. = FALSE)
     }
     theta = data.table(rn = x@documents, x@gamma)
+    set_theta_names(theta_dt = theta)
+  } else if (inherits(x, "textmodel_lda")) {
+    theta = as.data.table(x$theta, keep.rownames = TRUE)
     set_theta_names(theta_dt = theta)
   } else {
     stop("x is an unrecognized object")

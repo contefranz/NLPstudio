@@ -13,8 +13,8 @@ plot_dtw(
 )
 }
 \arguments{
-\item{x}{Either the output of \code{\link[=warpLDA]{warpLDA()}} or a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
-\link[topicmodels:tm-class]{TopicModel-class}.}
+\item{x}{Either the output of \code{\link[=warpLDA]{warpLDA()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
+\link[topicmodels:tm-class]{TopicModel-class}, or a sequential LDA fitted by \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}.}
 
 \item{topics}{Optional numeric vector specifying which topic proportions to plot.
 If \code{NULL} (default), all topics will be plotted.}
@@ -34,8 +34,7 @@ A \link[ggplot2:ggplot]{ggplot2::ggplot} object representing the faceted histogr
 }
 \description{
 \code{plot_dtw()} visualizes the distribution of topic proportions across documents.
-It accepts either the output of \code{\link[=warpLDA]{warpLDA()}} (a list with a \code{theta} matrix) or
-a fitted \link[topicmodels:lda]{topicmodels::LDA} object (VEM or Gibbs). Each topic is shown as a
+It accepts different model classes. Each topic is shown as a
 separate histogram, allowing you to assess sparsity, dominance, and spread
 across the corpus.
 }
@@ -51,5 +50,5 @@ For \link[topicmodels:tm-class]{TopicModel-class} input, the function constructs
 and standardized topic column names (e.g., \code{Topic001}, \code{Topic002}, \code{...}).
 }
 \seealso{
-\code{\link[=warpLDA]{warpLDA()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}, \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}}
+\code{\link[=warpLDA]{warpLDA()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}
 }

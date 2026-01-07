@@ -14,7 +14,7 @@ set_theta_names <- function(theta_dt) {
   topic_cols <- setdiff(names(theta_dt), "doc_id")
   
   # Extract the numeric part from the topic column names
-  topic_ids <- as.integer(gsub("^V", "", topic_cols))
+  topic_ids <- as.integer(stringr::str_extract(topic_cols, "\\d+"))
   
   # Determine padding width based on the max topic number
   pad_width <- nchar(max(topic_ids))
