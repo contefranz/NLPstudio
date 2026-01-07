@@ -4,7 +4,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' Extract Topic-Word Probabilities and Terms
 #'
 #' This function extracts the top `n` most probable terms from each topic in the topic-word
-#' distribution matrix (`phi`) returned by [warpLDA()]. It supports both long and wide output
+#' distribution matrix (`phi`). It supports both long and wide output
 #' formats, making it suitable for downstream tasks such as inspection, visualization, or export.
 #'
 #' @inheritParams plot_dtw 
@@ -40,81 +40,81 @@ if ( getRversion() >= "2.15.1" ) {
 #' 
 
 get_top_terms <- function(x, n = 10, topics = NULL, format = c("long", "wide")) {
-  
   format <- match.arg(format)
+  if (!is.numeric(n) || length(n) != 1L || n < 1) stop("n must be a positive integer")
   
-  if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
-    phi = x$phi
-  } else if ( !is.list(x) && (inherits(x, "VEM") || inherits(x, "Gibbs"))) {
-    phi = data.table(exp(x@beta))
-    setnames(phi, new = x@terms)
+  # --- Extract phi as matrix + term names ---
+  if (is.list(x) && inherits(x$lda_object, "WarpLDA")) {
+    phi_mat <- as.matrix(x$phi)
+    term_names <- colnames(phi_mat)
+  } else if (!is.list(x) && (inherits(x, "VEM") || inherits(x, "Gibbs"))) {
+    phi_mat <- exp(x@beta)
+    term_names <- x@terms
+  } else if (inherits(x, "textmodel_lda")) {
+    phi_mat <- as.matrix(x$phi)
+    term_names <- colnames(phi_mat)
   } else {
     stop("x is an unrecognized object")
   }
   
-  if (!is.numeric(n)) stop("n must be numeric")
+  if (is.null(term_names)) term_names <- as.character(seq_len(ncol(phi_mat)))
   
-  phi[, topic := .I]
-  
-  # Optional topic filter
-  if (!is.null(topics)) {
-    if (!all(topics %in% phi$topic)) {
-      stop("Some specified topics are not available in phi.")
-    }
-    phi <- phi[topic %in% topics]
-    # Determine padding width based on max topic index
-    n_topics <- nrow(phi)
+  # Topics: rows of phi
+  K <- nrow(phi_mat)
+  if (is.null(topics)) {
+    topic_ids <- seq_len(K)
+  } else {
+    if (!is.numeric(topics) || anyNA(topics)) stop("topics must be numeric")
+    if (!all(topics %in% seq_len(K))) stop("Some specified topics are not available in phi.")
+    topic_ids <- as.integer(topics)
   }
   
-  # actual topic numbers
-  topic_ids = phi$topic
   pad_width <- nchar(as.character(max(topic_ids)))
   
-  # -------------------- LONG FORMAT --------------------
+  # Helper for top-n indices
+  .top_idx <- function(v, nn) head(order(v, decreasing = TRUE), nn)
+  
+  # -------- LONG --------
   if (format == "long") {
-    phi_long <- melt(phi,
-                     id.vars = "topic",
-                     variable.name = "term",
-                     value.name = "probability",
-                     variable.factor = FALSE)
-    
-    top_terms <- phi_long[order(topic, -probability), head(.SD, n), by = topic]
-    top_terms[, rank := seq_len(.N), by = topic]
-    setcolorder(top_terms, c("rank", "topic", "term", "probability"))
-    setkey(top_terms, NULL)
-    return(top_terms[])
+    out <- data.table::rbindlist(lapply(topic_ids, function(k) {
+      probs <- phi_mat[k, ]
+      nn <- min(n, length(probs))
+      idx <- .top_idx(probs, nn)
+      data.table::data.table(
+        rank = seq_len(nn),
+        topic = k,
+        term = term_names[idx],
+        probability = as.numeric(probs[idx])
+      )
+    }))
+    data.table::setcolorder(out, c("rank", "topic", "term", "probability"))
+    return(out[])
   }
   
-  # -------------------- WIDE FORMAT --------------------
-  # Store original term names
-  terms <- names(phi)[!names(phi) %in% "topic"]
-  
-  # Pre-extract matrix of probabilities
-  prob_matrix <- as.matrix(phi[, ..terms])
-  
-  # Build list of per-topic tables
-  wide_list <- lapply(seq_along(topic_ids), function(i) {
-    probs <- prob_matrix[i, ]
-    top_idx <- order(probs, decreasing = TRUE)[seq_len(n)]
-    data.table(
-      rank = seq_len(n),
-      term = terms[top_idx],
-      probability = probs[top_idx]
+  # -------- WIDE --------
+  wide_list <- lapply(topic_ids, function(k) {
+    probs <- phi_mat[k, ]
+    nn <- min(n, length(probs))
+    idx <- .top_idx(probs, nn)
+    data.table::data.table(
+      rank = seq_len(nn),
+      term = term_names[idx],
+      probability = as.numeric(probs[idx])
     )
   })
   
-  # Rename columns with padded topic numbers
   for (i in seq_along(wide_list)) {
     topic_number <- topic_ids[i]
     padded_id <- stringr::str_pad(topic_number, width = pad_width, pad = "0")
-    setnames(wide_list[[i]],
-             old = c("term", "probability"),
-             new = c(paste0("topic_", padded_id, "_term"),
-                     paste0("topic_", padded_id, "_prob")))
+    data.table::setnames(
+      wide_list[[i]],
+      old = c("term", "probability"),
+      new = c(paste0("topic_", padded_id, "_term"),
+              paste0("topic_", padded_id, "_prob"))
+    )
   }
   
-  # Merge all tables by rank
-  wide_out <- Reduce(function(x, y) merge(x, y, by = "rank", all = TRUE), wide_list)
-  setkey(wide_out, NULL)
-  return(wide_out)
+  wide_out <- Reduce(function(a, b) merge(a, b, by = "rank", all = TRUE), wide_list)
+  data.table::setkey(wide_out, NULL)
+  wide_out
 }

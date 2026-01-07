@@ -36,7 +36,7 @@ A \code{data.table} in either:
 }
 \description{
 This function extracts the top \code{n} most probable terms from each topic in the topic-word
-distribution matrix (\code{phi}) returned by \code{\link[=warpLDA]{warpLDA()}}. It supports both long and wide output
+distribution matrix (\code{phi}). It supports both long and wide output
 formats, making it suitable for downstream tasks such as inspection, visualization, or export.
 }
 \details{
