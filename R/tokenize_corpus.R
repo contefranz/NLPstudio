@@ -52,14 +52,14 @@ if (getRversion() >= "2.15.1") {
 #'   but wastes available parallel resources so it's not a recommended setting.
 #'
 #' In practice, setting `nchunks` slightly larger than `ncores` (e.g.,
-#' 2–4x) often gives the best balance between parallel efficiency and
+#' 2-4x) often gives the best balance between parallel efficiency and
 #' scheduling overhead for large, heterogeneous corpora.
 #'
 #' On small corpora, parallelization may add overhead compared to
 #' sequential tokenization. For large corpora, using multiple cores with
 #' the PSOCK backend typically yields the best balance of performance and
 #' reliability. Although FORK can be faster by avoiding serialization,
-#' it is less stable when combined with quanteda’s use of C++/OpenMP.
+#' it is less stable when combined with quanteda's use of C++/OpenMP.
 #'
 #' @note
 #' By default, `socket = "PSOCK"`. Using `socket = "FORK"` on Linux/macOS
@@ -114,7 +114,7 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
   
   # Single-doc fast path
   if (quanteda::ndoc(x) == 1L) {
-    cli::cli_alert_info("Corpus has one document — running sequentially")
+    cli::cli_alert_info("Corpus has one document - running sequentially")
     return(quanteda::tokens(x, ...))
   }
   
