@@ -20,8 +20,9 @@ from_json_to_df(
 processing. Defaults to 1 (sequential).}
 
 \item{nchunks}{Integer. Number of chunks to split the input file vector into.
-Defaults to \code{ncores}. Increasing \code{nchunks} above \code{ncores} improves load
-balancing at the cost of some scheduling overhead.}
+Defaults to \code{ncores}. The chunk size is computed as
+\code{ceiling(length(files) / nchunks)}. Ignored if \code{max_chunk_size} is
+explicitly provided via \code{...}.}
 
 \item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
 (default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
@@ -30,9 +31,12 @@ supported and will trigger an error.}
 \item{drop_late_filers}{Logical. If \code{TRUE}, removes filings considered
 "late" (filing year greater than fiscal year + 1). Default \code{FALSE}.}
 
-\item{...}{Additional arguments passed to internal helpers. Currently supports
-\code{max_chunk_size} (integer, default 500), which caps the maximum number of
-files per chunk to prevent memory spikes.}
+\item{...}{Additional arguments for chunking.
+\describe{
+\item{\code{max_chunk_size}}{Integer. If provided, sets the exact number of
+files per chunk, overriding the value derived from \code{nchunks}. Use this
+for fine-grained memory control when file sizes vary significantly.}
+}}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with one row per \verb{(document × item)}
@@ -56,10 +60,11 @@ parallel backends to remain efficient and memory-safe.
 \details{
 Internally the function proceeds in three phases:
 \enumerate{
-\item \strong{Read & parse} – The input file paths are divided into \code{nchunks} groups.
-If any group exceeds \code{max_chunk_size} files, it is further split to enforce
-this cap. Each sub-chunk is read in parallel with
-\code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, and converted to data tables.
+\item \strong{Read & parse} – The input file paths are divided into chunks. By
+default, chunk size is derived from \code{nchunks} as
+\code{ceiling(length(files) / nchunks)}. If \code{max_chunk_size} is explicitly
+provided, it overrides this calculation. Each chunk is read in parallel
+with \code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}} and converted to data tables.
 \item \strong{Reshape} – Each parsed table is reshaped from wide to long format in
 parallel. Identifier variables for \code{\link[data.table:melt.data.table]{data.table::melt()}} are determined
 automatically: any columns beginning with \code{"item_"} or \code{"section_"}
@@ -80,6 +85,18 @@ systems.
 faster on Linux/macOS because it avoids copying large objects to workers.
 }
 }
+\section{Chunking strategy}{
+
+The function offers two ways to control chunking:
+\itemize{
+\item \strong{\code{nchunks}} (default): Set the number of batches. With 7000 files
+and \code{nchunks = 4}, each batch contains ~1750 files.
+\item \strong{\code{max_chunk_size}} (explicit): Set the exact batch size. With 7000
+files and \code{max_chunk_size = 500}, you get 14 batches of 500 files each.
+}
+If both are relevant, \code{max_chunk_size} takes precedence.
+}
+
 \section{Efficiency considerations}{
 
 \itemize{

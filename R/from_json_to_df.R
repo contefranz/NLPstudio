@@ -1,7 +1,7 @@
 if ( getRversion() >= "2.15.1" ) {
   utils::globalVariables( c( "jcol", "item", "fyear", ".", "filing_date",
                              "period_of_report", "accession_number",
-                             "text", "year_filed", "date_filed", "fyear_end", "sic", "chunk_size") )
+                             "text", "year_filed", "date_filed", "fyear_end", "sic") )
 }
 #' Convert JSON to data.table
 #'
@@ -13,21 +13,26 @@ if ( getRversion() >= "2.15.1" ) {
 #' @inheritParams tokenize_corpus
 #' @param files Character vector of JSON file paths.
 #' @param nchunks Integer. Number of chunks to split the input file vector into.
-#'   Defaults to `ncores`. Increasing `nchunks` above `ncores` improves load
-#'   balancing at the cost of some scheduling overhead.
+#'   Defaults to `ncores`. The chunk size is computed as
+#'   `ceiling(length(files) / nchunks)`. Ignored if `max_chunk_size` is
+#'   explicitly provided via `...`.
 #' @param drop_late_filers Logical. If `TRUE`, removes filings considered
 #'   "late" (filing year greater than fiscal year + 1). Default `FALSE`.
-#' @param ... Additional arguments passed to internal helpers. Currently supports
-#'   `max_chunk_size` (integer, default 500), which caps the maximum number of
-#'   files per chunk to prevent memory spikes.
+#' @param ... Additional arguments for chunking. 
+#'   \describe{
+#'     \item{`max_chunk_size`}{Integer. If provided, sets the exact number of
+#'       files per chunk, overriding the value derived from `nchunks`. Use this
+#'       for fine-grained memory control when file sizes vary significantly.}
+#'   }
 
 #' @details
 #' Internally the function proceeds in three phases:
 #'
-#' 1. **Read & parse** – The input file paths are divided into `nchunks` groups.
-#'   If any group exceeds `max_chunk_size` files, it is further split to enforce
-#'   this cap. Each sub-chunk is read in parallel with
-#'   [RcppSimdJson::fload()], and converted to data tables.
+#' 1. **Read & parse** – The input file paths are divided into chunks. By
+#'    default, chunk size is derived from `nchunks` as
+#'    `ceiling(length(files) / nchunks)`. If `max_chunk_size` is explicitly
+#'    provided, it overrides this calculation. Each chunk is read in parallel
+#'    with [RcppSimdJson::fload()] and converted to data tables.
 #'
 #' 2. **Reshape** – Each parsed table is reshaped from wide to long format in
 #'   parallel. Identifier variables for [data.table::melt()] are determined
@@ -57,7 +62,16 @@ if ( getRversion() >= "2.15.1" ) {
 #'   - `item`: item identifier (character)  
 #'   - `text`: filing text content (character)  
 #'   - plus any additional metadata extracted upstream
-#'
+#' @section Chunking strategy:
+#' The function offers two ways to control chunking:
+#' \itemize{
+#'   \item **`nchunks`** (default): Set the number of batches. With 7000 files
+#'     and `nchunks = 4`, each batch contains ~1750 files.
+#'   \item **`max_chunk_size`** (explicit): Set the exact batch size. With 7000
+#'     files and `max_chunk_size = 500`, you get 14 batches of 500 files each.
+#' }
+#' If both are relevant, `max_chunk_size` takes precedence.
+#' 
 #' @section Efficiency considerations:
 #' - **RcppSimdJson** is used for parsing, which is significantly faster than
 #'   base or jsonlite parsers on large files.
@@ -88,12 +102,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   
   socket <- match.arg(socket)
   args <- list(...)
-  max_chunk_size <- args$max_chunk_size %||% 500   # fallback if not supplied
-  # build groups
-  groups <- split(files, rep_len(seq_len(nchunks), length(files)))
-  # enforce max_chunk_size
-  groups <- lapply(groups, function(g) split(g, ceiling(seq_along(g)/max_chunk_size)))
-  groups <- unlist(groups, recursive = FALSE)
+  # If max_chunk_size is explicitly provided, use it; otherwise derive from nchunks
+  if (!is.null(args$max_chunk_size)) {
+    chunk_size <- args$max_chunk_size
+  } else {
+    chunk_size <- ceiling(length(files) / nchunks)
+  }
   
   # Phase 1: Read
   cli_alert_info("Reading JSON files with RcppSimdJson")
