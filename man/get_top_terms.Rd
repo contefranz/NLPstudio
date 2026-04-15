@@ -7,7 +7,7 @@
 get_top_terms(x, n = 10, topics = NULL, format = c("long", "wide"))
 }
 \arguments{
-\item{x}{Either the output of \code{\link[=warpLDA]{warpLDA()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
+\item{x}{Either the output of \code{\link[=warp_lda]{warp_lda()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
 \link[topicmodels:tm-class]{TopicModel-class}, or a sequential LDA fitted by \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}.}
 
 \item{n}{Integer. Number of top terms to extract per topic. Default is 10.}
@@ -47,5 +47,5 @@ grouping and sorting. The \code{probability} column represents the raw condition
 a word in a given topic (i.e., \eqn{\mathcal{P}(w \mid \phi)})
 }
 \seealso{
-\code{\link[=warpLDA]{warpLDA()}}, \code{\link[=plot_top_terms]{plot_top_terms()}} \code{\link[=plot_dtw]{plot_dtw()}} \link[topicmodels:lda]{LDA()}
+\code{\link[=warp_lda]{warp_lda()}}, \code{\link[=plot_top_terms]{plot_top_terms()}} \code{\link[=plot_dtw]{plot_dtw()}} \link[topicmodels:lda]{LDA()}
 }

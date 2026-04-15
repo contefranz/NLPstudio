@@ -13,7 +13,7 @@ plot_dtw(
 )
 }
 \arguments{
-\item{x}{Either the output of \code{\link[=warpLDA]{warpLDA()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
+\item{x}{Either the output of \code{\link[=warp_lda]{warp_lda()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
 \link[topicmodels:tm-class]{TopicModel-class}, or a sequential LDA fitted by \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}.}
 
 \item{topics}{Optional numeric vector specifying which topic proportions to plot.
@@ -44,11 +44,11 @@ histogram using \link[ggplot2:ggplot2-package]{ggplot2::ggplot2}. Each facet cor
 proportions across all documents. This is useful for diagnosing topic quality, sparsity, and
 prevalence.
 
-For \code{warpLDA()} input, the function uses \code{x$theta} directly.
+For \code{warp_lda()} input, the function uses \code{x$theta} directly.
 For \link[topicmodels:tm-class]{TopicModel-class} input, the function constructs a \code{data.table} from the fitted object
 (e.g., using \code{x@documents} and \code{x@gamma}), and then ensures the presence of a \code{doc_id} column
 and standardized topic column names (e.g., \code{Topic001}, \code{Topic002}, \code{...}).
 }
 \seealso{
-\code{\link[=warpLDA]{warpLDA()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}
+\code{\link[=warp_lda]{warp_lda()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}
 }

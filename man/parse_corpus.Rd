@@ -4,13 +4,21 @@
 \alias{parse_corpus}
 \title{Fast Corpus Parsing via spaCy}
 \usage{
-parse_corpus(x, ncores = 1, ...)
+parse_corpus(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...)
 }
 \arguments{
 \item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus}.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for the
-parsing. Default to 1.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
+
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
 
 \item{...}{Additional arguments passed to \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}.}
 }
@@ -18,7 +26,7 @@ parsing. Default to 1.}
 A \link[data.table:data.table]{data.table::data.table} of tokenized, parsed, and annotated tokens.
 }
 \description{
-Parse a \link[quanteda:corpus]{quanteda::corpus} in parallel under the \strong{\link[future:future]{future::future}} paradigm .
+Parse a \link[quanteda:corpus]{quanteda::corpus} in parallel using backends from the \strong{parallel} package.
 This function is a wrapper of \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}. Thus, it is critical to have
 a working installation of the \strong{\link[spacyr:spacyr-package]{spacyr::spacyr}} package. Please refer to the
 \href{https://github.com/quanteda/spacyr?tab=readme-ov-file#installing-the-package}{installation guide}

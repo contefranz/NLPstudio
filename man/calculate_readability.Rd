@@ -4,13 +4,27 @@
 \alias{calculate_readability}
 \title{Fast Calculation of Readability Measures}
 \usage{
-calculate_readability(x, ncores, ...)
+calculate_readability(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 }
 \arguments{
 \item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} or a character vector containing the documents to process.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
-the calculation of readability.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
+
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
 
 \item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_readability]{quanteda.textstats::textstat_readability}.}
 }
@@ -19,7 +33,11 @@ A \link[data.table:data.table]{data.table::data.table} with as many columns as p
 \code{measure} and \code{doc_id} as the document identifier.
 }
 \description{
-Compute readability measures in parallel with the \strong{\link[future:future]{future::future}} paradigm.
+Compute readability measures in parallel using backends from the
+\strong{parallel} package. By default, computation is parallelized with
+PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for cross-platform
+stability. Optionally, FORK-based parallelism
+(\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS.
 }
 \author{
 Francesco Grossetti \email{francesco.grossetti@unibocconi.it}

@@ -47,7 +47,7 @@ forking on Linux/macOS) backends.
 and \code{calculate_distance()} provide fast document-level metrics and
 statistics built on \code{quanteda.textstats}.
 \item \strong{Topic modeling:}
-\code{warpLDA()} interfaces with \strong{text2vec} to fit topic models, while
+\code{warp_lda()} interfaces with \strong{text2vec} to fit topic models, while
 \code{get_top_terms()} and \code{plot_top_terms()} support extraction and
 visualization of model outputs. The function \code{plot_dtw()} can be used to
 inspect the distribution of document–topic weights across a fitted model.

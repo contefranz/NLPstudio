@@ -5,15 +5,35 @@
 \alias{calculate_distance}
 \title{Fast Calculation of Similarity and Distance Measures}
 \usage{
-calculate_similarity(x, ncores, ...)
+calculate_similarity(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 
-calculate_distance(x, ncores, ...)
+calculate_distance(
+  x,
+  ncores = 1,
+  nchunks = ncores,
+  socket = c("PSOCK", "FORK"),
+  ...
+)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} or a character vector containing the documents to process.}
+\item{x}{A \strong{quanteda} \link[quanteda:dfm]{quanteda::dfm} object.}
 
-\item{ncores}{The number of \link[future:multisession]{future::multisession} workers to be allocated for
-the calculation of readability.}
+\item{ncores}{Integer. Number of CPU cores to use for parallel
+processing. Defaults to 1 (sequential).}
+
+\item{nchunks}{Integer. Number of chunks to split the corpus into.
+Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
+balancing when documents vary in size. See \emph{Details}.}
+
+\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
+(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
+supported and will trigger an error.}
 
 \item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.}
 }
@@ -22,12 +42,16 @@ A sparse matrix as S4 class following \link[quanteda.textstats:textstat_proxy-cl
 from the \strong{Matrix} package.
 }
 \description{
-Compute similarity and distance measures in parallel with the \strong{\link[future:future]{future::future}} paradigm.
+Compute similarity and distance measures in parallel using backends from the
+\strong{parallel} package. By default, computation is parallelized with PSOCK
+clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for cross-platform stability.
+Optionally, FORK-based parallelism (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be
+requested on Linux/macOS.
 }
 \details{
-These functions leverage parallel computing via the \strong{\link[future:future]{future::future}} framework to efficiently compute
+These functions leverage parallel computing via the \strong{parallel} package to efficiently compute
 similarity and distance measures across documents. By splitting the input \link[quanteda:dfm]{quanteda::dfm} into balanced
-chunks, the computation is distributed across multiple CPU cores using \link[future.apply:future_lapply]{future.apply::future_lapply}.
+chunks, the computation is distributed across multiple CPU cores.
 This ensures scalability even when handling large corpora.
 
 Once the computations are complete, the individual results are internally merged back into a single
