@@ -44,7 +44,7 @@
 #'   statistics built on `quanteda.textstats`.
 #'   
 #' - **Topic modeling:**  
-#'   `warpLDA()` interfaces with **text2vec** to fit topic models, while
+#'   `warp_lda()` interfaces with **text2vec** to fit topic models, while
 #'   `get_top_terms()` and `plot_top_terms()` support extraction and
 #'   visualization of model outputs. The function `plot_dtw()` can be used to
 #'   inspect the distribution of document–topic weights across a fitted model. 

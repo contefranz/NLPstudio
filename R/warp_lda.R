@@ -47,12 +47,10 @@
 #' @importFrom data.table as.data.table setnames
 #' @importFrom text2vec LDA
 #' @importFrom utils modifyList
-#' @importFrom glue glue
-#' @importFrom stringr str_glue
 #' @importFrom cli cli_alert_info
 #' @export
 
-warpLDA = function(x, k, return_theta = TRUE, return_phi = TRUE, ...) {
+warp_lda = function(x, k, return_theta = TRUE, return_phi = TRUE, ...) {
   
   if ( !is(x, "dgCMatrix") ) {
     stop("x must be a sparse matrix of class dgCMatrix")
@@ -106,4 +104,15 @@ warpLDA = function(x, k, return_theta = TRUE, return_phi = TRUE, ...) {
     out$phi = as.data.table(lda_model$topic_word_distribution)
   }
   return(out)
+}
+
+#' @rdname warp_lda
+#' @export
+warpLDA = function(...) {
+  if (requireNamespace("lifecycle", quietly = TRUE)) {
+    lifecycle::deprecate_warn("0.3.0", "warpLDA()", "warp_lda()")
+  } else {
+    warning("warpLDA() is deprecated. Use warp_lda() instead.", call. = FALSE)
+  }
+  warp_lda(...)
 }
