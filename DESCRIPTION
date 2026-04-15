@@ -37,6 +37,8 @@ Suggests:
     RcppSimdJson (>= 0.1.14),
     seededlda (>= 1.4.3),
     spacyr (>= 1.3.0),
+    testthat (>= 3.0.0),
     tidytext (>= 0.4.2),
     topicmodels (>= 0.2)
+Config/testthat/edition: 3
 LazyData: true
