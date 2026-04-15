@@ -94,28 +94,31 @@ calculate_similarity = function(x, ncores, ...) {
   rbind_dfm = getFromNamespace("rbind.dfm", "quanteda")
   out_measures = do.call(rbind_dfm, computation_list_dfm)
   
-  # Ensure ordering matches the original dfm
-  doc_order <- docnames(x)
-  out_measures <- out_measures[doc_order, doc_order]
-  
-  # Check whether a second matrix is passed and force symmetry 
+  # Check whether a second matrix is passed and force symmetry
   if ( !has_y ) {
+    # Ensure ordering matches the original dfm (square matrix)
+    doc_order <- docnames(x)
+    out_measures <- out_measures[doc_order, doc_order]
     # Ensure symmetry
     temp_matrix = forceSymmetric(out_measures, uplo = "U")
-  } 
-  
-  # Convert to a packed symmetric matrix (dspMatrix) for memory efficiency
-  temp_matrix = as(temp_matrix, "packedMatrix")
-  
-  # Wrap into the correct S4 class
-  textstat_obj = new("textstat_simil_symm",
-                     temp_matrix,
-                     method = args$method,
-                     margin = args$margin,
-                     type = "textstat_simil")
-  
+    # Convert to a packed symmetric matrix (dspMatrix) for memory efficiency
+    temp_matrix = as(temp_matrix, "packedMatrix")
+    # Wrap into the correct S4 class
+    textstat_obj = new("textstat_simil_symm",
+                       temp_matrix,
+                       method = args$method,
+                       margin = args$margin,
+                       type = "textstat_simil")
+  } else {
+    temp_matrix = out_measures
+    textstat_obj = new("textstat_simil_symm",
+                       temp_matrix,
+                       method = args$method,
+                       margin = args$margin,
+                       type = "textstat_simil")
+  }
+
   cli_alert_success("Done")
-  # this returns the original textstat_simil_symm class
   return(textstat_obj)
 }
 
@@ -160,28 +163,31 @@ calculate_distance = function(x, ncores, ...) {
   rbind_dfm = getFromNamespace("rbind.dfm", "quanteda")
   out_measures = do.call(rbind_dfm, computation_list_dfm)
   
-  # Ensure ordering matches the original dfm
-  doc_order <- docnames(x)
-  out_measures <- out_measures[doc_order, doc_order]
-  
-  # Check whether a second matrix is passed and force symmetry 
+  # Check whether a second matrix is passed and force symmetry
   if ( !has_y ) {
+    # Ensure ordering matches the original dfm (square matrix)
+    doc_order <- docnames(x)
+    out_measures <- out_measures[doc_order, doc_order]
     # Ensure symmetry
     temp_matrix = forceSymmetric(out_measures, uplo = "U")
-  } 
-  
-  # Convert to a packed symmetric matrix (dspMatrix) for memory efficiency
-  temp_matrix = as(temp_matrix, "packedMatrix")
-  
-  # Wrap into the correct S4 class
-  textstat_obj = new("textstat_dist_symm",
-                     temp_matrix,
-                     method = args$method,
-                     margin = args$margin,
-                     type = "textstat_dist")
-  
+    # Convert to a packed symmetric matrix (dspMatrix) for memory efficiency
+    temp_matrix = as(temp_matrix, "packedMatrix")
+    # Wrap into the correct S4 class
+    textstat_obj = new("textstat_dist_symm",
+                       temp_matrix,
+                       method = args$method,
+                       margin = args$margin,
+                       type = "textstat_dist")
+  } else {
+    temp_matrix = out_measures
+    textstat_obj = new("textstat_dist_symm",
+                       temp_matrix,
+                       method = args$method,
+                       margin = args$margin,
+                       type = "textstat_dist")
+  }
+
   cli_alert_success("Done")
-  # this returns the original textstat_simil_symm class
   return(textstat_obj)
 }
 
