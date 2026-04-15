@@ -5,7 +5,7 @@ test_that("tokenize_corpus works sequentially", {
     doc3 = "Birds fly high in the sky"
   ))
   toks <- tokenize_corpus(corp, ncores = 1)
-  expect_s4_class(toks, "tokens")
+  expect_true(quanteda::is.tokens(toks))
   expect_equal(quanteda::ndoc(toks), 3L)
   expect_equal(quanteda::docnames(toks), c("doc1", "doc2", "doc3"))
 })
@@ -17,7 +17,7 @@ test_that("tokenize_corpus works in parallel with 2 cores", {
     doc3 = "Birds fly high in the sky"
   ))
   toks <- tokenize_corpus(corp, ncores = 2)
-  expect_s4_class(toks, "tokens")
+  expect_true(quanteda::is.tokens(toks))
   expect_equal(quanteda::ndoc(toks), 3L)
   expect_equal(quanteda::docnames(toks), c("doc1", "doc2", "doc3"))
 })
@@ -25,7 +25,7 @@ test_that("tokenize_corpus works in parallel with 2 cores", {
 test_that("tokenize_corpus handles single-document corpus", {
   corp <- quanteda::corpus(c(doc1 = "Single document test"))
   toks <- tokenize_corpus(corp, ncores = 1)
-  expect_s4_class(toks, "tokens")
+  expect_true(quanteda::is.tokens(toks))
   expect_equal(quanteda::ndoc(toks), 1L)
 })
 
