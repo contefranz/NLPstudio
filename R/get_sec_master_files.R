@@ -64,22 +64,15 @@ get_sec_master_files = function(root_path, pattern = NULL, fyear = NULL, drop_la
   thefiles = list.files(root_path, pattern = pattern,
                         recursive = FALSE,
                         full.names = TRUE)
-  n_files = length(thefiles)
-  master_collector = vector("list", n_files)
-
-  for ( i_file in seq_len(n_files) ) {
-    current_pointer = basename(thefiles[i_file])
-    message("Reading file ", current_pointer)
-    current = fread(thefiles[i_file])
-    master_collector[[ i_file ]] = current
-  }
-
-  master_all = rbindlist(master_collector)
+  master_all = rbindlist(lapply(thefiles, function(f) {
+    message("Reading file ", basename(f))
+    fread(f)
+  }))
 
   # check that only one filing type exists. If the check fails, stop with an error as the selection
   # of the filing type is inherited from the edgar-crawler and it is not controlled here in R nor
   # by edgartools
-  if( uniqueN(master_collector$Type) > 1 ) {
+  if( uniqueN(master_all$Type) > 1 ) {
     stop("Multiple filing types detected")
   }
 

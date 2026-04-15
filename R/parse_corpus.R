@@ -74,6 +74,8 @@ parse_corpus = function(x, ncores = 1, ...) {
 
   # define the number of workers
   parsing_func <- getExportedValue("spacyr", "spacy_parse")
+  parsing_final <- getExportedValue("spacyr", "spacy_finalize")
+  on.exit(parsing_final(), add = TRUE)
   plan(multisession, workers = ncores)
   chunks = split(x, rep_len(1L:ncores, ndoc(x)))
 
@@ -100,7 +102,5 @@ parse_corpus = function(x, ncores = 1, ...) {
   }
   out = rbindlist(collector)
   cli_alert_success("Corpus x has been successfully parsed")
-  parsing_final <- getExportedValue("spacyr", "spacy_finalize")
-  on.exit(parsing_final(), add = TRUE)
   return(out[])
 }
