@@ -22,8 +22,6 @@ Depends: R (>= 4.3)
 Imports:
     cli (>= 3.6.2),
     data.table (>= 1.15.4),
-    future (>= 1.33.2),
-    future.apply (>= 1.11.2),
     ggplot2 (>= 3.5.0),
     glue (>= 1.8.0),
     Matrix (>= 1.7),

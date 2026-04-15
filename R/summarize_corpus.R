@@ -37,7 +37,8 @@ summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK"
     stop("x must be a quanteda corpus object")
   }
   socket <- match.arg(socket)
-  
+  .validate_parallel_args(ncores, nchunks)
+
   # Split corpus into nchunks by doc IDs
   doc_ids <- quanteda::docnames(x)
   groups  <- split(doc_ids, rep_len(seq_len(max(1L, nchunks)), length(doc_ids)))
@@ -52,20 +53,11 @@ summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK"
     return(out)
   }
   
-  cli::cli_alert_info("Summarizing {length(chunks)} chunks in parallel with {ncores} cores")
-  
-  if (socket == "FORK") {
-    if (.Platform$OS.type == "windows") {
-      stop("socket = 'FORK' is not supported on Windows. Use 'PSOCK'.")
-    }
-    warning("FORK sockets may be unstable with quanteda. Consider using 'PSOCK'.")
-    summaries <- parallel::mclapply(chunks, .summarize_chunk, mc.cores = ncores, ...)
-  } else {
-    cl <- parallel::makeCluster(ncores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterExport(cl, varlist = c(".summarize_chunk"), envir = environment())
-    summaries <- parallel::clusterApplyLB(cl, chunks, .summarize_chunk, ...)
-  }
+  cli::cli_alert_info("Summarizing {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
+
+  summaries <- .run_parallel(chunks, .summarize_chunk, ncores, socket,
+                             export_vars = c(".summarize_chunk"),
+                             export_env = environment(), ...)
   
   out <- data.table::rbindlist(summaries, fill = TRUE)
   # Ensure we have doc_id column

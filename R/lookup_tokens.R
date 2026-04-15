@@ -32,7 +32,8 @@ lookup_tokens <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "
     stop("x must be a quanteda tokens object")
   }
   socket <- match.arg(socket)
-  
+  .validate_parallel_args(ncores, nchunks)
+
   args <- list(...)
   args <- args[!sapply(args, quanteda::is.dictionary)]  # filter dictionaries from logs
   if (length(args) < 1) {
@@ -54,20 +55,11 @@ lookup_tokens <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "
     return(toks)
   }
   
-  cli::cli_alert_info("Lookup {nchunks} chunks in parallel with {ncores} cores and {length(chunks)} chunks")
-  
-  if (socket == "FORK") {
-    if (.Platform$OS.type == "windows") {
-      stop("socket = 'FORK' is not supported on Windows. Use 'PSOCK'.")
-    }
-    warning("FORK sockets may be unstable with quanteda. Consider using 'PSOCK'.")
-    toks_list <- parallel::mclapply(chunks, .lookup_chunk, mc.cores = ncores, ..., SIMPLIFY = FALSE)
-  } else {
-    cl <- parallel::makeCluster(ncores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterExport(cl, varlist = c(".lookup_chunk"), envir = environment())
-    toks_list <- parallel::clusterApplyLB(cl, chunks, .lookup_chunk, ...)
-  }
+  cli::cli_alert_info("Lookup {nchunks} chunks in parallel with {ncores} cores via {socket}")
+
+  toks_list <- .run_parallel(chunks, .lookup_chunk, ncores, socket,
+                             export_vars = c(".lookup_chunk"),
+                             export_env = environment(), ...)
   
   toks <- Reduce(c, toks_list)
   toks <- toks[doc_ids]  # restore order
