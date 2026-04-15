@@ -31,13 +31,11 @@
 #' @returns A sparse matrix as S4 class following [textstat_simil-class] or [textstat_dist-class]
 #' from the **Matrix** package.
 #'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
-#'
 #' @examples
 #' \dontrun{
 #'
 #' # Create a sample dfm
-#' dfmat <- dfm(c("this is a test", "another document", "more text here", "testing similarity"))
+#' dfmat <- dfm(tokens(c("this is a test", "another document", "more text here", "testing similarity")))
 #'
 #' # Compute cosine similarity in parallel using 2 cores
 #' result_simil <- calculate_similarity(dfmat, ncores = 2, margin = "documents", method = "cosine")

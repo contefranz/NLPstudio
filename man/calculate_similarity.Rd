@@ -69,7 +69,7 @@ compatibility with downstream quanteda functions.
 \dontrun{
 
 # Create a sample dfm
-dfmat <- dfm(c("this is a test", "another document", "more text here", "testing similarity"))
+dfmat <- dfm(tokens(c("this is a test", "another document", "more text here", "testing similarity")))
 
 # Compute cosine similarity in parallel using 2 cores
 result_simil <- calculate_similarity(dfmat, ncores = 2, margin = "documents", method = "cosine")
@@ -79,7 +79,4 @@ result_dist <- calculate_distance(dfmat, ncores = 2, margin = "documents", metho
 
 }
 
-}
-\author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
 }
