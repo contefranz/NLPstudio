@@ -36,7 +36,8 @@ reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, so
     stop("x must be a quanteda corpus object")
   }
   socket <- match.arg(socket)
-  
+  .validate_parallel_args(ncores, nchunks)
+
   # Split corpus into nchunks by doc IDs
   doc_ids <- quanteda::docnames(x)
   groups  <- split(doc_ids, rep_len(seq_len(max(1L, nchunks)), length(doc_ids)))
@@ -50,20 +51,11 @@ reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, so
     return(corp)
   }
   
-  cli::cli_alert_info("Reshaping {length(chunks)} chunks in parallel with {ncores} cores")
-  
-  if (socket == "FORK") {
-    if (.Platform$OS.type == "windows") {
-      stop("socket = 'FORK' is not supported on Windows. Use 'PSOCK'.")
-    }
-    warning("FORK sockets may be unstable with quanteda. Consider using 'PSOCK'.")
-    corp_list <- parallel::mclapply(chunks, .reshape_chunk, mc.cores = ncores, to = to, ...)
-  } else {
-    cl <- parallel::makeCluster(ncores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterExport(cl, varlist = c(".reshape_chunk"), envir = environment())
-    corp_list <- parallel::clusterApplyLB(cl, chunks, .reshape_chunk, to = to, ...)
-  }
+  cli::cli_alert_info("Reshaping {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
+
+  corp_list <- .run_parallel(chunks, .reshape_chunk, ncores, socket,
+                             export_vars = c(".reshape_chunk"),
+                             export_env = environment(), to = to, ...)
   cli::cli_alert_info("Combining the chunks")
   # Combine corpora
   corp <- Reduce(c, corp_list)

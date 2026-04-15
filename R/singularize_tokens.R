@@ -41,7 +41,8 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
   if (!quanteda::is.tokens(x)) stop("x must be a quanteda tokens object")
   
   socket <- match.arg(socket)
-  
+  .validate_parallel_args(ncores, nchunks)
+
   cli::cli_h2("Singularizing tokens")
   cli::cli_alert_info("Building DFM and extracting vocabulary")
   
@@ -75,18 +76,9 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
     groups <- split(seq_along(vocabulary), rep_len(seq_len(nchunks), length(vocabulary)))
     chunks <- lapply(groups, function(ix) hash_vocabulary[ix, ])
     
-    if (socket == "FORK") {
-      if (.Platform$OS.type == "windows") {
-        stop("socket = 'FORK' is not supported on Windows. Use 'PSOCK'.")
-      }
-      warning("FORK sockets may be unstable with quanteda. Consider using 'PSOCK'.")
-      big_list <- parallel::mclapply(chunks, .singularize_chunk, mc.cores = ncores)
-    } else {
-      cl <- parallel::makeCluster(ncores)
-      on.exit(parallel::stopCluster(cl), add = TRUE)
-      parallel::clusterExport(cl, varlist = c(".singularize_chunk", ".singularize"), envir = environment())
-      big_list <- parallel::clusterApplyLB(cl, chunks, .singularize_chunk)
-    }
+    big_list <- .run_parallel(chunks, .singularize_chunk, ncores, socket,
+                              export_vars = c(".singularize_chunk", ".singularize"),
+                              export_env = environment())
     
     hash_vocabulary <- data.table::rbindlist(big_list)
   }

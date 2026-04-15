@@ -101,6 +101,7 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   cli_h2("Flattening JSON files")
   
   socket <- match.arg(socket)
+  .validate_parallel_args(ncores, nchunks)
   args <- list(...)
   # If max_chunk_size is explicitly provided, use it; otherwise derive from nchunks
   if (!is.null(args$max_chunk_size)) {
@@ -155,88 +156,38 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   out_list
 }
 
-#' @importFrom parallel mclapply clusterApplyLB makeCluster stopCluster
 #' @keywords internal
 .parallel_read_json <- function(files, ncores, socket) {
-  if (socket == "FORK") {
-    res <- parallel::mclapply(
-      files,
-      function(f) {
-        fload_fun <- getExportedValue("RcppSimdJson", "fload")
-        dat <- fload_fun(f)
-        data.table::as.data.table(dat)
-      },
-      mc.cores = ncores
-    )
-  } else {
-    cl <- parallel::makeCluster(ncores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    res <- parallel::clusterApplyLB(
-      cl,
-      files,
-      function(f) {
-        fload_fun <- getExportedValue("RcppSimdJson", "fload")
-        dat <- fload_fun(f)
-        data.table::as.data.table(dat)
-      }
-    )
+  .read_json_file <- function(f) {
+    fload_fun <- getExportedValue("RcppSimdJson", "fload")
+    dat <- fload_fun(f)
+    data.table::as.data.table(dat)
   }
-  res
+  .run_parallel(files, .read_json_file, ncores, socket,
+                export_vars = c(".read_json_file"),
+                export_env = environment())
 }
-#' @importFrom parallel mclapply clusterApplyLB makeCluster stopCluster
+
 #' @keywords internal
 .parallel_melt <- function(temp, ncores, socket) {
-  if (socket == "FORK") {
-    # ---- Linux / macOS ----
-    res <- parallel::mclapply(
-      seq_along(temp),
-      function(jcol) {
-        dt <- temp[[jcol]]
-        meas <- grep("^(item_|section_)", names(dt), value = TRUE)
-        if (length(meas) == 0L) {
-          # nothing to melt; return an empty dt with expected cols
-          return(data.table::data.table())
-        }
-        idv <- setdiff(names(dt), meas)
-        data.table::melt(
-          dt,
-          id.vars       = idv,
-          measure.vars  = meas,
-          variable.name = "item",
-          value.name    = "text",
-          variable.factor = FALSE
-        )
-      },
-      mc.cores = ncores
-    )
-  } else {
-    # ---- Windows ----
-    cl <- parallel::makeCluster(ncores)
-    on.exit(parallel::stopCluster(cl), add = TRUE)
-    parallel::clusterExport(cl, varlist = "temp", envir = environment())
-    
-    res <- parallel::clusterApplyLB(
-      cl,
-      seq_along(temp),
-      function(jcol) {
-        dt <- temp[[jcol]]
-        meas <- grep("^(item_|section_)", names(dt), value = TRUE)
-        if (length(meas) == 0L) {
-          # nothing to melt; return an empty dt with expected cols
-          return(data.table::data.table())
-        }
-        idv <- setdiff(names(dt), meas)
-        data.table::melt(
-          dt,
-          id.vars       = idv,
-          measure.vars  = meas,
-          variable.name = "item",
-          value.name    = "text",
-          variable.factor = FALSE
-        )
-      }
+  .melt_chunk <- function(jcol) {
+    dt <- temp[[jcol]]
+    meas <- grep("^(item_|section_)", names(dt), value = TRUE)
+    if (length(meas) == 0L) {
+      return(data.table::data.table())
+    }
+    idv <- setdiff(names(dt), meas)
+    data.table::melt(
+      dt,
+      id.vars       = idv,
+      measure.vars  = meas,
+      variable.name = "item",
+      value.name    = "text",
+      variable.factor = FALSE
     )
   }
-  return(res)
+  .run_parallel(seq_along(temp), .melt_chunk, ncores, socket,
+                export_vars = c(".melt_chunk", "temp"),
+                export_env = environment())
 }
 

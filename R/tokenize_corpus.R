@@ -100,8 +100,9 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
   }
   
   socket <- match.arg(socket)
+  .validate_parallel_args(ncores, nchunks)
   args <- list(...)
-  
+
   if (length(args) < 1) {
     cli::cli_alert_info("quanteda::tokens() has been called with default parameters")
   } else {
@@ -111,40 +112,29 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
       cli::cli_alert("{args_active[iarg]}")
     }
   }
-  
+
   # Single-doc fast path
   if (quanteda::ndoc(x) == 1L) {
     cli::cli_alert_info("Corpus has one document - running sequentially")
     return(quanteda::tokens(x, ...))
   }
-  
+
   # Split into balanced chunks by doc IDs (never split the object itself first)
   doc_ids <- quanteda::docnames(x)
   groups  <- split(doc_ids, rep_len(seq_len(max(1L, nchunks)), length(doc_ids)))
   chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
   chunks  <- Filter(Negate(is.null), chunks)
-  if (length(chunks) <= 1L) {
+  if (length(chunks) <= 1L || ncores < 2L) {
     cli::cli_alert_info("Tokenizing sequentially")
     toks <- quanteda::tokens(x, ...)
   } else {
-    # socket-specific parallelization
     cli_alert_info("Tokenizing {nchunks} chunks in parallel using {ncores} cores via {socket}")
-    if (socket == "FORK") {
-      if (.Platform$OS.type == "windows") {
-        stop("socket = \"FORK\" is not supported on Windows. Use socket = \"PSOCK\" instead.")
-      }
-      warning("quanteda and FORK sockets may conflict. Consider using socket = \"PSOCK\".")
-      toks_list <- parallel::mclapply(chunks, FUN = .tokenize_chunk, mc.cores = ncores, ...)
-    } else {
-      cl <- parallel::makeCluster(ncores)
-      on.exit(parallel::stopCluster(cl), add = TRUE)
-      parallel::clusterExport(cl, varlist = c(".tokenize_chunk"), envir = environment())
-      toks_list <- parallel::clusterApplyLB(cl, chunks, .tokenize_chunk, ...)
-    }  
+    toks_list <- .run_parallel(chunks, .tokenize_chunk, ncores, socket,
+                               export_vars = c(".tokenize_chunk"),
+                               export_env = environment(), ...)
+    toks <- Reduce(c, toks_list)
   }
-  
-  # Combine tokens
-  toks <- Reduce(c, toks_list)
+
   # Ensure original ordering
   toks <- toks[doc_ids]
   
