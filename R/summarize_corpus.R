@@ -49,6 +49,9 @@ summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK"
     cli::cli_alert_info("Summarizing sequentially")
     out <- quanteda.textstats::textstat_summary(x, ...)
     data.table::setDT(out)
+    if ("document" %in% names(out)) {
+      data.table::setnames(out, "document", "doc_id")
+    }
     return(out)
   }
   
