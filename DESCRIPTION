@@ -4,15 +4,15 @@ Version: 0.2.0
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))
-Description: Description: NLPstudio provides a streamlined and high-performance workflow for working with 
-  structured and unstructured textual data, particularly SEC EDGAR filings. The package supports 
-  corpus creation from JSON, tokenization, parsing, singularization, and document-level summarization 
-  via quanteda, all with parallel backend support through future and parallel. In addition, 
-  NLPstudio includes tools for computing readability, similarity, and distance measures using 
-  quanteda.textstats. A full WarpLDA topic modeling workflow is integrated, allowing extraction 
-  and visualization of document-topic and topic-word distributions. The package supports export-ready 
-  wide and long formats and includes curated domain dictionaries for financial text analysis. 
-  Built on data.table, quanteda, and future, NLPstudio is intended for scalable text analysis in an 
+Description: NLPstudio provides a streamlined and high-performance workflow for working with
+  structured and unstructured textual data, particularly SEC EDGAR filings. The package supports
+  corpus creation from JSON, tokenization, parsing, singularization, and document-level summarization
+  via quanteda, all with parallel backend support through the parallel package. In addition,
+  NLPstudio includes tools for computing readability, similarity, and distance measures using
+  quanteda.textstats. A full WarpLDA topic modeling workflow is integrated, allowing extraction
+  and visualization of document-topic and topic-word distributions. The package supports export-ready
+  wide and long formats and includes curated domain dictionaries for financial text analysis.
+  Built on data.table, quanteda, and parallel, NLPstudio is intended for scalable text analysis in an
   academic context with a particular focus on accounting and finance research domains.
 License: GPL (>= 3)
 Encoding: UTF-8
@@ -23,7 +23,6 @@ Imports:
     cli (>= 3.6.2),
     data.table (>= 1.15.4),
     ggplot2 (>= 3.5.0),
-    glue (>= 1.8.0),
     Matrix (>= 1.7),
     methods (>= 4.3),
     parallel (>= 4.3.3),

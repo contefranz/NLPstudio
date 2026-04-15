@@ -8,7 +8,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' separate histogram, allowing you to assess sparsity, dominance, and spread
 #' across the corpus.
 #'
-#' @param x Either the output of [warpLDA()], a fitted [topicmodels::LDA()] object of class 
+#' @param x Either the output of [warp_lda()], a fitted [topicmodels::LDA()] object of class 
 #' [TopicModel-class][topicmodels::LDA-class], or a sequential LDA fitted by [textmodel_seqlda()].
 #' @param topics Optional numeric vector specifying which topic proportions to plot. 
 #' If `NULL` (default), all topics will be plotted.
@@ -26,14 +26,14 @@ if ( getRversion() >= "2.15.1" ) {
 #' proportions across all documents. This is useful for diagnosing topic quality, sparsity, and 
 #' prevalence.
 #' 
-#' For `warpLDA()` input, the function uses `x$theta` directly. 
+#' For `warp_lda()` input, the function uses `x$theta` directly. 
 #' For [TopicModel-class][topicmodels::LDA-class] input, the function constructs a `data.table` from the fitted object 
 #' (e.g., using `x@documents` and `x@gamma`), and then ensures the presence of a `doc_id` column 
 #' and standardized topic column names (e.g., `Topic001`, `Topic002`, `...`).
 #'
 #' @returns A [ggplot] object representing the faceted histograms of document–topic proportions.
 #'
-#' @seealso [warpLDA()], [topicmodels::LDA()], [seededlda::textmodel_seqlda()], [geom_histogram()]
+#' @seealso [warp_lda()], [topicmodels::LDA()], [seededlda::textmodel_seqlda()], [geom_histogram()]
 #'
 #' @import ggplot2 data.table
 #' @importFrom stats as.formula
@@ -45,7 +45,7 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
   
   stat <- match.arg(stat)
   
-  # Support for direct output from warpLDA() and LDA_VEM/LDA_Gibbs classes from topicmodels
+  # Support for direct output from warp_lda() and LDA_VEM/LDA_Gibbs classes from topicmodels
   if ( is.list(x) && inherits(x$lda_object, "WarpLDA") ) {
     theta = x$theta  
   } else if ( !is.list(x) && (inherits(x, "VEM") || inherits(x, "Gibbs"))) {
@@ -72,7 +72,7 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
     if (any(is.na(topics)))
       stop("topics contains NA.")
     if (any(topics < 1 | topics > length(topic_cols)))
-      stop(glue::glue("Topic indices must be in the range [1, {length(topic_cols)}]"))
+      stop(paste0("Topic indices must be in the range [1, ", length(topic_cols), "]"))
     # allow non-integers like 1.0 but forbid fractional indices
     if (any(topics != floor(topics)))
       stop("topics must contain integer indices (e.g., 1, 2, 3).")

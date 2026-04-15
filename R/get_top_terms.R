@@ -31,7 +31,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' grouping and sorting. The `probability` column represents the raw conditional probability of observing
 #' a word in a given topic (i.e., \eqn{\mathcal{P}(w \mid \phi)})
 #'
-#' @seealso [warpLDA()], [plot_top_terms()] [plot_dtw()] [LDA()][topicmodels::LDA]
+#' @seealso [warp_lda()], [plot_top_terms()] [plot_dtw()] [LDA()][topicmodels::LDA]
 #'
 #' @import data.table
 #' @importFrom utils head

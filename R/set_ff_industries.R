@@ -50,8 +50,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' @import data.table
 #' @importFrom quanteda is.corpus corpus docvars ndoc docnames
 #' @importFrom stats setNames
-#' @importFrom glue glue
-#' @importFrom stringr str_glue
 #' @importFrom cli cli_alert_info cli_alert_success
 #' @export
 
@@ -118,7 +116,7 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
       is.na(ff_ind), `:=` (
         ff_ind = ind + 1L,
         ff_ind_short_desc = "Unclassified",
-        ff_ind_desc = str_glue("Unclassified -- Unmatched industries when ind = {ind}")
+        ff_ind_desc = paste0("Unclassified -- Unmatched industries when ind = ", ind)
       )
     ]
   }
@@ -126,7 +124,7 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
   out = corpus(mapped, docid_field = "doc_id", text_field = "text")
   output_size = ndoc(out)
   if( input_size != output_size ) {
-    warning(glue("Input size was {input_size} documents while output size is {output_size} documents"))
+    warning(paste0("Input size was ", input_size, " documents while output size is ", output_size, " documents"))
   }
   cli_alert_success("Fama-French industries successfully mapped")
   return(out)
