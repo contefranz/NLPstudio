@@ -49,9 +49,11 @@ lookup_tokens <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "
   chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
   chunks  <- Filter(Negate(is.null), chunks)
   
+  cli::cli_h2("Lookup tokens")
   if (length(chunks) <= 1L || ncores < 2L) {
     cli::cli_alert_info("Lookup sequentially")
     toks <- quanteda::tokens_lookup(x, ...)
+    cli::cli_alert_success("Lookup complete")
     return(toks)
   }
   

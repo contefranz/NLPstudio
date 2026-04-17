@@ -51,11 +51,6 @@
 }
 
 #' @keywords internal
-is.textstat_simil_symm = function(x) {
-  "textstat_simil_symm" %in% class(x)
-}
-
-#' @keywords internal
 set_theta_names <- function(theta_dt) {
   
   setnames(theta_dt, "rn", "doc_id")
@@ -78,13 +73,3 @@ set_theta_names <- function(theta_dt) {
   return(theta_dt)
 }
 
-#' Null-coalescing operator
-#'
-#' Returns the left-hand side if it is not `NULL`, otherwise returns the
-#' right-hand side.
-#'
-#' @keywords internal
-#' @noRd
-`%||%` <- function(x, y) {
-  if (is.null(x)) y else x
-}

@@ -18,12 +18,10 @@ if ( getRversion() >= "2.15.1" ) {
 #'   explicitly provided via `...`.
 #' @param drop_late_filers Logical. If `TRUE`, removes filings considered
 #'   "late" (filing year greater than fiscal year + 1). Default `FALSE`.
-#' @param ... Additional arguments for chunking. 
-#'   \describe{
-#'     \item{`max_chunk_size`}{Integer. If provided, sets the exact number of
-#'       files per chunk, overriding the value derived from `nchunks`. Use this
-#'       for fine-grained memory control when file sizes vary significantly.}
-#'   }
+#' @param max_chunk_size Integer. If provided, sets the exact number of files
+#'   per chunk, overriding the value derived from `nchunks`. Use this for
+#'   fine-grained memory control when file sizes vary significantly.
+#' @param ... Additional arguments passed to internal processing steps.
 
 #' @details
 #' Internally the function proceeds in three phases:
@@ -89,23 +87,23 @@ if ( getRversion() >= "2.15.1" ) {
 #' @importFrom parallel mclapply clusterApplyLB makeCluster stopCluster
 #' @export
 from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
-                            socket = c("PSOCK", "FORK"), drop_late_filers = FALSE, ...) {
-  
+                            socket = c("PSOCK", "FORK"), drop_late_filers = FALSE,
+                            max_chunk_size = NULL, ...) {
+
   if (!requireNamespace("RcppSimdJson", quietly = TRUE)) {
     stop("The 'RcppSimdJson' package is required for fast JSON parsing. Please install it.")
   }
   if (!is.character(files)) {
     stop("`files` must be a character vector of file paths")
   }
-  
+
   cli_h2("Flattening JSON files")
-  
+
   socket <- match.arg(socket)
   .validate_parallel_args(ncores, nchunks)
-  args <- list(...)
   # If max_chunk_size is explicitly provided, use it; otherwise derive from nchunks
-  if (!is.null(args$max_chunk_size)) {
-    chunk_size <- args$max_chunk_size
+  if (!is.null(max_chunk_size)) {
+    chunk_size <- max_chunk_size
   } else {
     chunk_size <- ceiling(length(files) / nchunks)
   }
@@ -137,7 +135,9 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   
   cli_alert_success("Conversion has been successful")
   setcolorder(out, "fyear", after = "period_of_report")
-  setcolorder(out, "item", after = "filing_type")
+  if ("filing_type" %in% names(out)) {
+    setcolorder(out, "item", after = "filing_type")
+  }
   return(out[])
 }
 
@@ -158,36 +158,46 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
 
 #' @keywords internal
 .parallel_read_json <- function(files, ncores, socket) {
-  .read_json_file <- function(f) {
+  # Sequential fast-path: read each file directly, no cluster overhead
+  if (ncores < 2L || length(files) <= 1L) {
     fload_fun <- getExportedValue("RcppSimdJson", "fload")
-    dat <- fload_fun(f)
-    data.table::as.data.table(dat)
+    return(lapply(files, function(f) data.table::as.data.table(fload_fun(f))))
   }
-  .run_parallel(files, .read_json_file, ncores, socket,
-                export_vars = c(".read_json_file"),
-                export_env = environment())
+  # Parallel path: distribute file batches across workers so that
+  # getExportedValue() is called once per worker, not once per file.
+  groups  <- split(files, rep_len(seq_len(ncores), length(files)))
+  batches <- Filter(function(b) length(b) > 0L, groups)
+  .read_json_batch <- function(batch) {
+    fload_fun <- getExportedValue("RcppSimdJson", "fload")
+    lapply(batch, function(f) data.table::as.data.table(fload_fun(f)))
+  }
+  nested <- .run_parallel(batches, .read_json_batch, ncores, socket,
+                          export_vars = c(".read_json_batch"),
+                          export_env  = environment())
+  # Flatten one level: list-of-lists -> flat list of data.tables
+  unlist(nested, recursive = FALSE)
 }
 
 #' @keywords internal
 .parallel_melt <- function(temp, ncores, socket) {
-  .melt_chunk <- function(jcol) {
-    dt <- temp[[jcol]]
+  .melt_one <- function(dt) {
     meas <- grep("^(item_|section_)", names(dt), value = TRUE)
-    if (length(meas) == 0L) {
-      return(data.table::data.table())
-    }
+    if (length(meas) == 0L) return(data.table::data.table())
     idv <- setdiff(names(dt), meas)
-    data.table::melt(
-      dt,
-      id.vars       = idv,
-      measure.vars  = meas,
-      variable.name = "item",
-      value.name    = "text",
-      variable.factor = FALSE
-    )
+    data.table::melt(dt,
+                     id.vars         = idv,
+                     measure.vars    = meas,
+                     variable.name   = "item",
+                     value.name      = "text",
+                     variable.factor = FALSE)
   }
-  .run_parallel(seq_along(temp), .melt_chunk, ncores, socket,
-                export_vars = c(".melt_chunk", "temp"),
-                export_env = environment())
+  # Sequential fast-path
+  if (ncores < 2L || length(temp) <= 1L) {
+    return(lapply(temp, .melt_one))
+  }
+  # Parallel path: export the data and the helper together
+  .run_parallel(temp, .melt_one, ncores, socket,
+                export_vars = c(".melt_one"),
+                export_env  = environment())
 }
 

@@ -44,10 +44,12 @@ reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, so
   chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
   chunks  <- Filter(Negate(is.null), chunks)
   
+  cli::cli_h2("Reshaping corpus")
   # Sequential fallback
   if (length(chunks) <= 1L || ncores < 2L) {
     cli::cli_alert_info("Reshaping sequentially")
     corp <- quanteda::corpus_reshape(x, to = to, ...)
+    cli::cli_alert_success("Corpus successfully reshaped")
     return(corp)
   }
   

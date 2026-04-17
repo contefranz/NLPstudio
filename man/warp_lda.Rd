@@ -5,7 +5,14 @@
 \alias{warpLDA}
 \title{Fit a WarpLDA Class Topic Model}
 \usage{
-warp_lda(x, k, return_theta = TRUE, return_phi = TRUE, ...)
+warp_lda(
+  x,
+  k,
+  return_theta = TRUE,
+  return_phi = TRUE,
+  lda_control = list(),
+  fit_control = list()
+)
 
 warpLDA(...)
 }
@@ -18,7 +25,14 @@ warpLDA(...)
 
 \item{return_phi}{Should the Topic-Word-Weights matrix ( \eqn{\phi} ) be returned? Default to \code{TRUE}.}
 
-\item{...}{Additional arguments passed to \code{\link[text2vec:LatentDirichletAllocation]{LDA$new}} and \link[text2vec:LatentDirichletAllocation]{LDA$fit_transform}.}
+\item{lda_control}{A named list of arguments forwarded to \code{\link[text2vec:LatentDirichletAllocation]{LDA$new()}}.
+Overrides the defaults \code{doc_topic_prior = 0.1} and \code{topic_word_prior = 0.001}.
+\code{n_topics} is always set from \code{k} and cannot be overridden here.}
+
+\item{fit_control}{A named list of arguments forwarded to
+\code{\link[text2vec:LatentDirichletAllocation]{LDA$fit_transform()}}. Overrides the defaults
+\code{n_iter = 1000}, \code{convergence_tol = 0.001}, \code{n_check_convergence = 25},
+and \code{progressbar = TRUE}.}
 }
 \value{
 A named list with the following elements:
@@ -33,15 +47,18 @@ are terms. Included if \code{return_phi = TRUE}.
 }
 \description{
 Fit a Latent Dirichlet Allocation model using \link[text2vec:LatentDirichletAllocation]{WarpLDA} class from the package \strong{text2vec}.
-Conveniently returns utility objects such as \eqn{\theta} and \eqn{\phi} matrices for sub-sequent
+Conveniently returns utility objects such as \eqn{\theta} and \eqn{\phi} matrices for subsequent
 analysis.
 }
 \details{
 This function wraps the \link[text2vec:LatentDirichletAllocation]{text2vec::LDA} class to fit a probabilistic topic model using the
-WarpLDA algorithm—a highly efficient method for estimating Latent Dirichlet Allocation (LDA)
+WarpLDA algorithm — a highly efficient method for estimating Latent Dirichlet Allocation (LDA)
 models on large and sparse document-term matrices. Internally, the function initializes the
-LDA model via \code{LDA$new()} and fits it using \code{LDA$fit_transform()}, passing user-supplied
-parameters through \code{...}.
+LDA model via \code{LDA$new()} and fits it using \code{LDA$fit_transform()}.
+
+Constructor arguments (\code{lda_control}) and fitting arguments (\code{fit_control}) are kept separate
+so that options valid only at construction time (e.g., \code{doc_topic_prior}) cannot accidentally
+be forwarded to the fitting step, and vice versa (e.g., \code{progressbar}).
 
 The output includes the trained model object and, optionally, the matrices \eqn{\theta}
 (document-topic proportions) and \eqn{\phi} (topic-word distributions), both in \code{data.table} format

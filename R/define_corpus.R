@@ -49,7 +49,8 @@ if ( getRversion() >= "2.15.1" ) {
 #' @seealso [corpus()], [docvars()]
 #' @import data.table
 #' @importFrom quanteda corpus
-#' @importFrom cli cli_h2
+#' @importFrom stringr str_remove str_c
+#' @importFrom cli cli_h2 cli_alert_success
 #' @export
 define_corpus <- function(x, ...) {
   UseMethod("define_corpus")
@@ -63,9 +64,11 @@ define_corpus.data.table <- function(x, ...) {
   if (!inherits(x, "data.table")) {
     stop("x must be a data.table containing a 'text' and 'filename' column")
   }
-  required_cols <- c("text", "filename")
-  if (!all(required_cols %in% names(x))) {
-    stop("data.table must contain columns: text, filename")
+  required_cols <- c("text", "filename", "item")
+  missing_cols  <- setdiff(required_cols, names(x))
+  if (length(missing_cols) > 0L) {
+    stop(paste0("data.table is missing required column(s): ",
+                paste(missing_cols, collapse = ", ")))
   }
   
   x[, filename2 := str_remove(filename, "\\.htm|\\.txt")]
@@ -80,8 +83,8 @@ define_corpus.data.table <- function(x, ...) {
   
   cli_h2("Building corpus from data.table")
   corpus_obj <- corpus(x, text_field = "text", docid_field = "doc_id_corpus")
-  
   x[, `:=` (filename2 = NULL, doc_id_corpus = NULL)]
+  cli_alert_success("Corpus built with {quanteda::ndoc(corpus_obj)} documents")
   return(corpus_obj)
 }
 

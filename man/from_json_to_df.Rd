@@ -10,6 +10,7 @@ from_json_to_df(
   nchunks = ncores,
   socket = c("PSOCK", "FORK"),
   drop_late_filers = FALSE,
+  max_chunk_size = NULL,
   ...
 )
 }
@@ -31,12 +32,11 @@ supported and will trigger an error.}
 \item{drop_late_filers}{Logical. If \code{TRUE}, removes filings considered
 "late" (filing year greater than fiscal year + 1). Default \code{FALSE}.}
 
-\item{...}{Additional arguments for chunking.
-\describe{
-\item{\code{max_chunk_size}}{Integer. If provided, sets the exact number of
-files per chunk, overriding the value derived from \code{nchunks}. Use this
-for fine-grained memory control when file sizes vary significantly.}
-}}
+\item{max_chunk_size}{Integer. If provided, sets the exact number of files
+per chunk, overriding the value derived from \code{nchunks}. Use this for
+fine-grained memory control when file sizes vary significantly.}
+
+\item{...}{Additional arguments passed to internal processing steps.}
 }
 \value{
 A \link[data.table:data.table]{data.table::data.table} with one row per \verb{(document × item)}

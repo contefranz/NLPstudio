@@ -1,6 +1,3 @@
-if (getRversion() >= "2.15.1") {
-  utils::globalVariables(c("doc_id"))
-}
 #' Fast Corpus Tokenization
 #'
 #' Tokenize a [quanteda::corpus()] in parallel using backends from the
@@ -103,6 +100,7 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
   .validate_parallel_args(ncores, nchunks)
   args <- list(...)
 
+  cli::cli_h2("Tokenizing corpus")
   if (length(args) < 1) {
     cli::cli_alert_info("quanteda::tokens() has been called with default parameters")
   } else {

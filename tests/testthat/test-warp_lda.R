@@ -5,7 +5,7 @@ test_that("warp_lda rejects non-dgCMatrix input", {
 test_that("warp_lda rejects non-numeric k", {
   m <- Matrix::Matrix(matrix(c(1, 0, 0, 1, 1, 0), nrow = 2), sparse = TRUE)
   m <- methods::as(m, "dgCMatrix")
-  expect_error(warp_lda(m, k = "two"), "k must be a numeric")
+  expect_error(warp_lda(m, k = "two"), "k must be a single positive numeric")
 })
 
 test_that("warpLDA deprecated alias emits warning", {

@@ -45,6 +45,7 @@ summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK"
   chunks  <- lapply(groups, function(ids) if (length(ids)) x[ids] else NULL)
   chunks  <- Filter(Negate(is.null), chunks)
   
+  cli::cli_h2("Summarizing corpus")
   # Sequential fallback
   if (length(chunks) <= 1L || ncores < 2L) {
     cli::cli_alert_info("Summarizing sequentially")
@@ -53,6 +54,7 @@ summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK"
     if ("document" %in% names(out)) {
       data.table::setnames(out, "document", "doc_id")
     }
+    cli::cli_alert_success("Corpus summarization complete")
     return(out)
   }
   

@@ -16,6 +16,7 @@
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table
+#' @importFrom quanteda is.corpus corpus docnames
 #' @importFrom quanteda.textstats textstat_readability
 #' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
 #' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success
@@ -24,11 +25,11 @@
 
 calculate_readability = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
 
-  if ( !is.corpus(x) && !is.character(x) ) {
+  if (!quanteda::is.corpus(x) && !is.character(x)) {
     stop("x must be a quanteda corpus object or a character vector containing the documents")
   }
-  if ( is.character(x) && !is.corpus(x) ) {
-    x = corpus(x)
+  if (is.character(x) && !quanteda::is.corpus(x)) {
+    x <- quanteda::corpus(x)
   }
 
   socket <- match.arg(socket)

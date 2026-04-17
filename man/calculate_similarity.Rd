@@ -5,78 +5,66 @@
 \alias{calculate_distance}
 \title{Fast Calculation of Similarity and Distance Measures}
 \usage{
-calculate_similarity(
-  x,
-  ncores = 1,
-  nchunks = ncores,
-  socket = c("PSOCK", "FORK"),
-  ...
-)
+calculate_similarity(x, ncores = 1, ...)
 
-calculate_distance(
-  x,
-  ncores = 1,
-  nchunks = ncores,
-  socket = c("PSOCK", "FORK"),
-  ...
-)
+calculate_distance(x, ncores = 1, ...)
 }
 \arguments{
 \item{x}{A \strong{quanteda} \link[quanteda:dfm]{quanteda::dfm} object.}
 
-\item{ncores}{Integer. Number of CPU cores to use for parallel
-processing. Defaults to 1 (sequential).}
+\item{ncores}{Integer. Number of threads to pass to
+\code{\link[quanteda:quanteda_options]{quanteda::quanteda_options()}} for the duration of the call.
+Defaults to 1 (quanteda's own default). The setting is restored on
+exit so it does not affect the caller's global state.}
 
-\item{nchunks}{Integer. Number of chunks to split the corpus into.
-Defaults to \code{ncores}. Setting \code{nchunks > ncores} can improve load
-balancing when documents vary in size. See \emph{Details}.}
-
-\item{socket}{Character. Parallel backend to use. One of \code{"PSOCK"}
-(default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
-supported and will trigger an error.}
-
-\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.}
+\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or
+\link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.}
 }
 \value{
-A sparse matrix as S4 class following \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}
-from the \strong{Matrix} package.
+A sparse matrix as S4 class following \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil}
+or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist} from the \strong{Matrix} package.
 }
 \description{
-Compute similarity and distance measures in parallel using backends from the
-\strong{parallel} package. By default, computation is parallelized with PSOCK
-clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for cross-platform stability.
-Optionally, FORK-based parallelism (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be
-requested on Linux/macOS.
+Compute similarity and distance measures using \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or
+\link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}, optionally routing additional CPU threads through
+quanteda's built-in OpenMP backend.
 }
 \details{
-These functions leverage parallel computing via the \strong{parallel} package to efficiently compute
-similarity and distance measures across documents. By splitting the input \link[quanteda:dfm]{quanteda::dfm} into balanced
-chunks, the computation is distributed across multiple CPU cores.
-This ensures scalability even when handling large corpora.
+Earlier versions of these functions attempted to parallelise by
+splitting the input \link[quanteda:dfm]{quanteda::dfm} by rows and computing partial matrices on
+separate workers. That approach is fundamentally incorrect: each chunk
+only sees its own documents, so cross-chunk pairs are never evaluated
+and the merged result is block-diagonal rather than a true full
+pairwise matrix.
 
-Once the computations are complete, the individual results are internally merged back into a single
-sparse matrix. If a second matrix (\code{y}) is not provided, the output
-is forced into a symmetric structure using \link[Matrix:forceSymmetric-methods]{Matrix::forceSymmetric}, ensuring consistency with the
-default behavior of \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} and \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.
+The correct parallelism for all-pairs similarity/distance is at the
+linear-algebra level, which quanteda already implements internally via
+OpenMP. Setting \code{ncores > 1} therefore exposes that mechanism rather
+than introducing an external worker pool.
 
-For memory efficiency, the final similarity or distance matrix is converted into a packed
-symmetric sparse format (\link[Matrix:dsyMatrix-class]{Matrix::dspMatrix}), which significantly reduces storage requirements while
-maintaining computational speed. Finally, the results are wrapped into the appropriate
-\strong{\link[quanteda.textstats:quanteda.textstats-package]{quanteda.textstats::quanteda.textstats}} S4 class (\link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}), ensuring full
-compatibility with downstream quanteda functions.
+If a second matrix (\code{y}) is not provided, the output is forced into a
+symmetric structure using \link[Matrix:forceSymmetric-methods]{Matrix::forceSymmetric} and packed into a
+\link[Matrix:dsyMatrix-class]{Matrix::dspMatrix} for memory efficiency.  The result is wrapped into
+the appropriate \strong{quanteda.textstats} S4 class
+(\link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}).
 }
 \examples{
 \dontrun{
 
-# Create a sample dfm
-dfmat <- dfm(tokens(c("this is a test", "another document", "more text here", "testing similarity")))
+dfmat <- dfm(tokens(c(
+  "this is a test", "another document",
+  "more text here",  "testing similarity"
+)))
 
-# Compute cosine similarity in parallel using 2 cores
-result_simil <- calculate_similarity(dfmat, ncores = 2, margin = "documents", method = "cosine")
+# Cosine similarity (quanteda uses 2 threads internally)
+result_simil <- calculate_similarity(dfmat, ncores = 2,
+                                     margin = "documents",
+                                     method = "cosine")
 
-# Compute euclidean distance in parallel using 2 cores
-result_dist <- calculate_distance(dfmat, ncores = 2, margin = "documents", method = "euclidean")
-
+# Euclidean distance
+result_dist <- calculate_distance(dfmat, ncores = 2,
+                                  margin = "documents",
+                                  method = "euclidean")
 }
 
 }
