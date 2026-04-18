@@ -82,9 +82,6 @@ if ( getRversion() >= "2.15.1" ) {
 #'   [parallel::mclapply()], [parallel::clusterApplyLB()]
 #'
 #' @import data.table
-#' @importFrom stringr str_detect
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
-#' @importFrom parallel mclapply clusterApplyLB makeCluster stopCluster
 #' @export
 from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
                             socket = c("PSOCK", "FORK"), drop_late_filers = FALSE,
@@ -97,7 +94,7 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
     stop("`files` must be a character vector of file paths")
   }
 
-  cli_h2("Flattening JSON files")
+  cli::cli_h2("Flattening JSON files")
 
   socket <- match.arg(socket)
   .validate_parallel_args(ncores, nchunks)
@@ -109,13 +106,13 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   }
   
   # Phase 1: Read
-  cli_alert_info("Reading JSON files with RcppSimdJson")
+  cli::cli_alert_info("Reading JSON files with RcppSimdJson")
   temp <- .chunked_read_json(files, ncores, chunk_size = chunk_size, socket = socket)
-  
+
   # Phase 2: Reshape
-  cli_alert_info("Reshaping JSON data in parallel with {ncores} cores")
+  cli::cli_alert_info("Reshaping JSON data in parallel with {ncores} cores")
   df_melt <- .parallel_melt(temp, ncores, socket = socket)
-  out <- rbindlist(df_melt, fill = TRUE)
+  out <- data.table::rbindlist(df_melt, fill = TRUE)
   
   # Phase 3: Post-process
   out[, cik := as.integer(cik)]
@@ -133,10 +130,10 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
     out[, year_filed := NULL]
   }
   
-  cli_alert_success("Conversion has been successful")
-  setcolorder(out, "fyear", after = "period_of_report")
+  cli::cli_alert_success("Conversion has been successful")
+  data.table::setcolorder(out, "fyear", after = "period_of_report")
   if ("filing_type" %in% names(out)) {
-    setcolorder(out, "item", after = "filing_type")
+    data.table::setcolorder(out, "item", after = "filing_type")
   }
   return(out[])
 }
@@ -148,7 +145,7 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   out_list <- vector("list", length(chunks))
   
   for (i in seq_along(chunks)) {
-    cli_alert_info("Processing chunk {i}/{length(chunks)} with {length(chunks[[i]])} files")
+    cli::cli_alert_info("Processing chunk {i}/{length(chunks)} with {length(chunks[[i]])} files")
     temp <- .parallel_read_json(chunks[[i]], ncores, socket = socket)
     out_list[[i]] <- data.table::rbindlist(temp, fill = TRUE)
     rm(temp); gc(verbose = FALSE)

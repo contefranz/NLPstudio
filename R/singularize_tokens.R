@@ -27,10 +27,6 @@ if (getRversion() >= "2.15.1") {
 #' 
 #'
 #' @import data.table
-#' @importFrom quanteda is.tokens dfm featnames tokens_replace tokens_remove
-#' @importFrom stringr str_detect
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
 singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
                                socket = c("PSOCK", "FORK"),

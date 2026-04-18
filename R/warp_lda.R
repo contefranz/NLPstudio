@@ -52,17 +52,12 @@
 #' Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). [Latent Dirichlet Allocation](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf).
 #' _Journal of Machine Learning Research_, 3(Jan), 993-1022.
 #'
-#' @importFrom methods is
-#' @importFrom data.table as.data.table setnames
-#' @importFrom text2vec LDA
-#' @importFrom utils modifyList
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
 
 warp_lda <- function(x, k, return_theta = TRUE, return_phi = TRUE,
                      lda_control = list(), fit_control = list()) {
 
-  if (!is(x, "dgCMatrix")) {
+  if (!methods::is(x, "dgCMatrix")) {
     stop("x must be a sparse matrix of class dgCMatrix")
   }
   if (!is.numeric(k) || length(k) != 1L || k < 1L) {
@@ -75,36 +70,36 @@ warp_lda <- function(x, k, return_theta = TRUE, return_phi = TRUE,
   if (!is.list(lda_control)) stop("lda_control must be a list")
   if (!is.list(fit_control)) stop("fit_control must be a list")
 
-  cli_h2("Fitting WarpLDA topic model")
-  cli_alert_info("Initiating LDA estimation with {k} topics...")
+  cli::cli_h2("Fitting WarpLDA topic model")
+  cli::cli_alert_info("Initiating LDA estimation with {k} topics...")
 
-  lda_args <- modifyList(
+  lda_args <- utils::modifyList(
     list(n_topics = k, doc_topic_prior = 0.1, topic_word_prior = 0.001),
     lda_control
   )
   lda_args$n_topics <- k  # n_topics is always driven by k
 
-  fit_args <- modifyList(
+  fit_args <- utils::modifyList(
     list(x = x, n_iter = 1000, convergence_tol = 0.001,
          n_check_convergence = 25, progressbar = TRUE),
     fit_control
   )
   fit_args$x <- x  # x is always the input matrix
 
-  lda_model <- do.call(LDA$new, lda_args)
+  lda_model <- do.call(text2vec::LDA$new, lda_args)
   theta      <- do.call(lda_model$fit_transform, fit_args)
 
   out <- list(lda_object = lda_model)
 
   if (return_theta) {
-    out$theta <- as.data.table(theta, keep.rownames = TRUE)
+    out$theta <- data.table::as.data.table(theta, keep.rownames = TRUE)
     set_theta_names(theta_dt = out$theta)
   }
   if (return_phi) {
-    out$phi <- as.data.table(lda_model$topic_word_distribution)
+    out$phi <- data.table::as.data.table(lda_model$topic_word_distribution)
   }
 
-  cli_alert_success("WarpLDA model fitted successfully")
+  cli::cli_alert_success("WarpLDA model fitted successfully")
   return(out)
 }
 

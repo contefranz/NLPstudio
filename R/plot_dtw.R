@@ -36,8 +36,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' @seealso [warp_lda()], [topicmodels::LDA()], [seededlda::textmodel_seqlda()], [geom_histogram()]
 #'
 #' @import ggplot2 data.table
-#' @importFrom stats as.formula
-#' @importFrom tools toTitleCase
 #' @export
 
 plot_dtw = function(x, topics = NULL, stat = c("density", "count"), 
@@ -52,10 +50,10 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
     if (!requireNamespace("topicmodels", quietly = TRUE)) {
       stop("Package 'topicmodels' must be installed to handle VEM/Gibbs objects.", call. = FALSE)
     }
-    theta = data.table(rn = x@documents, x@gamma)
+    theta = data.table::data.table(rn = x@documents, x@gamma)
     set_theta_names(theta_dt = theta)
   } else if (inherits(x, "textmodel_lda")) {
-    theta = as.data.table(x$theta, keep.rownames = TRUE)
+    theta = data.table::as.data.table(x$theta, keep.rownames = TRUE)
     set_theta_names(theta_dt = theta)
   } else {
     stop("x is an unrecognized object")
@@ -82,7 +80,7 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
   theta <- theta[, c("doc_id", sel_cols), with = FALSE]
   
   # Melt the data.table to long format
-  long_theta = melt(
+  long_theta = data.table::melt(
     theta,
     id.vars = "doc_id",
     variable.name = "topic",
@@ -96,13 +94,13 @@ plot_dtw = function(x, topics = NULL, stat = c("density", "count"),
     labs(
       title = "Distribution of Document-Topic Weights",
       x = "Document Topic Proportion",
-      y = toTitleCase(stat)
+      y = tools::toTitleCase(stat)
     ) +
     theme_minimal(base_size = 12)
   
   # Handle facet_wrap with additional arguments
-  facet_args$facets = as.formula("~ topic")
-  p = p + do.call(facet_wrap, facet_args)
+  facet_args$facets = stats::as.formula("~ topic")
+  p = p + do.call(ggplot2::facet_wrap, facet_args)
   
   return(p)
 }

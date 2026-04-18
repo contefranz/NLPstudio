@@ -48,9 +48,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' It provides the Fama–French industry classification mappings via [farr::get_ff_ind()].
 #'
 #' @import data.table
-#' @importFrom quanteda is.corpus corpus docvars ndoc docnames
-#' @importFrom stats setNames
-#' @importFrom cli cli_alert_info cli_alert_success
 #' @export
 
 set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
@@ -58,45 +55,45 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
   if (!requireNamespace("farr", quietly = TRUE)) {
     stop("Package 'farr' is required for set_ff_industries(). Please install it.", call. = FALSE)
   }
-  if (!is.corpus(x)) {
+  if (!quanteda::is.corpus(x)) {
     stop("x must be a corpus")
   }
   if (!is.numeric(ind)) {
     stop("ind must be a numeric value")
   }
-  
-  # Negate it! 
+
+  # Negate it!
   `%nin%` = Negate(`%in%`)
-  
-  corp_dt = data.table(doc_id = docnames(x), docvars(x), text = as.character(x))
-  setcolorder(corp_dt, neworder = "item", after = "filing_type")
+
+  corp_dt = data.table::data.table(doc_id = quanteda::docnames(x), quanteda::docvars(x), text = as.character(x))
+  data.table::setcolorder(corp_dt, neworder = "item", after = "filing_type")
   input_size = nrow(corp_dt)
-  
+
   if("sic" %nin% names(corp_dt)) {
     stop("A column \"sic\" containing industry codes must be stored in the input corpus x")
   }
-  
+
   ind = as.character(ind)
   ind = match.arg(ind, choices = c("12", "17", "30", "38", "48", "49"))
   ind = as.numeric(ind)
-  
-  cli_alert_info("Pulling {ind} Fama-French industries")
+
+  cli::cli_alert_info("Pulling {ind} Fama-French industries")
   get_ff_ind <- getExportedValue("farr", "get_ff_ind")
   ff = get_ff_ind(ind = ind)
-  setDT(ff)
-  
+  data.table::setDT(ff)
+
   # Build column expression list from input data structure
-  expr_list = setNames(
+  expr_list = stats::setNames(
     lapply(names(corp_dt), function(col) as.name(paste0("i.", col))),
     names(corp_dt)
   )
-  
+
   # Add FF mapping columns
   expr_list$ff_ind = quote(ff_ind)
   expr_list$ff_ind_short_desc = quote(ff_ind_short_desc)
   expr_list$ff_ind_desc = quote(ff_ind_desc)
-  
-  cli_alert_info("Mapping Fama-French industries and rebuilding the corpus")
+
+  cli::cli_alert_info("Mapping Fama-French industries and rebuilding the corpus")
   # Evaluate non-equi join and keep all desired columns
   mapped = ff[
     corp_dt,
@@ -104,14 +101,14 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
     mult = "first",
     eval(as.call(c(quote(`.`), expr_list)))
   ]
-  
+
   # # Impose row-ordering
-  setorder(mapped, cik, fyear, item)
+  data.table::setorder(mapped, cik, fyear, item)
   # Improve column order
-  setcolorder(mapped, c("ff_ind", "ff_ind_short_desc", "ff_ind_desc"), after = "sic")
-  
+  data.table::setcolorder(mapped, c("ff_ind", "ff_ind_short_desc", "ff_ind_desc"), after = "sic")
+
   if (fill_category) {
-    cli_alert_info("Filling unclassified industries")
+    cli::cli_alert_info("Filling unclassified industries")
     mapped[
       is.na(ff_ind), `:=` (
         ff_ind = ind + 1L,
@@ -120,13 +117,13 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
       )
     ]
   }
-  
-  out = corpus(mapped, docid_field = "doc_id", text_field = "text")
-  output_size = ndoc(out)
+
+  out = quanteda::corpus(mapped, docid_field = "doc_id", text_field = "text")
+  output_size = quanteda::ndoc(out)
   if( input_size != output_size ) {
     warning(paste0("Input size was ", input_size, " documents while output size is ", output_size, " documents"))
   }
-  cli_alert_success("Fama-French industries successfully mapped")
+  cli::cli_alert_success("Fama-French industries successfully mapped")
   return(out)
   
 }

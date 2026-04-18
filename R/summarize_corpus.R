@@ -27,10 +27,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' @returns A [data.table] object with detailed information about each document.
 #'
 #' @import data.table
-#' @importFrom quanteda is.corpus docnames ndoc
-#' @importFrom quanteda.textstats textstat_summary
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
 summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
   if (!quanteda::is.corpus(x)) {

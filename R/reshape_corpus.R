@@ -26,9 +26,6 @@
 #' @return A reshaped [quanteda::corpus()] with the same document variables
 #' and reshaped text units as defined by `to`.
 #'
-#' @importFrom quanteda is.corpus docnames ndoc corpus_reshape
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
 reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
   

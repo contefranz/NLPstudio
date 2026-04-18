@@ -53,16 +53,11 @@
 #'                                   method = "euclidean")
 #' }
 #'
-#' @importFrom quanteda is.dfm docnames quanteda_options
-#' @importFrom quanteda.textstats textstat_simil textstat_dist
-#' @importFrom Matrix forceSymmetric
-#' @importFrom methods as new
-#' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success
 #' @export
 
 calculate_similarity <- function(x, ncores = 1, ...) {
 
-  if (!is.dfm(x)) {
+  if (!quanteda::is.dfm(x)) {
     stop("x must be a quanteda dfm object")
   }
   if (!is.numeric(ncores) || length(ncores) != 1L ||
@@ -70,30 +65,30 @@ calculate_similarity <- function(x, ncores = 1, ...) {
     stop("ncores must be a single positive integer")
   }
 
-  cli_h2("Calculating similarity")
+  cli::cli_h2("Calculating similarity")
   args <- list(...)
   has_y <- "y" %in% names(args)
   if (length(args) < 1L) {
-    cli_alert_info("textstat_simil() called with default parameters")
+    cli::cli_alert_info("textstat_simil() called with default parameters")
   } else {
-    cli_alert_info("textstat_simil() called with the following parameters")
-    for (nm in names(args)) cli_alert("{nm} = {toString(args[[nm]])}")
+    cli::cli_alert_info("textstat_simil() called with the following parameters")
+    for (nm in names(args)) cli::cli_alert("{nm} = {toString(args[[nm]])}")
   }
 
   # Delegate threading to quanteda's OpenMP backend; restore on exit
-  old_threads <- quanteda_options("threads")
-  on.exit(quanteda_options(threads = old_threads), add = TRUE)
-  quanteda_options(threads = ncores)
-  cli_alert_info("Using {ncores} thread(s) via quanteda")
+  old_threads <- quanteda::quanteda_options("threads")
+  on.exit(quanteda::quanteda_options(threads = old_threads), add = TRUE)
+  quanteda::quanteda_options(threads = ncores)
+  cli::cli_alert_info("Using {ncores} thread(s) via quanteda")
 
-  out_measures <- textstat_simil(x, ...)
+  out_measures <- quanteda.textstats::textstat_simil(x, ...)
 
   if (!has_y) {
-    doc_order <- docnames(x)
-    out_matrix <- as(out_measures, "matrix")[doc_order, doc_order]
-    out_matrix <- forceSymmetric(out_matrix, uplo = "U")
-    temp_matrix <- as(out_matrix, "packedMatrix")
-    textstat_obj <- new("textstat_simil_symm",
+    doc_order <- quanteda::docnames(x)
+    out_matrix <- methods::as(out_measures, "matrix")[doc_order, doc_order]
+    out_matrix <- Matrix::forceSymmetric(out_matrix, uplo = "U")
+    temp_matrix <- methods::as(out_matrix, "packedMatrix")
+    textstat_obj <- methods::new("textstat_simil_symm",
                         temp_matrix,
                         method = args$method,
                         margin = args$margin,
@@ -102,7 +97,7 @@ calculate_similarity <- function(x, ncores = 1, ...) {
     textstat_obj <- out_measures
   }
 
-  cli_alert_success("Done")
+  cli::cli_alert_success("Done")
   return(textstat_obj)
 }
 
@@ -111,7 +106,7 @@ calculate_similarity <- function(x, ncores = 1, ...) {
 
 calculate_distance <- function(x, ncores = 1, ...) {
 
-  if (!is.dfm(x)) {
+  if (!quanteda::is.dfm(x)) {
     stop("x must be a quanteda dfm object")
   }
   if (!is.numeric(ncores) || length(ncores) != 1L ||
@@ -119,29 +114,29 @@ calculate_distance <- function(x, ncores = 1, ...) {
     stop("ncores must be a single positive integer")
   }
 
-  cli_h2("Calculating distance")
+  cli::cli_h2("Calculating distance")
   args <- list(...)
   has_y <- "y" %in% names(args)
   if (length(args) < 1L) {
-    cli_alert_info("textstat_dist() called with default parameters")
+    cli::cli_alert_info("textstat_dist() called with default parameters")
   } else {
-    cli_alert_info("textstat_dist() called with the following parameters")
-    for (nm in names(args)) cli_alert("{nm} = {toString(args[[nm]])}")
+    cli::cli_alert_info("textstat_dist() called with the following parameters")
+    for (nm in names(args)) cli::cli_alert("{nm} = {toString(args[[nm]])}")
   }
 
-  old_threads <- quanteda_options("threads")
-  on.exit(quanteda_options(threads = old_threads), add = TRUE)
-  quanteda_options(threads = ncores)
-  cli_alert_info("Using {ncores} thread(s) via quanteda")
+  old_threads <- quanteda::quanteda_options("threads")
+  on.exit(quanteda::quanteda_options(threads = old_threads), add = TRUE)
+  quanteda::quanteda_options(threads = ncores)
+  cli::cli_alert_info("Using {ncores} thread(s) via quanteda")
 
-  out_measures <- textstat_dist(x, ...)
+  out_measures <- quanteda.textstats::textstat_dist(x, ...)
 
   if (!has_y) {
-    doc_order <- docnames(x)
-    out_matrix <- as(out_measures, "matrix")[doc_order, doc_order]
-    out_matrix <- forceSymmetric(out_matrix, uplo = "U")
-    temp_matrix <- as(out_matrix, "packedMatrix")
-    textstat_obj <- new("textstat_dist_symm",
+    doc_order <- quanteda::docnames(x)
+    out_matrix <- methods::as(out_measures, "matrix")[doc_order, doc_order]
+    out_matrix <- Matrix::forceSymmetric(out_matrix, uplo = "U")
+    temp_matrix <- methods::as(out_matrix, "packedMatrix")
+    textstat_obj <- methods::new("textstat_dist_symm",
                         temp_matrix,
                         method = args$method,
                         margin = args$margin,
@@ -150,6 +145,6 @@ calculate_distance <- function(x, ncores = 1, ...) {
     textstat_obj <- out_measures
   }
 
-  cli_alert_success("Done")
+  cli::cli_alert_success("Done")
   return(textstat_obj)
 }

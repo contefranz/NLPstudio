@@ -34,7 +34,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' @seealso [warp_lda()], [plot_top_terms()] [plot_dtw()] [LDA()][topicmodels::LDA]
 #'
 #' @import data.table
-#' @importFrom utils head
 #' @export
 #' 
 #' 
@@ -72,7 +71,7 @@ get_top_terms <- function(x, n = 10, topics = NULL, format = c("long", "wide")) 
   pad_width <- nchar(as.character(max(topic_ids)))
   
   # Helper for top-n indices
-  .top_idx <- function(v, nn) head(order(v, decreasing = TRUE), nn)
+  .top_idx <- function(v, nn) utils::head(order(v, decreasing = TRUE), nn)
   
   # -------- LONG --------
   if (format == "long") {

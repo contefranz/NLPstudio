@@ -23,9 +23,6 @@
 #' @return A [quanteda::tokens()] object with lookups applied and
 #' documents in the same order as the input.
 #'
-#' @importFrom quanteda is.dictionary is.tokens tokens_lookup ndoc docnames
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success
 #' @export
 lookup_tokens <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
   if (!quanteda::is.tokens(x)) {

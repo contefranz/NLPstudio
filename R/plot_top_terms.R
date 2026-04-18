@@ -65,8 +65,8 @@ plot_top_terms = function(top_terms, facet_args = list(scales = "free_y"), ...) 
     theme_minimal(base_size = 12)
   
   # Apply facetting
-  facet_args$facets = as.formula("~ topic")
-  p = p + do.call(facet_wrap, facet_args)
+  facet_args$facets = stats::as.formula("~ topic")
+  p = p + do.call(ggplot2::facet_wrap, facet_args)
   
   return(p)
 }

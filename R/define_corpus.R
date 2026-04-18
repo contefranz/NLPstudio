@@ -48,9 +48,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' }
 #' @seealso [corpus()], [docvars()]
 #' @import data.table
-#' @importFrom quanteda corpus
-#' @importFrom stringr str_remove str_c
-#' @importFrom cli cli_h2 cli_alert_success
 #' @export
 define_corpus <- function(x, ...) {
   UseMethod("define_corpus")
@@ -71,8 +68,8 @@ define_corpus.data.table <- function(x, ...) {
                 paste(missing_cols, collapse = ", ")))
   }
   
-  x[, filename2 := str_remove(filename, "\\.htm|\\.txt")]
-  x[, doc_id_corpus := str_c(filename2, item, sep = "_")]
+  x[, filename2 := stringr::str_remove(filename, "\\.htm|\\.txt")]
+  x[, doc_id_corpus := stringr::str_c(filename2, item, sep = "_")]
   
   # Check for duplicate doc IDs
   x[, checkdup := duplicated(x, by = "doc_id_corpus")]
@@ -81,10 +78,10 @@ define_corpus.data.table <- function(x, ...) {
   }
   x[, checkdup := NULL]
   
-  cli_h2("Building corpus from data.table")
-  corpus_obj <- corpus(x, text_field = "text", docid_field = "doc_id_corpus")
+  cli::cli_h2("Building corpus from data.table")
+  corpus_obj <- quanteda::corpus(x, text_field = "text", docid_field = "doc_id_corpus")
   x[, `:=` (filename2 = NULL, doc_id_corpus = NULL)]
-  cli_alert_success("Corpus built with {quanteda::ndoc(corpus_obj)} documents")
+  cli::cli_alert_success("Corpus built with {quanteda::ndoc(corpus_obj)} documents")
   return(corpus_obj)
 }
 

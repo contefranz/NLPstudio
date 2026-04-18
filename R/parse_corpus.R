@@ -44,9 +44,6 @@
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table
-#' @importFrom quanteda is.corpus ndoc
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success
 #' @export
 
 
@@ -55,21 +52,21 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
   if (!requireNamespace("spacyr", quietly = TRUE)) {
     stop("Package 'spacyr' is required for parse_corpus(). Please install it.")
   }
-  if ( !is.corpus(x) ) {
+  if (!quanteda::is.corpus(x)) {
     stop("x must be a quanteda corpus object")
   }
 
   socket <- match.arg(socket)
   .validate_parallel_args(ncores, nchunks)
 
-  cli_h2("Parsing corpus")
+  cli::cli_h2("Parsing corpus")
   args = list(...)
   if ( length(args) < 1 ) {
-    cli_alert_info("spacyr::spacy_parse() has been called with the default parameters")
+    cli::cli_alert_info("spacyr::spacy_parse() has been called with the default parameters")
   } else {
-    cli_alert_info("spacyr::spacy_parse() has been called with the following parameters")
+    cli::cli_alert_info("spacyr::spacy_parse() has been called with the following parameters")
     for (nm in names(args)) {
-      cli_alert("{nm} = {toString(args[[nm]])}")
+      cli::cli_alert("{nm} = {toString(args[[nm]])}")
     }
   }
 
@@ -84,18 +81,18 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
   chunks  <- Filter(Negate(is.null), chunks)
 
   if (length(chunks) <= 1L || ncores < 2L) {
-    cli_alert_info("Parsing sequentially")
+    cli::cli_alert_info("Parsing sequentially")
     parsing_func <- getExportedValue("spacyr", "spacy_parse")
-    out <- as.data.table(parsing_func(x, ...))
+    out <- data.table::as.data.table(parsing_func(x, ...))
   } else {
-    cli_alert_info("Parsing {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
+    cli::cli_alert_info("Parsing {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
     results <- .run_parallel(chunks, .parse_chunk, ncores, socket,
                              export_vars = c(".parse_chunk"),
                              export_env = environment(), ...)
-    out <- rbindlist(results, fill = TRUE)
+    out <- data.table::rbindlist(results, fill = TRUE)
   }
 
-  cli_alert_success("Corpus x has been successfully parsed")
+  cli::cli_alert_success("Corpus x has been successfully parsed")
   return(out[])
 }
 

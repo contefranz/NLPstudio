@@ -43,7 +43,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table
-#' @importFrom stringr str_remove str_c str_replace_all str_to_lower
 #'
 #' @export
 
@@ -51,44 +50,44 @@ if ( getRversion() >= "2.15.1" ) {
 get_sec_master_files = function(root_path, pattern = NULL, fyear = NULL, drop_late = FALSE) {
 
   # remove the trailing "/" at the end of the path to avoid double slashes in the call of list.files
-  root_path = str_remove(root_path, "/$")
+  root_path = stringr::str_remove(root_path, "/$")
 
   # if fyear specifies a followup, modifies the search pattern
   if (!is.null(fyear)) {
     if (!is.null(pattern)) {
-      pattern = str_c(pattern, ".*", fyear, collapse = "|")
+      pattern = stringr::str_c(pattern, ".*", fyear, collapse = "|")
     } else {
-      pattern = str_c(fyear, collapse = "|")
+      pattern = stringr::str_c(fyear, collapse = "|")
     }
   }
   thefiles = list.files(root_path, pattern = pattern,
                         recursive = FALSE,
                         full.names = TRUE)
-  master_all = rbindlist(lapply(thefiles, function(f) {
+  master_all = data.table::rbindlist(lapply(thefiles, function(f) {
     message("Reading file ", basename(f))
-    fread(f)
+    data.table::fread(f)
   }))
 
   # check that only one filing type exists. If the check fails, stop with an error as the selection
   # of the filing type is inherited from the edgar-crawler and it is not controlled here in R nor
   # by edgartools
-  if( uniqueN(master_all$Type) > 1 ) {
+  if( data.table::uniqueN(master_all$Type) > 1 ) {
     stop("Multiple filing types detected")
   }
 
   # fixing column names to match those from the JSON structures as modified by from_json_to_df()
   # 1. replace space with "_"
-  setnames(master_all, new = str_replace_all(names(master_all), "\\s", "_"))
+  data.table::setnames(master_all, new = stringr::str_replace_all(names(master_all), "\\s", "_"))
   # 2. lowercase everything
-  setnames(master_all, new = str_to_lower(names(master_all)))
+  data.table::setnames(master_all, new = stringr::str_to_lower(names(master_all)))
   # 3. renaming
-  setnames(master_all,
+  data.table::setnames(master_all,
            c("company", "complete_text_file_link", "html_index", "filing_date", "htm_file_link", "period_of_report"),
            c("cname", "filing_txt", "filing_detail", "date_filed", "filing_html", "fyear_end") )
   # 4. remove useless columns
   master_all[ , `:=` (date = NULL, fiscal_year_end = NULL)]
   # 5. define a column order that resembles that of the JSON structure
-  setcolorder(master_all, c("cik", "cname", "type", "date_filed", "fyear_end", "sic", "state_of_inc",
+  data.table::setcolorder(master_all, c("cik", "cname", "type", "date_filed", "fyear_end", "sic", "state_of_inc",
                             "state_location", "filing_detail", "filing_html", "filing_txt", "filename"))
 
   if (drop_late) {
@@ -98,7 +97,7 @@ get_sec_master_files = function(root_path, pattern = NULL, fyear = NULL, drop_la
     # filing that is associated to the current fiscal period. To solve the problem we sort
     # by cik, date_filed, fyear_end so that the most current filing is the last observation within the
     # group. We use duplicated() to spot duplicated observations in reverse order and then drop them.
-    setkey(master_all, cik, date_filed, fyear_end, sic, filing_detail, filing_html, filing_txt)
+    data.table::setkey(master_all, cik, date_filed, fyear_end, sic, filing_detail, filing_html, filing_txt)
     master_all[ , checkdup := duplicated(master_all, by = c("cik", "date_filed"), fromLast = TRUE)]
 
     master_all = master_all[ checkdup == FALSE ]

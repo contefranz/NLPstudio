@@ -16,10 +16,6 @@
 #' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
 #'
 #' @import data.table
-#' @importFrom quanteda is.corpus corpus docnames
-#' @importFrom quanteda.textstats textstat_readability
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert cli_alert_success
 #' @export
 
 
@@ -35,14 +31,14 @@ calculate_readability = function(x, ncores = 1, nchunks = ncores, socket = c("PS
   socket <- match.arg(socket)
   .validate_parallel_args(ncores, nchunks)
 
-  cli_h2("Calculating readability")
+  cli::cli_h2("Calculating readability")
   args = list(...)
   if ( length(args) < 1 ) {
-    cli_alert_info("quanteda.textstats::textstat_readability() has been called with the default parameters")
+    cli::cli_alert_info("quanteda.textstats::textstat_readability() has been called with the default parameters")
   } else {
-    cli_alert_info("quanteda.textstats::textstat_readability() has been called with the following parameters")
+    cli::cli_alert_info("quanteda.textstats::textstat_readability() has been called with the following parameters")
     for (nm in names(args)) {
-      cli_alert_info("{nm} = {toString(args[[nm]])}")
+      cli::cli_alert_info("{nm} = {toString(args[[nm]])}")
     }
   }
 
@@ -53,21 +49,21 @@ calculate_readability = function(x, ncores = 1, nchunks = ncores, socket = c("PS
   chunks  <- Filter(Negate(is.null), chunks)
 
   if (length(chunks) <= 1L || ncores < 2L) {
-    cli_alert_info("Computing readability sequentially")
-    out_all <- as.data.table(textstat_readability(x, ...))
+    cli::cli_alert_info("Computing readability sequentially")
+    out_all <- data.table::as.data.table(quanteda.textstats::textstat_readability(x, ...))
   } else {
-    cli_alert_info("Computing readability for {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
+    cli::cli_alert_info("Computing readability for {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
     results <- .run_parallel(chunks, .readability_chunk, ncores, socket,
                              export_vars = c(".readability_chunk"),
                              export_env = environment(), ...)
-    out_all <- rbindlist(results, fill = TRUE)
+    out_all <- data.table::rbindlist(results, fill = TRUE)
   }
 
   data.table::setnames(out_all, "document", "doc_id")
   out_all[, org_ord := match(doc_id, doc_ids)]
   data.table::setorder(out_all, org_ord)
   out_all[, org_ord := NULL]
-  cli_alert_success("Done")
+  cli::cli_alert_success("Done")
   return(out_all[])
 }
 

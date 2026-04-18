@@ -86,9 +86,6 @@
 #' toks_fork <- tokenize_corpus(corp, ncores = 2, socket = "FORK")
 #' }
 #'
-#' @importFrom quanteda is.corpus tokens ndoc docnames
-#' @importFrom parallel makeCluster stopCluster clusterApplyLB clusterExport mclapply
-#' @importFrom cli cli_h2 cli_alert_info cli_alert_success cli_alert_danger
 #' @export
 tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
   
@@ -126,7 +123,7 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
     cli::cli_alert_info("Tokenizing sequentially")
     toks <- quanteda::tokens(x, ...)
   } else {
-    cli_alert_info("Tokenizing {nchunks} chunks in parallel using {ncores} cores via {socket}")
+    cli::cli_alert_info("Tokenizing {nchunks} chunks in parallel using {ncores} cores via {socket}")
     toks_list <- .run_parallel(chunks, .tokenize_chunk, ncores, socket,
                                export_vars = c(".tokenize_chunk"),
                                export_env = environment(), ...)
