@@ -2,10 +2,13 @@
 % Please edit documentation in R/define_corpus.R
 \name{define_corpus}
 \alias{define_corpus}
+\alias{define_corpus.default}
 \alias{define_corpus.data.table}
 \title{Generate a Quanteda Corpus from a Data Table}
 \usage{
 define_corpus(x, ...)
+
+\method{define_corpus}{default}(x, ...)
 
 \method{define_corpus}{data.table}(x, ...)
 }

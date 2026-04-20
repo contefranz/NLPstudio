@@ -10,6 +10,8 @@ from_json_to_df(
   nchunks = ncores,
   socket = c("PSOCK", "FORK"),
   drop_late_filers = FALSE,
+  what = NULL,
+  drop_empty_text = TRUE,
   max_chunk_size = NULL,
   ...
 )
@@ -31,6 +33,14 @@ supported and will trigger an error.}
 
 \item{drop_late_filers}{Logical. If \code{TRUE}, removes filings considered
 "late" (filing year greater than fiscal year + 1). Default \code{FALSE}.}
+
+\item{what}{Character or \code{NULL}. Recommended explicit selector for the JSON
+family being imported. Supported values are \code{"10-K"}, \code{"10-Q"}, \code{"8-K"},
+and \code{"loan"}. When \code{NULL} (default), the function infers the family from
+the JSON keys for backward compatibility.}
+
+\item{drop_empty_text}{Logical. If \code{TRUE} (default), drop rows where the
+extracted section text is empty or missing after melting.}
 
 \item{max_chunk_size}{Integer. If provided, sets the exact number of files
 per chunk, overriding the value derived from \code{nchunks}. Use this for
@@ -65,12 +75,12 @@ default, chunk size is derived from \code{nchunks} as
 \code{ceiling(length(files) / nchunks)}. If \code{max_chunk_size} is explicitly
 provided, it overrides this calculation. Each chunk is read in parallel
 with \code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}} and converted to data tables.
-\item \strong{Reshape} – Each parsed table is reshaped from wide to long format in
-parallel. Identifier variables for \code{\link[data.table:melt.data.table]{data.table::melt()}} are determined
-automatically: any columns beginning with \code{"item_"} or \code{"section_"}
-are treated as measure variables, and all others are treated as identifier
-variables. If no such columns are found, all columns are treated as
-identifiers.
+\item \strong{Reshape} – Each parsed table is normalized and reshaped from wide to
+long format in parallel. The selected text columns depend on \code{what}:
+\code{"10-K"} uses \verb{item_*}/\verb{section_*}, \code{"10-Q"} uses \verb{part_*} and
+\verb{part_*_item_*}, \code{"8-K"} uses \verb{item_*}, and \code{"loan"} uses the canonical
+section names produced by \code{sec-crawler}. When \code{what = NULL}, the function
+infers the family from the JSON keys for backward compatibility.
 \item \strong{Combine & clean} – Melted tables are bound together, date columns
 converted, fiscal year (\code{fyear}) derived, late filers optionally dropped,
 and column order standardized.
