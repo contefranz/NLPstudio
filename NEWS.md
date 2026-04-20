@@ -1,5 +1,68 @@
 # NLPstudio News
 
+## NLPstudio 0.4.0  (2026-04-20)
+
+### BREAKING CHANGES
+
+1. `library(NLPstudio)` no longer attaches `quanteda`, `quanteda.textstats`,
+   `data.table`, `text2vec`, or `stringr` to the search path. Those packages
+   remain in `Imports` and are fully available inside the package, but users
+   who relied on the implicit attachment for their own code will need to add
+   explicit `library()` calls. A startup message now states the version and
+   lists the required packages.
+
+   **Why this changed.** The previous behaviour followed the meta-package
+   pattern popularised by the tidyverse: loading one package silently attaches
+   several others. This is convenient at the console but has meaningful costs
+   when NLPstudio is used as a library dependency rather than an interactive
+   toolkit:
+
+   - **Search-path pollution.** Every attached package adds a frame to the
+     search path. Name collisions become more likely as the path grows — for
+     instance, `data.table::between()` and `dplyr::between()` resolve
+     differently depending on attachment order, producing bugs that are
+     hard to trace.
+
+   - **Opacity for downstream packages.** A package that `Imports` NLPstudio
+     unintentionally acquires five additional namespaces on the search path,
+     which can mask functions in its own dependencies without any explicit
+     declaration in its `DESCRIPTION`.
+
+   - **Redundancy.** Since v0.3.3 every call inside NLPstudio uses fully
+     qualified `pkg::function()` notation. The package does not need any of
+     these namespaces *attached* in order to work; it only needs them
+     *loaded*, which `Imports` already guarantees.
+
+   Users who want the packages attached for interactive work can add
+   `library(quanteda); library(data.table)` etc. to their own scripts or
+   `.Rprofile`. Nothing changes for code that already calls those packages
+   explicitly.
+
+### NEW FEATURES
+
+1. `define_corpus()` gains a `default` S3 method that produces an informative
+   error when the input is not a `data.table`, replacing the opaque
+   "no applicable method" dispatch failure.
+
+### NOTES
+
+1. **Golden tests** added for all parallel functions: `tokenize_corpus()`,
+   `calculate_readability()`, `summarize_corpus()`, and `reshape_corpus()` now
+   each include a test asserting that `ncores = 2` produces numerically
+   identical output to `ncores = 1`. The class of silent parallelization bug
+   that affected `calculate_similarity()` in v0.2.x would be caught
+   immediately across any of these functions.
+
+2. **Contract tests** added for `define_corpus()` (missing columns individually
+   and in combination, non-`data.table` input, duplicate doc-ID warning, no
+   temp-column leakage into the input `data.table`) and `warp_lda()` (argument
+   routing via positive contracts: valid `fit_control` args, valid `lda_control`
+   args, `k` not overridable via `lda_control`, `return_theta`/`return_phi`
+   flags).
+
+3. Test count: 96 (up from 66 in v0.3.x).
+
+
 ## NLPstudio 0.3.3  (2026-04-18)
 
 ### NOTES
