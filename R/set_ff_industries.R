@@ -52,7 +52,8 @@ if ( getRversion() >= "2.15.1" ) {
 
 set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
   
-  if (!requireNamespace("farr", quietly = TRUE)) {
+  pkg <- "farr"
+  if (!requireNamespace(pkg, quietly = TRUE)) {
     stop("Package 'farr' is required for set_ff_industries(). Please install it.", call. = FALSE)
   }
   if (!quanteda::is.corpus(x)) {
@@ -78,7 +79,7 @@ set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
   ind = as.numeric(ind)
 
   cli::cli_alert_info("Pulling {ind} Fama-French industries")
-  get_ff_ind <- getExportedValue("farr", "get_ff_ind")
+  get_ff_ind <- getExportedValue(pkg, "get_ff_ind")
   ff = get_ff_ind(ind = ind)
   data.table::setDT(ff)
 
