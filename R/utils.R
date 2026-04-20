@@ -40,7 +40,25 @@
     warning("FORK sockets may be unstable with quanteda/C++ internals. Consider using \"PSOCK\".")
     res <- parallel::mclapply(chunks, FUN, mc.cores = ncores, ...)
   } else {
-    cl <- parallel::makeCluster(ncores)
+    if (ncores == 1L) {
+      return(lapply(chunks, FUN, ...))
+    }
+    cl <- tryCatch(
+      parallel::makeCluster(ncores),
+      error = function(e) {
+        warning(
+          sprintf(
+            "PSOCK cluster could not be created; falling back to sequential execution: %s",
+            conditionMessage(e)
+          ),
+          call. = FALSE
+        )
+        NULL
+      }
+    )
+    if (is.null(cl)) {
+      return(lapply(chunks, FUN, ...))
+    }
     on.exit(parallel::stopCluster(cl), add = TRUE)
     if (!is.null(export_vars)) {
       parallel::clusterExport(cl, varlist = export_vars, envir = export_env)
@@ -72,4 +90,3 @@ set_theta_names <- function(theta_dt) {
   
   return(theta_dt)
 }
-

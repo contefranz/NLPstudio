@@ -15,6 +15,8 @@
 #'   [`LDA$fit_transform()`][text2vec::LDA]. Overrides the defaults
 #'   `n_iter = 1000`, `convergence_tol = 0.001`, `n_check_convergence = 25`,
 #'   and `progressbar = TRUE`.
+#' @param ... Additional arguments passed through from the deprecated
+#'   [warpLDA()] wrapper to [warp_lda()].
 #'
 #' @details
 #' This function wraps the [text2vec::LDA] class to fit a probabilistic topic model using the

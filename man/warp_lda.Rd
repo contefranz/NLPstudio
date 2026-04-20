@@ -33,6 +33,9 @@ Overrides the defaults \code{doc_topic_prior = 0.1} and \code{topic_word_prior =
 \code{\link[text2vec:LatentDirichletAllocation]{LDA$fit_transform()}}. Overrides the defaults
 \code{n_iter = 1000}, \code{convergence_tol = 0.001}, \code{n_check_convergence = 25},
 and \code{progressbar = TRUE}.}
+
+\item{...}{Additional arguments passed through from the deprecated
+\code{warpLDA()} wrapper to \code{warp_lda()}.}
 }
 \value{
 A named list with the following elements:
