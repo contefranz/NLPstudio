@@ -55,6 +55,13 @@ define_corpus <- function(x, ...) {
 
 
 #' @rdname define_corpus
+#' @method define_corpus default
+#' @export
+define_corpus.default <- function(x, ...) {
+  stop("x must be a data.table containing 'text', 'filename', and 'item' columns")
+}
+
+#' @rdname define_corpus
 #' @method define_corpus data.table
 #' @export
 define_corpus.data.table <- function(x, ...) {

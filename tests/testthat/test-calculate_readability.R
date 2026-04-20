@@ -47,3 +47,14 @@ test_that("calculate_readability validates parallel args", {
   corp <- quanteda::corpus(c(doc1 = "Test sentence here. Another one follows."))
   expect_error(calculate_readability(corp, ncores = 0), "ncores must be a single positive integer")
 })
+
+test_that("calculate_readability: parallel output matches sequential numerically", {
+  corp <- quanteda::corpus(c(
+    doc1 = "The quick brown fox jumps over the lazy dog. It was a sunny day.",
+    doc2 = "Complex financial instruments require sophisticated analysis methods.",
+    doc3 = "Simple words are easy to read. Short sentences help too."
+  ))
+  seq_result <- calculate_readability(corp, ncores = 1, measure = "Flesch")
+  par_result <- calculate_readability(corp, ncores = 2, measure = "Flesch")
+  expect_equal(seq_result, par_result)
+})
