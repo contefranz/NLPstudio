@@ -31,7 +31,8 @@ if (getRversion() >= "2.15.1") {
 singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
                                socket = c("PSOCK", "FORK"),
                                remove_numbers = TRUE, min_char = 1) {
-  if (!requireNamespace("pluralize", quietly = TRUE)) {
+  pkg <- "pluralize"
+  if (!requireNamespace(pkg, quietly = TRUE)) {
     stop("Package 'pluralize' is required for singularize_tokens(). Please install it.", call. = FALSE)
   }
   if (!quanteda::is.tokens(x)) stop("x must be a quanteda tokens object")
@@ -95,13 +96,15 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
 
 #' @keywords internal
 .singularize_chunk <- function(current_chunk) {
-  singularize_fun <- getExportedValue("pluralize", "singularize")
+  pkg <- "pluralize"
+  singularize_fun <- getExportedValue(pkg, "singularize")
   current_chunk[, single := singularize_fun(feature)]
   current_chunk
 }
 
 #' @keywords internal
 .singularize <- function(row) {
-  singularize_fun <- getExportedValue("pluralize", "singularize")
+  pkg <- "pluralize"
+  singularize_fun <- getExportedValue(pkg, "singularize")
   singularize_fun(row$feature)
 }

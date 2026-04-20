@@ -32,7 +32,6 @@ Imports:
 Suggests:
     farr (>= 0.3.0),
     lifecycle (>= 1.0.4),
-    pluralize (>= 0.2.1),
     RcppSimdJson (>= 0.1.14),
     seededlda (>= 1.4.3),
     spacyr (>= 1.3.0),
