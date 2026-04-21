@@ -44,6 +44,19 @@
    error when the input is not a `data.table`, replacing the opaque
    "no applicable method" dispatch failure.
 
+### BUG FIXES
+
+1. GitHub Actions `R-CMD-check` now passes reliably across the supported CI
+   environments. Internal PSOCK execution now falls back to sequential
+   processing when a worker socket cannot be created, which avoids
+   environment-specific failures without changing the public API.
+
+2. Optional helper packages used only inside specific functions are no longer
+   installed during CI. In particular, `pluralize` and `farr` have been
+   removed from `Suggests`, while `singularize_tokens()` and
+   `set_ff_industries()` continue to emit explicit runtime errors when those
+   packages are not installed by the user.
+
 ### NOTES
 
 1. **Golden tests** added for all parallel functions: `tokenize_corpus()`,
@@ -61,6 +74,13 @@
    flags).
 
 3. Test count: 96 (up from 66 in v0.3.x).
+
+4. The package now includes a standard GitHub Actions `R-CMD-check` workflow
+   and matching README badge.
+
+5. Roxygen comments were normalized toward Markdown-style notation and the
+   generated documentation was refreshed. Mathematical notation remains in Rd
+   form where appropriate (for example `\eqn{}`).
 
 
 ## NLPstudio 0.3.3  (2026-04-18)
