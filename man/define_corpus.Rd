@@ -45,7 +45,7 @@ ensures consistent handling of document IDs, automatic duplicate checks,
 and integration with the rest of the \strong{NLPstudio} pipeline.
 }
 \examples{
-\dontrun{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 # Suppose you have a folder with EDGAR JSON filings
 files <- list.files("data/json_filings", pattern = "\\\\.json$", full.names = TRUE)
 
@@ -58,7 +58,7 @@ corp <- define_corpus(dt)
 # Inspect the corpus
 summary(corp)
 docvars(corp)[1:5, ]
-}
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[quanteda:corpus]{quanteda::corpus()}}, \code{\link[quanteda:docvars]{quanteda::docvars()}}

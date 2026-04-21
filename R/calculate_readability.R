@@ -13,7 +13,7 @@
 #' @returns A [data.table] with as many columns as passed to
 #' `measure` and `doc_id` as the document identifier.
 #'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#' @author Francesco Grossetti <francesco.grossetti@unibocconi.it>
 #'
 #' @import data.table
 #' @export

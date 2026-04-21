@@ -34,9 +34,7 @@
 #' @returns A sparse matrix as S4 class following [textstat_simil-class]
 #'   or [textstat_dist-class] from the **Matrix** package.
 #'
-#' @examples
-#' \dontrun{
-#'
+#' @examplesIf interactive()
 #' dfmat <- dfm(tokens(c(
 #'   "this is a test", "another document",
 #'   "more text here",  "testing similarity"
@@ -51,7 +49,6 @@
 #' result_dist <- calculate_distance(dfmat, ncores = 2,
 #'                                   margin = "documents",
 #'                                   method = "euclidean")
-#' }
 #'
 #' @export
 

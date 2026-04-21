@@ -27,20 +27,20 @@ if ( getRversion() >= "2.15.1" ) {
 #' @returns A `data.table` containing all the SEC master files as detected by the function
 #' with the following columns:
 #'
-#' \item{`cik`}{The Central Index Key as given by the SEC EDGAR database. Integer.}
-#' \item{`cname`}{The company name. Character.}
-#' \item{`type`}{The filing type. Character.}
-#' \item{`date_filed`}{The filing date on the SEC. IDat.}
-#' \item{`fyear_end`}{The fiscal year end date. IDat.}
-#' \item{`sic`}{The four-digit SIC industry code. Integer.}
-#' \item{`state_of_inc`}{U.S. state of incorporation (abbreviation). Character.}
-#' \item{`state_location`}{U.S. state location (abbreviation). Character.}
-#' \item{`filing_detail`}{Pointer to filing summary page in HTML. Character.}
-#' \item{`filing_html`}{Pointer to filing in HTML. Character.}
-#' \item{`filing_txt`}{Pointer to complete submission file in txt. Character.}
-#' \item{`filename`}{Filename. Character.}
+#' - `cik`: The Central Index Key as given by the SEC EDGAR database. Integer.
+#' - `cname`: The company name. Character.
+#' - `type`: The filing type. Character.
+#' - `date_filed`: The filing date on the SEC. IDat.
+#' - `fyear_end`: The fiscal year end date. IDat.
+#' - `sic`: The four-digit SIC industry code. Integer.
+#' - `state_of_inc`: U.S. state of incorporation (abbreviation). Character.
+#' - `state_location`: U.S. state location (abbreviation). Character.
+#' - `filing_detail`: Pointer to filing summary page in HTML. Character.
+#' - `filing_html`: Pointer to filing in HTML. Character.
+#' - `filing_txt`: Pointer to complete submission file in txt. Character.
+#' - `filename`: Filename. Character.
 #'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#' @author Francesco Grossetti <francesco.grossetti@unibocconi.it>
 #'
 #' @import data.table
 #'

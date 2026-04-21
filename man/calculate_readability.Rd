@@ -40,5 +40,5 @@ stability. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS.
 }
 \author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+Francesco Grossetti \href{mailto:francesco.grossetti@unibocconi.it}{francesco.grossetti@unibocconi.it}
 }

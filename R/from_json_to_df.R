@@ -68,12 +68,10 @@ if ( getRversion() >= "2.15.1" ) {
 #'   - plus any additional metadata extracted upstream
 #' @section Chunking strategy:
 #' The function offers two ways to control chunking:
-#' \itemize{
-#'   \item **`nchunks`** (default): Set the number of batches. With 7000 files
-#'     and `nchunks = 4`, each batch contains ~1750 files.
-#'   \item **`max_chunk_size`** (explicit): Set the exact batch size. With 7000
-#'     files and `max_chunk_size = 500`, you get 14 batches of 500 files each.
-#' }
+#' - **`nchunks`** (default): Set the number of batches. With 7000 files
+#'   and `nchunks = 4`, each batch contains ~1750 files.
+#' - **`max_chunk_size`** (explicit): Set the exact batch size. With 7000
+#'   files and `max_chunk_size = 500`, you get 14 batches of 500 files each.
 #' If both are relevant, `max_chunk_size` takes precedence.
 #' 
 #' @section Efficiency considerations:

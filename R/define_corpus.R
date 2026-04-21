@@ -31,8 +31,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' 
 #' @return A [quanteda::corpus()] object with a set of document-level variables (i.e., `docvars`).
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf interactive()
 #' # Suppose you have a folder with EDGAR JSON filings
 #' files <- list.files("data/json_filings", pattern = "\\.json$", full.names = TRUE)
 #'
@@ -45,7 +44,6 @@ if ( getRversion() >= "2.15.1" ) {
 #' # Inspect the corpus
 #' summary(corp)
 #' docvars(corp)[1:5, ]
-#' }
 #' @seealso [corpus()], [docvars()]
 #' @import data.table
 #' @export
@@ -91,5 +89,4 @@ define_corpus.data.table <- function(x, ...) {
   cli::cli_alert_success("Corpus built with {quanteda::ndoc(corpus_obj)} documents")
   return(corpus_obj)
 }
-
 

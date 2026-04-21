@@ -41,7 +41,7 @@
 #'
 #' @seealso [spacy_install()] [spacy_initialize()] [spacy_parse()]
 #'
-#' @author Francesco Grossetti \email{francesco.grossetti@@unibocconi.it}
+#' @author Francesco Grossetti <francesco.grossetti@unibocconi.it>
 #'
 #' @import data.table
 #' @export

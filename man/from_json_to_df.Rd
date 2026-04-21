@@ -103,8 +103,8 @@ The function offers two ways to control chunking:
 and \code{nchunks = 4}, each batch contains ~1750 files.
 \item \strong{\code{max_chunk_size}} (explicit): Set the exact batch size. With 7000
 files and \code{max_chunk_size = 500}, you get 14 batches of 500 files each.
-}
 If both are relevant, \code{max_chunk_size} takes precedence.
+}
 }
 
 \section{Efficiency considerations}{

@@ -9,7 +9,7 @@
 #' @references
 #'   Loughran, T. & McDonald, B. (2024). 
 #'   [Measuring Firm Complexity](https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/measuring-firm-complexity/D737FD0A697AF699C5AADD62842ACAB8),
-#'   \emph{Journal of Financial and Quantitative Analysis}, 
+#'   *Journal of Financial and Quantitative Analysis*, 
 #'   2023:1-28.
 #' @keywords data
 "data_dictionary_LoughranMcDonald_Complexity"
@@ -22,7 +22,7 @@
 #' @references
 #'   Li, F. (2010). The Information Content of Forward-Looking Statements in
 #'   Corporate Filings—A Naïve Bayesian Machine Learning Approach,
-#'   \emph{Journal of Accounting Research}, 48 (5), 1049--1102.
+#'   *Journal of Accounting Research*, 48 (5), 1049--1102.
 #' @keywords data
 "data_dictionary_Li_FLS"
 
@@ -34,7 +34,7 @@
 #' @source <https://www.sciencedirect.com/science/article/abs/pii/S0165410117300733>
 #' @references
 #'   Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), Management earnings forecasts and other
-#'   forward-looking statements, \emph{Journal of Accounting and Economics}, Volume 65, Issue 1, 2018,
+#'   forward-looking statements, *Journal of Accounting and Economics*, Volume 65, Issue 1, 2018,
 #'   Pages 1-20.
 #' @keywords data
 "data_dictionary_BozanicRoulstoneVanBuskirk_FLS"
@@ -84,7 +84,6 @@
 #'   _Working Paper_ available [here](https://assets.researchsquare.com/files/rs-2544385/v3/de08997f5c48f22a37cc4f93.pdf?c=1678389566).
 #' @keywords data
 "data_dictionary_SDG"
-
 
 
 

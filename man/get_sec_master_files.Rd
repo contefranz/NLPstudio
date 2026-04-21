@@ -26,19 +26,20 @@ all the fiscal years detected in \code{root_path} are considered. Default to \co
 \value{
 A \code{data.table} containing all the SEC master files as detected by the function
 with the following columns:
-
-\item{\code{cik}}{The Central Index Key as given by the SEC EDGAR database. Integer.}
-\item{\code{cname}}{The company name. Character.}
-\item{\code{type}}{The filing type. Character.}
-\item{\code{date_filed}}{The filing date on the SEC. IDat.}
-\item{\code{fyear_end}}{The fiscal year end date. IDat.}
-\item{\code{sic}}{The four-digit SIC industry code. Integer.}
-\item{\code{state_of_inc}}{U.S. state of incorporation (abbreviation). Character.}
-\item{\code{state_location}}{U.S. state location (abbreviation). Character.}
-\item{\code{filing_detail}}{Pointer to filing summary page in HTML. Character.}
-\item{\code{filing_html}}{Pointer to filing in HTML. Character.}
-\item{\code{filing_txt}}{Pointer to complete submission file in txt. Character.}
-\item{\code{filename}}{Filename. Character.}
+\itemize{
+\item \code{cik}: The Central Index Key as given by the SEC EDGAR database. Integer.
+\item \code{cname}: The company name. Character.
+\item \code{type}: The filing type. Character.
+\item \code{date_filed}: The filing date on the SEC. IDat.
+\item \code{fyear_end}: The fiscal year end date. IDat.
+\item \code{sic}: The four-digit SIC industry code. Integer.
+\item \code{state_of_inc}: U.S. state of incorporation (abbreviation). Character.
+\item \code{state_location}: U.S. state location (abbreviation). Character.
+\item \code{filing_detail}: Pointer to filing summary page in HTML. Character.
+\item \code{filing_html}: Pointer to filing in HTML. Character.
+\item \code{filing_txt}: Pointer to complete submission file in txt. Character.
+\item \code{filename}: Filename. Character.
+}
 }
 \description{
 Create a container list with the pointers to all the JSON files detected in the input folder.
@@ -55,5 +56,5 @@ stored in a .csv file and are located in \code{root_path} with no sub-directory.
 to specify at least a \code{pattern} to detect those files.
 }
 \author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+Francesco Grossetti \href{mailto:francesco.grossetti@unibocconi.it}{francesco.grossetti@unibocconi.it}
 }

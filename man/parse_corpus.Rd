@@ -62,5 +62,5 @@ processing.
 \code{\link[spacyr:spacy_install]{spacyr::spacy_install()}} \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}
 }
 \author{
-Francesco Grossetti \email{francesco.grossetti@unibocconi.it}
+Francesco Grossetti \href{mailto:francesco.grossetti@unibocconi.it}{francesco.grossetti@unibocconi.it}
 }

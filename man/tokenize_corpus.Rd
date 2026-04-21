@@ -87,7 +87,7 @@ quanteda, as it can lead to undefined behavior. If you insist on using
 On Windows, setting \code{socket = "FORK"} will result in an error.
 }
 \examples{
-\dontrun{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 library(NLPstudio)
 corp <- quanteda::corpus(
   c("Cats are running", "Dogs were barking")
@@ -101,6 +101,5 @@ toks_psock <- tokenize_corpus(corp, ncores = 2, socket = "PSOCK")
 
 # Parallel with FORK (Linux/macOS only, not recommended)
 toks_fork <- tokenize_corpus(corp, ncores = 2, socket = "FORK")
-}
-
+\dontshow{\}) # examplesIf}
 }
