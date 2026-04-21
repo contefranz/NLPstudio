@@ -1,6 +1,6 @@
 # NLPstudio News
 
-## NLPstudio 0.4.0  (2026-04-20)
+## NLPstudio 0.4.1  (2026-04-21)
 
 ### BREAKING CHANGES
 
