@@ -14,9 +14,9 @@ An object of class \code{dictionary2} of length 1.
 data_dictionary_BozanicRoulstoneVanBuskirk_FLS
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing the
-the 2018 version of the Bozanic, Roulstone, and VanBuskirk Forward Looking Statement Word List.
-The list contains 90 words.
+A \link[quanteda:dictionary]{quanteda::dictionary} containing the 2018 Bozanic, Roulstone, and Van Buskirk
+forward-looking statement word list. The object has a single top-level
+entry, \code{FLS_BozanicRoulstoneVanBuskirk}, with 90 terms.
 }
 \references{
 Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), Management earnings forecasts and other

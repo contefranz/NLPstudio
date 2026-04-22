@@ -119,6 +119,26 @@ provides an upper bound on files per chunk to prevent memory overload.
 }
 }
 
+\examples{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+# Requires the optional RcppSimdJson package and a directory of SEC-style
+# JSON filings supplied by the user.
+files <- list.files(
+  "data/json_filings",
+  pattern = "\\\\\\\\.json$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+dt <- from_json_to_df(
+  files,
+  what = "10-K",
+  ncores = 2
+)
+
+head(dt)
+\dontshow{\}) # examplesIf}
+}
 \seealso{
 \code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, \code{\link[data.table:melt.data.table]{data.table::melt()}},
 \code{\link[parallel:mclapply]{parallel::mclapply()}}, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}

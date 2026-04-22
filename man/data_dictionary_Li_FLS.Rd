@@ -14,8 +14,8 @@ An object of class \code{dictionary2} of length 1.
 data_dictionary_Li_FLS
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing the
-the 2010 version of the Feng Li's Forward Looking Statement Word List. The list contains 18 words.
+A \link[quanteda:dictionary]{quanteda::dictionary} containing Feng Li's 2010 forward-looking statement word
+list. The object has a single top-level entry, \code{FLS_Li}, with 18 terms.
 }
 \references{
 Li, F. (2010). The Information Content of Forward-Looking Statements in

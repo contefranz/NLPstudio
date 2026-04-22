@@ -31,7 +31,9 @@ To support domain-specific content analysis, \strong{NLPstudio} ships with curat
 pre-compiled \strong{quanteda} dictionaries tailored to financial and regulatory
 texts. These include vocabularies for detecting forward-looking statements,
 firm complexity, corporate social responsibility, and sustainable development
-themes.
+themes. Workflows such as raw file discovery, SEC master-file ingestion, and
+external industry mapping are expected to be handled upstream before data
+enters the core package pipeline.
 }
 \details{
 The core implementation emphasizes:
@@ -55,9 +57,10 @@ inspect the distribution of document–topic weights across a fitted model.
 of \strong{\href{https://cran.r-project.org/web/packages/topicmodels/index.html}{topicmodels}}
 is also supported.
 \item \strong{Corpus ingestion:}
-\code{from_json_to_df()} converts SEC-style JSON filings into tidy
-data.tables, with chunking controlled by \code{nchunks} and optional
-\code{max_chunk_size} to prevent memory spikes.
+\code{from_json_to_df()} converts user-supplied SEC-style JSON filings into
+tidy data.tables, with chunking controlled by \code{nchunks} and optional
+\code{max_chunk_size} to prevent memory spikes. File discovery and auxiliary
+metadata preparation are intentionally managed outside the package.
 \item \strong{Domain dictionaries:}
 Pre-loaded dictionaries enable lookup-based bag-of-words analysis tailored
 to accounting, finance, and ESG disclosures.

@@ -26,6 +26,14 @@
 #' @return A reshaped [quanteda::corpus()] with the same document variables
 #' and reshaped text units as defined by `to`.
 #'
+#' @examples
+#' corp <- quanteda::corpus(c(
+#'   doc1 = "First sentence. Second sentence.",
+#'   doc2 = "Another document. With two parts."
+#' ))
+#'
+#' reshape_corpus(corp, to = "sentences")
+#'
 #' @export
 reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
   

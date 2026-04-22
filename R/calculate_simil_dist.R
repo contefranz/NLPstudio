@@ -34,19 +34,17 @@
 #' @returns A sparse matrix as S4 class following [textstat_simil-class]
 #'   or [textstat_dist-class] from the **Matrix** package.
 #'
-#' @examplesIf interactive()
-#' dfmat <- dfm(tokens(c(
+#' @examples
+#' dfmat <- quanteda::dfm(quanteda::tokens(c(
 #'   "this is a test", "another document",
-#'   "more text here",  "testing similarity"
+#'   "more text here", "testing similarity"
 #' )))
 #'
-#' # Cosine similarity (quanteda uses 2 threads internally)
-#' result_simil <- calculate_similarity(dfmat, ncores = 2,
+#' result_simil <- calculate_similarity(dfmat,
 #'                                      margin = "documents",
 #'                                      method = "cosine")
 #'
-#' # Euclidean distance
-#' result_dist <- calculate_distance(dfmat, ncores = 2,
+#' result_dist <- calculate_distance(dfmat,
 #'                                   margin = "documents",
 #'                                   method = "euclidean")
 #'

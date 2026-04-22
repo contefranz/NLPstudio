@@ -1,7 +1,8 @@
 #' Loughran and McDonald Firm Complexity Dictionary
 #'
-#' A [dictionary] containing the
-#' the 2024 version of the Loughran and McDonald Firm Complexity Word List. The list contains 53 words.
+#' A [dictionary] containing the 2024 Loughran and McDonald firm complexity
+#' word list. The object has a single top-level entry, `Firm_Complexity`, with
+#' 53 terms for complexity-oriented text analysis.
 #' @source 
 #' <https://sraf.nd.edu/complexity/>
 #' 
@@ -16,8 +17,8 @@
 
 #' Feng Li Forward Looking Statement Dictionary
 #'
-#' A [dictionary] containing the
-#' the 2010 version of the Feng Li's Forward Looking Statement Word List. The list contains 18 words.
+#' A [dictionary] containing Feng Li's 2010 forward-looking statement word
+#' list. The object has a single top-level entry, `FLS_Li`, with 18 terms.
 #' @source <https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1475-679X.2010.00382.x>
 #' @references
 #'   Li, F. (2010). The Information Content of Forward-Looking Statements in
@@ -28,9 +29,9 @@
 
 #' Bozanic Roulstone VanBuskirk Forward Looking Statement Dictionary
 #'
-#' A [dictionary] containing the
-#' the 2018 version of the Bozanic, Roulstone, and VanBuskirk Forward Looking Statement Word List.
-#' The list contains 90 words.
+#' A [dictionary] containing the 2018 Bozanic, Roulstone, and Van Buskirk
+#' forward-looking statement word list. The object has a single top-level
+#' entry, `FLS_BozanicRoulstoneVanBuskirk`, with 90 terms.
 #' @source <https://www.sciencedirect.com/science/article/abs/pii/S0165410117300733>
 #' @references
 #'   Bozanic, Z., Roulstone, D.T., Van Buskirk, A. (2018), Management earnings forecasts and other
@@ -41,15 +42,16 @@
 
 #' Cannon, Ling, Wang, and Watanabe CSR Dictionary
 #'
-#' A [dictionary] containing the
-#' the 2020 version of the Cannon, Ling, Wang, and Watanabe Corporate Social Responsibility Word List.
+#' A [dictionary] containing the Cannon, Ling, Wang, and Watanabe corporate
+#' social responsibility word list. The object has four top-level categories
+#' and mixes unigrams with multi-word expressions.
 #'
 #' @details
-#' The dictionary contains four categories of unigrams and bigrams:
-#' * _Philantropy_
-#' * _Business Practice_
-#' * _Product_
-#' * _General_
+#' The dictionary contains four categories:
+#' * `Philantropy`
+#' * `BusinessPractice`
+#' * `Product`
+#' * `General`
 #'
 #' @source <https://www.tandfonline.com/doi/epdf/10.1080/09638180.2019.1670223?src=getftr>
 #' @references
@@ -61,8 +63,9 @@
 
 #' U.N. Sustainable Development Goals (SDG) Mapping Dictionary
 #'
-#' A [dictionary] containing the
-#' key terms to identify SDGs withing research papers as mapped by Wang et al. (2023).
+#' A [dictionary] containing key terms for mapping research text to
+#' Sustainable Development Goal themes following Wang et al. (2023). The object
+#' has 16 top-level entries named `SDG1` through `SDG16`.
 #'
 #' @details
 #' The Auckland Approach, an enhanced method for mapping research publications to the Sustainable
@@ -73,7 +76,6 @@
 #' mapping by incorporating both globally standardized and locally relevant keywords.
 #' The methodology ensures a more comprehensive, contextualized, and data-driven mapping process,
 #' effectively tailoring global SDG themes to specific local research needs and narratives.
-#' The dictionary contains 16 categories.
 #'
 #' @source
 #' <https://www.researchsquare.com/article/rs-2544385/v2>
@@ -84,6 +86,5 @@
 #'   _Working Paper_ available [here](https://assets.researchsquare.com/files/rs-2544385/v3/de08997f5c48f22a37cc4f93.pdf?c=1678389566).
 #' @keywords data
 "data_dictionary_SDG"
-
 
 

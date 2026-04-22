@@ -26,6 +26,14 @@ if ( getRversion() >= "2.15.1" ) {
 
 #' @returns A [data.table] object with detailed information about each document.
 #'
+#' @examples
+#' corp <- quanteda::corpus(c(
+#'   doc1 = "A short document with simple language.",
+#'   doc2 = "A second text with more tokens and more variation."
+#' ))
+#'
+#' summarize_corpus(corp)
+#'
 #' @import data.table
 #' @export
 summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {

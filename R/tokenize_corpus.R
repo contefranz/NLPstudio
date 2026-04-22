@@ -69,20 +69,13 @@
 #' @return A [quanteda::tokens()] object containing tokenized documents
 #' with the same number and order of documents as the input corpus.
 #'
-#' @examplesIf interactive()
-#' library(NLPstudio)
+#' @examples
 #' corp <- quanteda::corpus(
 #'   c("Cats are running", "Dogs were barking")
 #' )
 #'
-#' # Sequential
-#' toks_seq <- tokenize_corpus(corp)
-#'
-#' # Parallel with PSOCK
-#' toks_psock <- tokenize_corpus(corp, ncores = 2, socket = "PSOCK")
-#'
-#' # Parallel with FORK (Linux/macOS only, not recommended)
-#' toks_fork <- tokenize_corpus(corp, ncores = 2, socket = "FORK")
+#' toks <- tokenize_corpus(corp, remove_punct = TRUE)
+#' toks
 #'
 #' @export
 tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {

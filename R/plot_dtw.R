@@ -35,6 +35,31 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @seealso [warp_lda()], [topicmodels::LDA()], [seededlda::textmodel_seqlda()], [geom_histogram()]
 #'
+#' @examples
+#' dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(
+#'       c(1, 0, 0, 1,
+#'         1, 1, 0, 0,
+#'         0, 1, 1, 0),
+#'       nrow = 3,
+#'       byrow = TRUE
+#'     ),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' colnames(dtm) <- paste0("term", 1:4)
+#' rownames(dtm) <- paste0("doc", 1:3)
+#'
+#' model <- warp_lda(
+#'   dtm,
+#'   k = 2,
+#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#' )
+#'
+#' plot_dtw(model, topics = 1:2, bins = 5)
+#'
 #' @import ggplot2 data.table
 #' @export
 

@@ -13,6 +13,17 @@
 #' @returns A [data.table] with as many columns as passed to
 #' `measure` and `doc_id` as the document identifier.
 #'
+#' @examples
+#' texts <- c(
+#'   doc1 = "This is a short and very simple document.",
+#'   doc2 = "This second document contains slightly longer sentences for illustration."
+#' )
+#'
+#' calculate_readability(
+#'   texts,
+#'   measure = c("Flesch", "FOG")
+#' )
+#'
 #' @author Francesco Grossetti <francesco.grossetti@unibocconi.it>
 #'
 #' @import data.table

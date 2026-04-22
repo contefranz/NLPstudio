@@ -85,6 +85,24 @@ if ( getRversion() >= "2.15.1" ) {
 #' @seealso [RcppSimdJson::fload()], [data.table::melt()],
 #'   [parallel::mclapply()], [parallel::clusterApplyLB()]
 #'
+#' @examplesIf interactive()
+#' # Requires the optional RcppSimdJson package and a directory of SEC-style
+#' # JSON filings supplied by the user.
+#' files <- list.files(
+#'   "data/json_filings",
+#'   pattern = "\\\\.json$",
+#'   recursive = TRUE,
+#'   full.names = TRUE
+#' )
+#'
+#' dt <- from_json_to_df(
+#'   files,
+#'   what = "10-K",
+#'   ncores = 2
+#' )
+#'
+#' head(dt)
+#'
 #' @import data.table
 #' @export
 from_json_to_df <- function(files, ncores = 1, nchunks = ncores,

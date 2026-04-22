@@ -39,6 +39,18 @@ PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}})
 stability. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS.
 }
+\examples{
+texts <- c(
+  doc1 = "This is a short and very simple document.",
+  doc2 = "This second document contains slightly longer sentences for illustration."
+)
+
+calculate_readability(
+  texts,
+  measure = c("Flesch", "FOG")
+)
+
+}
 \author{
 Francesco Grossetti \href{mailto:francesco.grossetti@unibocconi.it}{francesco.grossetti@unibocconi.it}
 }

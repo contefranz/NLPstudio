@@ -41,6 +41,19 @@
 #'
 #' @seealso [spacy_install()] [spacy_initialize()] [spacy_parse()]
 #'
+#' @examplesIf interactive()
+#' # Requires the optional spacyr package, a local spaCy installation,
+#' # and an initialized language model.
+#' corp <- quanteda::corpus(c(
+#'   doc1 = "This is a simple example sentence.",
+#'   doc2 = "NLPstudio can parse corpora in parallel."
+#' ))
+#'
+#' spacyr::spacy_initialize()
+#' parsed <- parse_corpus(corp, lemma = TRUE, pos = TRUE)
+#' head(parsed)
+#' spacyr::spacy_finalize()
+#'
 #' @author Francesco Grossetti <francesco.grossetti@unibocconi.it>
 #'
 #' @import data.table

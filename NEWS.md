@@ -1,5 +1,17 @@
 # NLPstudio News
 
+## NLPstudio 0.5.1  (2026-04-22)
+
+### NOTES
+
+1. Added guarded copy-paste examples for the remaining exported, supported
+   functions that previously lacked them. The new examples are written with
+   `@examplesIf interactive()` so they document intended usage without being
+   executed during package checks.
+
+2. The examples release intentionally excludes deprecated
+   `set_ff_industries()` and does not revisit APIs removed in v0.5.0.
+
 ## NLPstudio 0.5.0  (2026-04-21)
 
 ### BREAKING CHANGES

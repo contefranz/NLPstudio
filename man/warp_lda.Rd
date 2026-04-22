@@ -68,6 +68,54 @@ The output includes the trained model object and, optionally, the matrices \eqn{
 for convenient downstream analysis. Note that \eqn{\phi} is expressed as a probability
 distribution over words for each topic. That is, it already represents likelihood estimates.
 }
+\examples{
+dtm <- methods::as(
+  Matrix::Matrix(
+    matrix(
+      c(1, 0, 0, 1,
+        1, 1, 0, 0,
+        0, 1, 1, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  ),
+  "dgCMatrix"
+)
+colnames(dtm) <- paste0("term", 1:4)
+rownames(dtm) <- paste0("doc", 1:3)
+
+model <- warp_lda(
+  dtm,
+  k = 2,
+  fit_control = list(n_iter = 25, progressbar = FALSE)
+)
+
+names(model)
+
+dtm <- methods::as(
+  Matrix::Matrix(
+    matrix(
+      c(1, 0, 0, 1,
+        1, 1, 0, 0,
+        0, 1, 1, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  ),
+  "dgCMatrix"
+)
+colnames(dtm) <- paste0("term", 1:4)
+rownames(dtm) <- paste0("doc", 1:3)
+
+suppressWarnings(warpLDA(
+  dtm,
+  k = 2,
+  fit_control = list(n_iter = 25, progressbar = FALSE)
+))
+
+}
 \references{
 Chen, J., Li, K., Zhu, J., & Chen, W. (2015). Warplda: a cache efficient O(1) algorithm for
 Latent Dirichlet Allocation. \href{https://arxiv.org/abs/1510.08628}{\emph{arXiv preprint arXiv:1510.08628}}.

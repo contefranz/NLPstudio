@@ -58,6 +58,21 @@ Note that the returned \link[data.table:data.table]{data.table::data.table} may 
 when \code{x} is large, which also can have implications for memory usage and downstream
 processing.
 }
+\examples{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+# Requires the optional spacyr package, a local spaCy installation,
+# and an initialized language model.
+corp <- quanteda::corpus(c(
+  doc1 = "This is a simple example sentence.",
+  doc2 = "NLPstudio can parse corpora in parallel."
+))
+
+spacyr::spacy_initialize()
+parsed <- parse_corpus(corp, lemma = TRUE, pos = TRUE)
+head(parsed)
+spacyr::spacy_finalize()
+\dontshow{\}) # examplesIf}
+}
 \seealso{
 \code{\link[spacyr:spacy_install]{spacyr::spacy_install()}} \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}
 }

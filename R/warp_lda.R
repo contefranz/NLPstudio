@@ -54,6 +54,31 @@
 #' Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). [Latent Dirichlet Allocation](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf).
 #' _Journal of Machine Learning Research_, 3(Jan), 993-1022.
 #'
+#' @examples
+#' dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(
+#'       c(1, 0, 0, 1,
+#'         1, 1, 0, 0,
+#'         0, 1, 1, 0),
+#'       nrow = 3,
+#'       byrow = TRUE
+#'     ),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' colnames(dtm) <- paste0("term", 1:4)
+#' rownames(dtm) <- paste0("doc", 1:3)
+#'
+#' model <- warp_lda(
+#'   dtm,
+#'   k = 2,
+#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#' )
+#'
+#' names(model)
+#'
 #' @export
 
 warp_lda <- function(x, k, return_theta = TRUE, return_phi = TRUE,
@@ -106,6 +131,29 @@ warp_lda <- function(x, k, return_theta = TRUE, return_phi = TRUE,
 }
 
 #' @rdname warp_lda
+#' @examples
+#' dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(
+#'       c(1, 0, 0, 1,
+#'         1, 1, 0, 0,
+#'         0, 1, 1, 0),
+#'       nrow = 3,
+#'       byrow = TRUE
+#'     ),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' colnames(dtm) <- paste0("term", 1:4)
+#' rownames(dtm) <- paste0("doc", 1:3)
+#'
+#' suppressWarnings(warpLDA(
+#'   dtm,
+#'   k = 2,
+#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#' ))
+#'
 #' @export
 warpLDA <- function(...) {
   if (requireNamespace("lifecycle", quietly = TRUE)) {

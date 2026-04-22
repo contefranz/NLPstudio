@@ -45,20 +45,19 @@ ensures consistent handling of document IDs, automatic duplicate checks,
 and integration with the rest of the \strong{NLPstudio} pipeline.
 }
 \examples{
-\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
-# Suppose you have a folder with EDGAR JSON filings
-files <- list.files("data/json_filings", pattern = "\\\\.json$", full.names = TRUE)
+dt <- data.table::data.table(
+  filename = c("filing_a.txt", "filing_b.txt"),
+  item = c("item1", "item1"),
+  text = c(
+    "The first filing contains a short disclosure.",
+    "The second filing contains another disclosure."
+  )
+)
 
-# Convert JSONs to a structured data.table
-dt <- from_json_to_df(files, ncores = 2, chunk_size = 200)
-
-# Build a quanteda corpus with stable document IDs
 corp <- define_corpus(dt)
 
-# Inspect the corpus
 summary(corp)
-docvars(corp)[1:5, ]
-\dontshow{\}) # examplesIf}
+quanteda::docvars(corp)
 }
 \seealso{
 \code{\link[quanteda:corpus]{quanteda::corpus()}}, \code{\link[quanteda:docvars]{quanteda::docvars()}}

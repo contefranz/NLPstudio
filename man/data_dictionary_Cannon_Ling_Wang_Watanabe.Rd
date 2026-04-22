@@ -14,16 +14,17 @@ An object of class \code{dictionary2} of length 4.
 data_dictionary_Cannon_Ling_Wang_Watanabe
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing the
-the 2020 version of the Cannon, Ling, Wang, and Watanabe Corporate Social Responsibility Word List.
+A \link[quanteda:dictionary]{quanteda::dictionary} containing the Cannon, Ling, Wang, and Watanabe corporate
+social responsibility word list. The object has four top-level categories
+and mixes unigrams with multi-word expressions.
 }
 \details{
-The dictionary contains four categories of unigrams and bigrams:
+The dictionary contains four categories:
 \itemize{
-\item \emph{Philantropy}
-\item \emph{Business Practice}
-\item \emph{Product}
-\item \emph{General}
+\item \code{Philantropy}
+\item \code{BusinessPractice}
+\item \code{Product}
+\item \code{General}
 }
 }
 \references{

@@ -35,6 +35,35 @@ correct sorting within facets. Typically, this function is used in
 combination with \code{\link[=get_top_terms]{get_top_terms()}} (with \code{format = "long"}) to prepare
 the input data.
 }
+\examples{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+# Requires the optional tidytext package.
+dtm <- methods::as(
+  Matrix::Matrix(
+    matrix(
+      c(1, 0, 0, 1,
+        1, 1, 0, 0,
+        0, 1, 1, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  ),
+  "dgCMatrix"
+)
+colnames(dtm) <- paste0("term", 1:4)
+rownames(dtm) <- paste0("doc", 1:3)
+
+model <- warp_lda(
+  dtm,
+  k = 2,
+  fit_control = list(n_iter = 25, progressbar = FALSE)
+)
+top_terms <- get_top_terms(model, n = 3, format = "long")
+
+plot_top_terms(top_terms)
+\dontshow{\}) # examplesIf}
+}
 \seealso{
 \code{\link[=get_top_terms]{get_top_terms()}}, \code{\link[=plot_dtw]{plot_dtw()}}
 }

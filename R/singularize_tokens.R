@@ -24,7 +24,17 @@ if (getRversion() >= "2.15.1") {
 #' @note Requires the **pluralize** package. On Linux/macOS, `"FORK"` may be
 #' faster but can be unstable with quanteda’s C++/OpenMP internals. Use `"PSOCK"`
 #' for maximum stability. On Windows, `"FORK"` is not available.
-#' 
+#'
+#' @examplesIf interactive()
+#' # Requires the optional pluralize package installed separately.
+#' corp <- quanteda::corpus(c(
+#'   doc1 = "Cats chase birds and cars pass houses.",
+#'   doc2 = "Companies file reports and managers review numbers."
+#' ))
+#' toks <- tokenize_corpus(corp)
+#'
+#' singularize_tokens(toks, min_char = 3)
+#'
 #'
 #' @import data.table
 #' @export

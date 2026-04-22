@@ -21,12 +21,14 @@
 #' functions allow users to extract, rank, and visualize topic–word distributions
 #' in both long and wide formats, facilitating model inspection and downstream
 #' analysis.
-#' 
+#'
 #' To support domain-specific content analysis, **NLPstudio** ships with curated,
 #' pre-compiled **quanteda** dictionaries tailored to financial and regulatory
 #' texts. These include vocabularies for detecting forward-looking statements,
 #' firm complexity, corporate social responsibility, and sustainable development
-#' themes.
+#' themes. Workflows such as raw file discovery, SEC master-file ingestion, and
+#' external industry mapping are expected to be handled upstream before data
+#' enters the core package pipeline.
 #' 
 #' @details
 #' The core implementation emphasizes:
@@ -52,9 +54,10 @@
 #'   of **[topicmodels](https://cran.r-project.org/web/packages/topicmodels/index.html)**  
 #'   is also supported. 
 #' - **Corpus ingestion:**  
-#'   `from_json_to_df()` converts SEC-style JSON filings into tidy
-#'   data.tables, with chunking controlled by `nchunks` and optional
-#'   `max_chunk_size` to prevent memory spikes.
+#'   `from_json_to_df()` converts user-supplied SEC-style JSON filings into
+#'   tidy data.tables, with chunking controlled by `nchunks` and optional
+#'   `max_chunk_size` to prevent memory spikes. File discovery and auxiliary
+#'   metadata preparation are intentionally managed outside the package.
 #'   
 #' - **Domain dictionaries:**  
 #'   Pre-loaded dictionaries enable lookup-based bag-of-words analysis tailored

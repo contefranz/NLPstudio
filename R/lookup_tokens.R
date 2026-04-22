@@ -23,6 +23,20 @@
 #' @return A [quanteda::tokens()] object with lookups applied and
 #' documents in the same order as the input.
 #'
+#' @examples
+#' corp <- quanteda::corpus(c(
+#'   doc1 = "Cats and dogs run quickly.",
+#'   doc2 = "Markets and firms react to policy news."
+#' ))
+#' toks <- tokenize_corpus(corp)
+#'
+#' dict <- quanteda::dictionary(list(
+#'   animals = c("cat*", "dog*"),
+#'   economics = c("market*", "firm*", "policy")
+#' ))
+#'
+#' lookup_tokens(toks, dictionary = dict)
+#'
 #' @export
 lookup_tokens <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
   if (!quanteda::is.tokens(x)) {

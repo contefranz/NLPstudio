@@ -51,3 +51,16 @@ Requires the \strong{pluralize} package. On Linux/macOS, \code{"FORK"} may be
 faster but can be unstable with quanteda’s C++/OpenMP internals. Use \code{"PSOCK"}
 for maximum stability. On Windows, \code{"FORK"} is not available.
 }
+\examples{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+# Requires the optional pluralize package installed separately.
+corp <- quanteda::corpus(c(
+  doc1 = "Cats chase birds and cars pass houses.",
+  doc2 = "Companies file reports and managers review numbers."
+))
+toks <- tokenize_corpus(corp)
+
+singularize_tokens(toks, min_char = 3)
+
+\dontshow{\}) # examplesIf}
+}

@@ -49,20 +49,17 @@ the appropriate \strong{quanteda.textstats} S4 class
 (\link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}).
 }
 \examples{
-\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
-dfmat <- dfm(tokens(c(
+dfmat <- quanteda::dfm(quanteda::tokens(c(
   "this is a test", "another document",
-  "more text here",  "testing similarity"
+  "more text here", "testing similarity"
 )))
 
-# Cosine similarity (quanteda uses 2 threads internally)
-result_simil <- calculate_similarity(dfmat, ncores = 2,
+result_simil <- calculate_similarity(dfmat,
                                      margin = "documents",
                                      method = "cosine")
 
-# Euclidean distance
-result_dist <- calculate_distance(dfmat, ncores = 2,
+result_dist <- calculate_distance(dfmat,
                                   margin = "documents",
                                   method = "euclidean")
-\dontshow{\}) # examplesIf}
+
 }

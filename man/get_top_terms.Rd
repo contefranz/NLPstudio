@@ -46,6 +46,32 @@ top words, or exporting for labeling. Internally, the function uses \code{data.t
 grouping and sorting. The \code{probability} column represents the raw conditional probability of observing
 a word in a given topic (i.e., \eqn{\mathcal{P}(w \mid \phi)})
 }
+\examples{
+dtm <- methods::as(
+  Matrix::Matrix(
+    matrix(
+      c(1, 0, 0, 1,
+        1, 1, 0, 0,
+        0, 1, 1, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  ),
+  "dgCMatrix"
+)
+colnames(dtm) <- paste0("term", 1:4)
+rownames(dtm) <- paste0("doc", 1:3)
+
+model <- warp_lda(
+  dtm,
+  k = 2,
+  fit_control = list(n_iter = 25, progressbar = FALSE)
+)
+
+get_top_terms(model, n = 3, format = "long")
+
+}
 \seealso{
 \code{\link[=warp_lda]{warp_lda()}}, \code{\link[=plot_top_terms]{plot_top_terms()}} \code{\link[=plot_dtw]{plot_dtw()}} \link[topicmodels:lda]{LDA()}
 }

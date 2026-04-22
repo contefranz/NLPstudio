@@ -50,3 +50,12 @@ quanteda, as it can lead to undefined behavior. If you insist on using
 \code{OMP_NUM_THREADS=1} and/or \code{quanteda_options(threads = 1)}) to reduce conflicts.
 On Windows, setting \code{socket = "FORK"} will result in an error.
 }
+\examples{
+corp <- quanteda::corpus(c(
+  doc1 = "A short document with simple language.",
+  doc2 = "A second text with more tokens and more variation."
+))
+
+summarize_corpus(corp)
+
+}

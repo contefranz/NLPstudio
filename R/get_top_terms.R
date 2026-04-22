@@ -33,6 +33,31 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @seealso [warp_lda()], [plot_top_terms()] [plot_dtw()] [LDA()][topicmodels::LDA]
 #'
+#' @examples
+#' dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(
+#'       c(1, 0, 0, 1,
+#'         1, 1, 0, 0,
+#'         0, 1, 1, 0),
+#'       nrow = 3,
+#'       byrow = TRUE
+#'     ),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' colnames(dtm) <- paste0("term", 1:4)
+#' rownames(dtm) <- paste0("doc", 1:3)
+#'
+#' model <- warp_lda(
+#'   dtm,
+#'   k = 2,
+#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#' )
+#'
+#' get_top_terms(model, n = 3, format = "long")
+#'
 #' @import data.table
 #' @export
 #' 

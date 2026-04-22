@@ -49,6 +49,32 @@ For \link[topicmodels:tm-class]{TopicModel-class} input, the function constructs
 (e.g., using \code{x@documents} and \code{x@gamma}), and then ensures the presence of a \code{doc_id} column
 and standardized topic column names (e.g., \code{Topic001}, \code{Topic002}, \code{...}).
 }
+\examples{
+dtm <- methods::as(
+  Matrix::Matrix(
+    matrix(
+      c(1, 0, 0, 1,
+        1, 1, 0, 0,
+        0, 1, 1, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  ),
+  "dgCMatrix"
+)
+colnames(dtm) <- paste0("term", 1:4)
+rownames(dtm) <- paste0("doc", 1:3)
+
+model <- warp_lda(
+  dtm,
+  k = 2,
+  fit_control = list(n_iter = 25, progressbar = FALSE)
+)
+
+plot_dtw(model, topics = 1:2, bins = 5)
+
+}
 \seealso{
 \code{\link[=warp_lda]{warp_lda()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}
 }

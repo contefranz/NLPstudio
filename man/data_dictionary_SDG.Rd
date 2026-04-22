@@ -16,8 +16,9 @@ An object of class \code{dictionary2} of length 16.
 data_dictionary_SDG
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing the
-key terms to identify SDGs withing research papers as mapped by Wang et al. (2023).
+A \link[quanteda:dictionary]{quanteda::dictionary} containing key terms for mapping research text to
+Sustainable Development Goal themes following Wang et al. (2023). The object
+has 16 top-level entries named \code{SDG1} through \code{SDG16}.
 }
 \details{
 The Auckland Approach, an enhanced method for mapping research publications to the Sustainable
@@ -28,7 +29,6 @@ United Nations (UN), improves the precision and coverage of SDG
 mapping by incorporating both globally standardized and locally relevant keywords.
 The methodology ensures a more comprehensive, contextualized, and data-driven mapping process,
 effectively tailoring global SDG themes to specific local research needs and narratives.
-The dictionary contains 16 categories.
 }
 \references{
 Wang, W., Kang, W., & Mu, J. (2023). Mapping research to the sustainable development goals
