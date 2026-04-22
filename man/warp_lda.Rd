@@ -2,8 +2,7 @@
 % Please edit documentation in R/warp_lda.R
 \name{warp_lda}
 \alias{warp_lda}
-\alias{warpLDA}
-\title{Fit a WarpLDA Class Topic Model}
+\title{Backward-Compatible Wrapper for \code{fit_topic_model()}}
 \usage{
 warp_lda(
   x,
@@ -13,116 +12,70 @@ warp_lda(
   lda_control = list(),
   fit_control = list()
 )
-
-warpLDA(...)
 }
 \arguments{
-\item{x}{A sparse document-term matrix of class \link[Matrix:dgCMatrix-class]{Matrix::dgCMatrix}.}
+\item{x}{A sparse document-feature input of class \link[Matrix:dgCMatrix-class]{dgCMatrix-class},
+\link[quanteda:dfm]{dfm}, or \code{DocumentTermMatrix}.}
 
-\item{k}{The number of latent topics to estimate.}
+\item{k}{Number of topics to estimate.}
 
-\item{return_theta}{Should the Document-Topic-Weights matrix ( \eqn{\theta} ) be returned? Default to \code{TRUE}.}
+\item{return_theta}{Should cached DTW be returned under the legacy \code{theta}
+name? Defaults to \code{TRUE}.}
 
-\item{return_phi}{Should the Topic-Word-Weights matrix ( \eqn{\phi} ) be returned? Default to \code{TRUE}.}
+\item{return_phi}{Should cached TWW be returned under the legacy \code{phi}
+name? Defaults to \code{TRUE}.}
 
-\item{lda_control}{A named list of arguments forwarded to \code{\link[text2vec:LatentDirichletAllocation]{LDA$new()}}.
-Overrides the defaults \code{doc_topic_prior = 0.1} and \code{topic_word_prior = 0.001}.
-\code{n_topics} is always set from \code{k} and cannot be overridden here.}
+\item{lda_control}{A named list of arguments forwarded to
+\code{\link[text2vec:LatentDirichletAllocation]{LDA$new()}}.}
 
 \item{fit_control}{A named list of arguments forwarded to
-\code{\link[text2vec:LatentDirichletAllocation]{LDA$fit_transform()}}. Overrides the defaults
-\code{n_iter = 1000}, \code{convergence_tol = 0.001}, \code{n_check_convergence = 25},
-and \code{progressbar = TRUE}.}
-
-\item{...}{Additional arguments passed through from the deprecated
-\code{\link[=warpLDA]{warpLDA()}} wrapper to \code{\link[=warp_lda]{warp_lda()}}.}
+\code{LDA$fit_transform()}.}
 }
 \value{
-A named list with the following elements:
+A named list with the historical structure:
 \itemize{
-\item \code{lda_object}. The trained \code{\link[text2vec:LatentDirichletAllocation]{LDA}} model object, containing methods for inference,
-scoring, and topic extraction.
-\item \code{theta}. A \code{data.table} of document-topic weights (\eqn{\theta}), where rows are documents
-and columns are topic proportions. Included if \code{return_theta = TRUE}.
-\item \code{phi}. A \code{data.table} of topic-word probabilities (\eqn{\phi}), where rows are topics and columns
-are terms. Included if \code{return_phi = TRUE}.
+\item \code{lda_object}: the raw \code{\link[text2vec:LatentDirichletAllocation]{LDA}} fit.
+\item \code{theta}: standardized DTW when \code{return_theta = TRUE}.
+\item \code{phi}: standardized TWW when \code{return_phi = TRUE}.
 }
 }
 \description{
-Fit a Latent Dirichlet Allocation model using \link[text2vec:LatentDirichletAllocation]{WarpLDA} class from the package \strong{text2vec}.
-Conveniently returns utility objects such as \eqn{\theta} and \eqn{\phi} matrices for subsequent
-analysis.
+\code{warp_lda()} remains available in v0.6.0 as a compatibility wrapper for the
+legacy WarpLDA workflow. New code should call \code{fit_topic_model()} with
+\code{engine = "text2vec"} and \code{model = "lda"} instead.
 }
 \details{
-This function wraps the \link[text2vec:LatentDirichletAllocation]{text2vec::LDA} class to fit a probabilistic topic model using the
-WarpLDA algorithm — a highly efficient method for estimating Latent Dirichlet Allocation (LDA)
-models on large and sparse document-term matrices. Internally, the function initializes the
-LDA model via \code{LDA$new()} and fits it using \code{LDA$fit_transform()}.
-
-Constructor arguments (\code{lda_control}) and fitting arguments (\code{fit_control}) are kept separate
-so that options valid only at construction time (e.g., \code{doc_topic_prior}) cannot accidentally
-be forwarded to the fitting step, and vice versa (e.g., \code{progressbar}).
-
-The output includes the trained model object and, optionally, the matrices \eqn{\theta}
-(document-topic proportions) and \eqn{\phi} (topic-word distributions), both in \code{data.table} format
-for convenient downstream analysis. Note that \eqn{\phi} is expressed as a probability
-distribution over words for each topic. That is, it already represents likelihood estimates.
+This wrapper is soft-deprecated in favor of \code{fit_topic_model()}. It keeps
+the old return shape for one release cycle so existing code can migrate
+incrementally.
 }
 \examples{
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
-      c(1, 0, 0, 1,
-        1, 1, 0, 0,
-        0, 1, 1, 0),
-      nrow = 3,
+      c(1, 0, 1,
+        1, 1, 0,
+        0, 1, 1,
+        1, 1, 1),
+      nrow = 4,
       byrow = TRUE
     ),
     sparse = TRUE
   ),
   "dgCMatrix"
 )
-colnames(dtm) <- paste0("term", 1:4)
-rownames(dtm) <- paste0("doc", 1:3)
+rownames(dtm) <- paste0("doc", 1:4)
+colnames(dtm) <- paste0("term", 1:3)
 
-model <- warp_lda(
-  dtm,
-  k = 2,
-  fit_control = list(n_iter = 25, progressbar = FALSE)
+suppressWarnings(
+  warp_lda(
+    dtm,
+    k = 2,
+    fit_control = list(n_iter = 25, progressbar = FALSE)
+  )
 )
 
-names(model)
-
-dtm <- methods::as(
-  Matrix::Matrix(
-    matrix(
-      c(1, 0, 0, 1,
-        1, 1, 0, 0,
-        0, 1, 1, 0),
-      nrow = 3,
-      byrow = TRUE
-    ),
-    sparse = TRUE
-  ),
-  "dgCMatrix"
-)
-colnames(dtm) <- paste0("term", 1:4)
-rownames(dtm) <- paste0("doc", 1:3)
-
-suppressWarnings(warpLDA(
-  dtm,
-  k = 2,
-  fit_control = list(n_iter = 25, progressbar = FALSE)
-))
-
-}
-\references{
-Chen, J., Li, K., Zhu, J., & Chen, W. (2015). Warplda: a cache efficient O(1) algorithm for
-Latent Dirichlet Allocation. \href{https://arxiv.org/abs/1510.08628}{\emph{arXiv preprint arXiv:1510.08628}}.
-
-Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003). \href{https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf}{Latent Dirichlet Allocation}.
-\emph{Journal of Machine Learning Research}, 3(Jan), 993-1022.
 }
 \seealso{
-\code{\link[text2vec:LatentDirichletAllocation]{LDA}}
+\code{fit_topic_model()}, \code{get_dtw()}, \code{get_tww()}
 }

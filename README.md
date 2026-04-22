@@ -1,7 +1,7 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
-[![release](https://img.shields.io/badge/release-v0.5.1-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.5.1)
+[![release](https://img.shields.io/badge/release-v0.6.0-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.6.0)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -21,10 +21,12 @@ package.
 
 In addition to preprocessing tasks such as tokenization, singularization,
 reshaping, summarization, and similarity computations, **NLPstudio** includes a
-topic modeling pipeline built on [**text2vec**](https://cran.r-project.org/package=text2vec)
-(WarpLDA) with utilities for extracting and visualizing topic–word and
-document–topic distributions. Models from
-[**topicmodels**](https://cran.r-project.org/package=topicmodels) are also supported.
+unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/package=text2vec),
+[**topicmodels**](https://cran.r-project.org/package=topicmodels), and
+[**seededlda**](https://cran.r-project.org/package=seededlda). The package
+standardizes document-topic weights (DTW), topic-word weights (TWW),
+representative-candidate extraction, and downstream visualization across those
+engines.
 
 The package also provides curated **quanteda** dictionaries tailored to
 financial and regulatory text, including forward-looking statements, firm

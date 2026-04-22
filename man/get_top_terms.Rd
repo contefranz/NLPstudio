@@ -2,76 +2,66 @@
 % Please edit documentation in R/get_top_terms.R
 \name{get_top_terms}
 \alias{get_top_terms}
-\title{Extract Topic-Word Probabilities and Terms}
+\title{Extract Top Terms from Standardized TWW}
 \usage{
 get_top_terms(x, n = 10, topics = NULL, format = c("long", "wide"))
 }
 \arguments{
-\item{x}{Either the output of \code{\link[=warp_lda]{warp_lda()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
-\link[topicmodels:tm-class]{TopicModel-class}, or a sequential LDA fitted by \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}.}
+\item{x}{A supported topic-model object accepted by \code{get_tww()}.}
 
-\item{n}{Integer. Number of top terms to extract per topic. Default is 10.}
+\item{n}{Integer. Number of top terms to extract per topic. Defaults to \code{10}.}
 
-\item{topics}{Optional numeric vector specifying which topics to return. If \code{NULL} (default), all topics are included.}
+\item{topics}{Optional topic filter supplied either as numeric indices or as
+\code{Topic###} identifiers. If \code{NULL}, all topics are included.}
 
-\item{format}{Output format. Either \code{"long"} (default) for a tidy table, or \code{"wide"} for a
-spreadsheet-like layout with separate columns for each topic's top terms and probabilities.}
+\item{format}{Output format. Either \code{"long"} (default) or \code{"wide"}.}
 }
 \value{
-A \code{data.table} in either:
+A \code{data.table}.
 \itemize{
-\item \strong{Long format}: One row per (topic, term) pair, with columns:
-\itemize{
-\item \code{rank}: The rank of the term within its topic.
-\item \code{topic}: The topic number.
-\item \code{term}: The term (column name from \code{phi}).
-\item \code{probability}: The estimated probability of the term in the topic.
-}
-\item \strong{Wide format}: One row per rank, with two columns per topic:
-\itemize{
-\item \code{topic_k-th_term}: The term at rank \code{i} for \code{k-th} topic (zero-padded).
-\item \code{topic_k-th_prob}: The corresponding probability value.
-}
+\item \code{"long"} format contains one row per \verb{(topic, term)} pair with columns
+\code{rank}, \code{topic}, \code{term}, and \code{probability}.
+\item \code{"wide"} format contains one row per rank with two columns per topic:
+\verb{<Topic###>_term} and \verb{<Topic###>_prob}.
 }
 }
 \description{
-This function extracts the top \code{n} most probable terms from each topic in the topic-word
-distribution matrix (\code{phi}). It supports both long and wide output
-formats, making it suitable for downstream tasks such as inspection, visualization, or export.
+Extract the top \code{n} highest-probability terms from each topic. The function
+works across all topic-model backends supported by \code{get_tww()}.
 }
 \details{
-The function reshapes the \code{phi} matrix to long format and ranks the terms within each topic
-by their estimated probability. This is useful for interpreting topics, displaying
-top words, or exporting for labeling. Internally, the function uses \code{data.table} for fast
-grouping and sorting. The \code{probability} column represents the raw conditional probability of observing
-a word in a given topic (i.e., \eqn{\mathcal{P}(w \mid \phi)})
+\code{get_top_terms()} first extracts standardized TWW via \code{get_tww()}, then
+ranks terms within each topic by descending probability.
 }
 \examples{
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
-      c(1, 0, 0, 1,
-        1, 1, 0, 0,
-        0, 1, 1, 0),
-      nrow = 3,
+      c(1, 0, 1,
+        1, 1, 0,
+        0, 1, 1,
+        1, 1, 1),
+      nrow = 4,
       byrow = TRUE
     ),
     sparse = TRUE
   ),
   "dgCMatrix"
 )
-colnames(dtm) <- paste0("term", 1:4)
-rownames(dtm) <- paste0("doc", 1:3)
+rownames(dtm) <- paste0("doc", 1:4)
+colnames(dtm) <- paste0("term", 1:3)
 
-model <- warp_lda(
+fit <- fit_topic_model(
   dtm,
+  engine = "text2vec",
+  model = "lda",
   k = 2,
   fit_control = list(n_iter = 25, progressbar = FALSE)
 )
 
-get_top_terms(model, n = 3, format = "long")
+get_top_terms(fit, n = 2, format = "long")
 
 }
 \seealso{
-\code{\link[=warp_lda]{warp_lda()}}, \code{\link[=plot_top_terms]{plot_top_terms()}} \code{\link[=plot_dtw]{plot_dtw()}} \link[topicmodels:lda]{LDA()}
+\code{fit_topic_model()}, \code{get_tww()}, \code{\link[=plot_top_terms]{plot_top_terms()}}, \code{\link[=plot_dtw]{plot_dtw()}}
 }

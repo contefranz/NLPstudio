@@ -20,12 +20,14 @@ distance computations. These features are tightly integrated with
 memory handling and with \strong{parallel} backends for scalable multicore
 processing.
 
-In addition to core NLP functionality, \strong{NLPstudio} provides a topic modeling
-pipeline based on the WarpLDA algorithm from
-\strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}}. Utility
-functions allow users to extract, rank, and visualize topic–word distributions
-in both long and wide formats, facilitating model inspection and downstream
-analysis.
+In addition to core NLP functionality, \strong{NLPstudio} provides a unified
+topic-modeling API spanning
+\strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}},
+\strong{\href{https://cran.r-project.org/package=topicmodels}{topicmodels}}, and
+\strong{\href{https://cran.r-project.org/package=seededlda}{seededlda}}. Utility
+functions standardize document-topic weights (DTW), topic-word weights
+(TWW), top-term extraction, representative-candidate retrieval, and
+visualization across those engines.
 
 To support domain-specific content analysis, \strong{NLPstudio} ships with curated,
 pre-compiled \strong{quanteda} dictionaries tailored to financial and regulatory
@@ -49,13 +51,11 @@ forking on Linux/macOS) backends.
 and \code{calculate_distance()} provide fast document-level metrics and
 statistics built on \code{quanteda.textstats}.
 \item \strong{Topic modeling:}
-\code{warp_lda()} interfaces with \strong{text2vec} to fit topic models, while
-\code{get_top_terms()} and \code{plot_top_terms()} support extraction and
-visualization of model outputs. The function \code{plot_dtw()} can be used to
-inspect the distribution of document–topic weights across a fitted model.
-\link[topicmodels:tm-class]{TopicModel-class}
-of \strong{\href{https://cran.r-project.org/web/packages/topicmodels/index.html}{topicmodels}}
-is also supported.
+\code{fit_topic_model()} provides a common fitting interface across
+\strong{text2vec}, \strong{topicmodels}, and \strong{seededlda}. Downstream helpers such
+as \code{get_dtw()}, \code{get_tww()}, \code{get_top_terms()}, \code{plot_top_terms()},
+\code{plot_dtw()}, and \code{get_representative_candidates()} work with the
+standardized DTW/TWW representation regardless of the fitting backend.
 \item \strong{Corpus ingestion:}
 \code{from_json_to_df()} converts user-supplied SEC-style JSON filings into
 tidy data.tables, with chunking controlled by \code{nchunks} and optional

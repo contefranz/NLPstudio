@@ -1,5 +1,34 @@
 # NLPstudio News
 
+## NLPstudio 0.6.0  (2026-04-22)
+
+### BREAKING CHANGES
+
+1. `warpLDA()` has been removed from the public API.
+
+### NEW FEATURES
+
+1. Added `fit_topic_model()`, a unified topic-model fitting interface across
+   **text2vec**, **topicmodels**, and **seededlda**.
+
+2. Added `get_dtw()` and `get_tww()` to standardize document-topic weights
+   (DTW) and topic-word weights (TWW) using the `Topic###` naming convention.
+
+3. Added `get_representative_candidates()` to extract dominant-topic
+   candidates and band them within topic using quantile or deterministic
+   rank-based fallback rules.
+
+### CHANGES
+
+1. `get_top_terms()` and `plot_dtw()` now route through the standardized
+   DTW/TWW extractor layer instead of backend-specific logic.
+
+2. `warp_lda()` remains available only as a soft-deprecated compatibility
+   wrapper around `fit_topic_model(engine = "text2vec", model = "lda")`.
+
+3. Package documentation now uses DTW/TWW terminology following Lewis and
+   Grossetti (2022) and documents the returned `nlp_topic_fit` S3 wrapper.
+
 ## NLPstudio 0.5.1  (2026-04-22)
 
 ### NOTES

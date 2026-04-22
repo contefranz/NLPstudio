@@ -33,21 +33,24 @@ if ( getRversion() >= "2.15.1" ) {
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
-#'       c(1, 0, 0, 1,
-#'         1, 1, 0, 0,
-#'         0, 1, 1, 0),
-#'       nrow = 3,
+#'       c(1, 0, 1,
+#'         1, 1, 0,
+#'         0, 1, 1,
+#'         1, 1, 1),
+#'       nrow = 4,
 #'       byrow = TRUE
 #'     ),
 #'     sparse = TRUE
 #'   ),
 #'   "dgCMatrix"
 #' )
-#' colnames(dtm) <- paste0("term", 1:4)
-#' rownames(dtm) <- paste0("doc", 1:3)
+#' colnames(dtm) <- paste0("term", 1:3)
+#' rownames(dtm) <- paste0("doc", 1:4)
 #'
-#' model <- warp_lda(
+#' model <- fit_topic_model(
 #'   dtm,
+#'   engine = "text2vec",
+#'   model = "lda",
 #'   k = 2,
 #'   fit_control = list(n_iter = 25, progressbar = FALSE)
 #' )

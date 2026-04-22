@@ -15,12 +15,14 @@
 #' memory handling and with **parallel** backends for scalable multicore
 #' processing.
 #' 
-#' In addition to core NLP functionality, **NLPstudio** provides a topic modeling
-#' pipeline based on the WarpLDA algorithm from
-#' **[text2vec](https://cran.r-project.org/package=text2vec)**. Utility
-#' functions allow users to extract, rank, and visualize topic–word distributions
-#' in both long and wide formats, facilitating model inspection and downstream
-#' analysis.
+#' In addition to core NLP functionality, **NLPstudio** provides a unified
+#' topic-modeling API spanning
+#' **[text2vec](https://cran.r-project.org/package=text2vec)**,
+#' **[topicmodels](https://cran.r-project.org/package=topicmodels)**, and
+#' **[seededlda](https://cran.r-project.org/package=seededlda)**. Utility
+#' functions standardize document-topic weights (DTW), topic-word weights
+#' (TWW), top-term extraction, representative-candidate retrieval, and
+#' visualization across those engines.
 #'
 #' To support domain-specific content analysis, **NLPstudio** ships with curated,
 #' pre-compiled **quanteda** dictionaries tailored to financial and regulatory
@@ -46,13 +48,11 @@
 #'   statistics built on `quanteda.textstats`.
 #'   
 #' - **Topic modeling:**  
-#'   `warp_lda()` interfaces with **text2vec** to fit topic models, while
-#'   `get_top_terms()` and `plot_top_terms()` support extraction and
-#'   visualization of model outputs. The function `plot_dtw()` can be used to
-#'   inspect the distribution of document–topic weights across a fitted model. 
-#'   [TopicModel-class][topicmodels::LDA-class] 
-#'   of **[topicmodels](https://cran.r-project.org/web/packages/topicmodels/index.html)**  
-#'   is also supported. 
+#'   `fit_topic_model()` provides a common fitting interface across
+#'   **text2vec**, **topicmodels**, and **seededlda**. Downstream helpers such
+#'   as `get_dtw()`, `get_tww()`, `get_top_terms()`, `plot_top_terms()`,
+#'   `plot_dtw()`, and `get_representative_candidates()` work with the
+#'   standardized DTW/TWW representation regardless of the fitting backend.
 #' - **Corpus ingestion:**  
 #'   `from_json_to_df()` converts user-supplied SEC-style JSON filings into
 #'   tidy data.tables, with chunking controlled by `nchunks` and optional

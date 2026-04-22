@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_dtw.R
 \name{plot_dtw}
 \alias{plot_dtw}
-\title{Plot Distribution of Document-Topic-Weights}
+\title{Plot the Distribution of Document Topic Weights}
 \usage{
 plot_dtw(
   x,
@@ -13,68 +13,57 @@ plot_dtw(
 )
 }
 \arguments{
-\item{x}{Either the output of \code{\link[=warp_lda]{warp_lda()}}, a fitted \code{\link[topicmodels:lda]{topicmodels::LDA()}} object of class
-\link[topicmodels:tm-class]{TopicModel-class}, or a sequential LDA fitted by \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}.}
+\item{x}{A supported topic-model object accepted by \code{get_dtw()}, or an
+already standardized DTW table returned by \code{get_dtw()}.}
 
-\item{topics}{Optional numeric vector specifying which topic proportions to plot.
-If \code{NULL} (default), all topics will be plotted.}
+\item{topics}{Optional topic filter supplied either as numeric indices or as
+\code{Topic###} identifiers. If \code{NULL}, all topics are plotted.}
 
-\item{stat}{Character string, either \code{"density"} (default) or \code{"count"},
-controlling the y-axis statistic in the histogram.}
+\item{stat}{Character string. Either \code{"density"} (default) or \code{"count"}.}
 
-\item{facet_args}{A named list of additional arguments passed to \code{\link[ggplot2:facet_wrap]{ggplot2::facet_wrap()}},
-such as \code{ncol}, \code{nrow}, or \code{strip.position}. By default, \code{scales = "free_y"} is used
-to allow per-topic y-axis scaling.}
+\item{facet_args}{A named list of additional arguments passed to
+\link[ggplot2:facet_wrap]{facet_wrap()}. Defaults to
+\code{list(scales = "free_y")}.}
 
-\item{...}{Additional arguments passed to \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}},
-such as \code{binwidth}, \code{fill}, or \code{color}.}
+\item{...}{Additional arguments passed to
+\link[ggplot2:geom_histogram]{geom_histogram()}.}
 }
 \value{
-A \link[ggplot2:ggplot]{ggplot2::ggplot} object representing the faceted histograms of document–topic proportions.
+A \link[ggplot2:ggplot]{ggplot} object.
 }
 \description{
-\code{plot_dtw()} visualizes the distribution of topic proportions across documents.
-It accepts different model classes. Each topic is shown as a
-separate histogram, allowing you to assess sparsity, dominance, and spread
-across the corpus.
-}
-\details{
-Internally, the function reshapes the \code{theta} matrix to long format and constructs a faceted
-histogram using \link[ggplot2:ggplot2-package]{ggplot2::ggplot2}. Each facet corresponds to a topic and shows the density of the topic
-proportions across all documents. This is useful for diagnosing topic quality, sparsity, and
-prevalence.
-
-For \code{warp_lda()} input, the function uses \code{x$theta} directly.
-For \link[topicmodels:tm-class]{TopicModel-class} input, the function constructs a \code{data.table} from the fitted object
-(e.g., using \code{x@documents} and \code{x@gamma}), and then ensures the presence of a \code{doc_id} column
-and standardized topic column names (e.g., \code{Topic001}, \code{Topic002}, \code{...}).
+Visualize the distribution of standardized DTW values as faceted histograms,
+one facet per topic.
 }
 \examples{
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
-      c(1, 0, 0, 1,
-        1, 1, 0, 0,
-        0, 1, 1, 0),
-      nrow = 3,
+      c(1, 0, 1,
+        1, 1, 0,
+        0, 1, 1,
+        1, 1, 1),
+      nrow = 4,
       byrow = TRUE
     ),
     sparse = TRUE
   ),
   "dgCMatrix"
 )
-colnames(dtm) <- paste0("term", 1:4)
-rownames(dtm) <- paste0("doc", 1:3)
+rownames(dtm) <- paste0("doc", 1:4)
+colnames(dtm) <- paste0("term", 1:3)
 
-model <- warp_lda(
+fit <- fit_topic_model(
   dtm,
+  engine = "text2vec",
+  model = "lda",
   k = 2,
   fit_control = list(n_iter = 25, progressbar = FALSE)
 )
 
-plot_dtw(model, topics = 1:2, bins = 5)
+plot_dtw(fit, topics = 1:2, bins = 5)
 
 }
 \seealso{
-\code{\link[=warp_lda]{warp_lda()}}, \code{\link[topicmodels:lda]{topicmodels::LDA()}}, \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}, \code{\link[ggplot2:geom_histogram]{ggplot2::geom_histogram()}}
+\code{fit_topic_model()}, \code{get_dtw()}, \code{\link[=get_top_terms]{get_top_terms()}}, \code{\link[=plot_top_terms]{plot_top_terms()}}
 }
