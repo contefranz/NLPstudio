@@ -1,5 +1,30 @@
 # NLPstudio News
 
+## NLPstudio 0.5.0  (2026-04-21)
+
+### BREAKING CHANGES
+
+1. `get_json_files()` has been removed. Users should now discover JSON inputs
+   directly with `list.files(..., pattern = "\\.json$", recursive = TRUE,
+   full.names = TRUE)` and pass the resulting character vector to
+   `from_json_to_df()`.
+
+2. `get_sec_master_files()` has been removed. SEC master-file ingestion is now
+   considered outside the current `NLPstudio` scope and should be handled
+   upstream before the data enters the package workflow.
+
+### DEPRECATIONS
+
+1. `set_ff_industries()` is now soft-deprecated. The function remains exported
+   and functional in v0.5.0, but it emits a deprecation warning and is planned
+   for removal in a future release. Fama-French industry mapping is now treated
+   as an upstream preprocessing step rather than part of the core package API.
+
+### NOTES
+
+1. This release intentionally does not include the examples expansion planned
+   for a follow-up documentation-focused release.
+
 ## NLPstudio 0.4.1  (2026-04-21)
 
 ### BREAKING CHANGES

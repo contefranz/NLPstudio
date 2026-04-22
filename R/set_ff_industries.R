@@ -3,10 +3,16 @@ if ( getRversion() >= "2.15.1" ) {
 }
 #' Map Fama–French Industries to a Corpus
 #'
+#' `r if (requireNamespace("lifecycle", quietly = TRUE)) lifecycle::badge("deprecated")`
+#'
 #' Assign Fama–French industry classifications to each document in a
 #' [corpus][quanteda::corpus] object based on its SIC code. Industry groupings
-#' are drawn from the datasets provided in the [**farr**](https://cran.r-project.org/web/packages/farr/index.html) 
+#' are drawn from the datasets provided in the [**farr**](https://cran.r-project.org/web/packages/farr/index.html)
 #' package.
+#'
+#' This workflow is deprecated in `NLPstudio` as of v0.5.0 and will be removed
+#' in a future release. Fama-French industry mapping is now considered outside
+#' the core package scope and should be handled upstream before corpus analysis.
 #'
 #' @param x A [corpus][quanteda::corpus] object with a `sic` column in its
 #'   document variables (`docvars`).
@@ -51,7 +57,26 @@ if ( getRversion() >= "2.15.1" ) {
 #' @export
 
 set_ff_industries <- function(x, ind, fill_category = FALSE, ...) {
-  
+  if (requireNamespace("lifecycle", quietly = TRUE)) {
+    lifecycle::deprecate_warn(
+      "0.5.0",
+      "set_ff_industries()",
+      details = paste(
+        "Manage Fama-French industry mapping upstream;",
+        "this workflow is outside the current NLPstudio scope."
+      )
+    )
+  } else {
+    warning(
+      paste(
+        "set_ff_industries() is deprecated as of NLPstudio 0.5.0.",
+        "Manage Fama-French industry mapping upstream;",
+        "this workflow is outside the current NLPstudio scope."
+      ),
+      call. = FALSE
+    )
+  }
+
   pkg <- "farr"
   if (!requireNamespace(pkg, quietly = TRUE)) {
     stop("Package 'farr' is required for set_ff_industries(). Please install it.", call. = FALSE)

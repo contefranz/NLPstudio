@@ -27,12 +27,18 @@ A \link[quanteda:corpus]{corpus} object with additional \code{docvars}:
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+}
+\details{
 Assign Fama–French industry classifications to each document in a
 \link[quanteda:corpus]{corpus} object based on its SIC code. Industry groupings
 are drawn from the datasets provided in the \href{https://cran.r-project.org/web/packages/farr/index.html}{\strong{farr}}
 package.
-}
-\details{
+
+This workflow is deprecated in \code{NLPstudio} as of v0.5.0 and will be removed
+in a future release. Fama-French industry mapping is now considered outside
+the core package scope and should be handled upstream before corpus analysis.
+
 The Fama-French industry classifications are available in several versions, with the most
 commonly used being the 12-industry (FF12), 17-industry (FF17), and 48-industry (FF48) groupings.
 These are widely adopted in empirical asset pricing research due to their balance between
