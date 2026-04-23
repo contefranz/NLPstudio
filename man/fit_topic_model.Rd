@@ -10,11 +10,11 @@ fit_topic_model(
   model,
   k = NULL,
   method = NULL,
-  data = NULL,
+  docvars = TRUE,
+  doc_data = NULL,
   return_dtw = TRUE,
   return_tww = TRUE,
-  model_control = list(),
-  fit_control = list(),
+  control = list(model = list(), fit = list()),
   dictionary = NULL,
   seedwords = NULL,
   initial_model = NULL
@@ -48,11 +48,15 @@ Supported combinations are:
 \item \code{seededlda}: \code{NULL} only
 }}
 
-\item{data}{Optional document metadata to store alongside the fitted model.
-This can be a corpus, dfm, data.frame, or data.table with a document-ID
-column. Explicit \code{data} is used by \code{get_dtw()} and
-\code{get_representative_candidates()} in preference to metadata embedded in the
-fitted backend object.}
+\item{docvars}{Should a compact document-variable table be stored alongside
+the fitted model? Defaults to \code{TRUE}. Stored docvars always include the
+fitted \code{doc_id} values and, when \code{x} is a \link[quanteda:dfm]{dfm}, any
+available document variables. This does not retain original text.}
+
+\item{doc_data}{Optional sidecar document data to store for downstream
+enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
+by \code{doc_id}. Text can only be attached downstream when this sidecar
+contains text or when it is supplied as a corpus.}
 
 \item{return_dtw}{Should DTW be cached in the returned object? Defaults to
 \code{TRUE}.}
@@ -60,15 +64,16 @@ fitted backend object.}
 \item{return_tww}{Should TWW be cached in the returned object? Defaults to
 \code{TRUE}.}
 
-\item{model_control}{A named list routed to the model-construction stage.
-In v0.6.0 this is used only for \code{engine = "text2vec"} and is forwarded to
-\code{\link[text2vec:LatentDirichletAllocation]{LDA$new()}}.}
-
-\item{fit_control}{A named list routed to the fitting stage.
+\item{control}{A named list of backend controls with optional \code{model} and
+\code{fit} entries. Use \code{control$model} for model-construction arguments and
+\code{control$fit} for fitting arguments.
 \itemize{
-\item \code{text2vec}: forwarded to \code{LDA$fit_transform()}
-\item \code{topicmodels}: passed as \verb{control =}
-\item \code{seededlda}: spliced into the selected \verb{textmodel_*()} call
+\item \code{text2vec}: \code{control$model} is forwarded to \code{LDA$initialize()} and
+\code{control$fit} is forwarded to \code{LDA$fit_transform()}
+\item \code{topicmodels}: \code{control$model} must be empty and \code{control$fit} is passed
+as backend \verb{control =}
+\item \code{seededlda}: \code{control$model} must be empty and \code{control$fit} is spliced
+into the selected \verb{textmodel_*()} call
 }}
 
 \item{dictionary}{Dictionary required for
@@ -88,9 +93,13 @@ list with these fields:
 \item \code{model}: model family requested.
 \item \code{method}: fitting method used, if applicable.
 \item \code{model_object}: raw backend fit.
-\item \code{dtw}: cached DTW in standardized \code{data.table} form, or \code{NULL}.
-\item \code{tww}: cached TWW in standardized \code{data.table} form, or \code{NULL}.
-\item \code{data}: stored metadata supplied at fit time, or \code{NULL}.
+\item \code{dtw}: cached DTW matrix with \code{doc_id} rownames and \code{Topic###} columns,
+or \code{NULL}.
+\item \code{tww}: cached TWW matrix with \code{Topic###} rownames and term columns, or
+\code{NULL}.
+\item \code{doc_ids}: fitted document IDs in model order.
+\item \code{docvars}: compact stored docvars keyed by \code{doc_id}, or \code{NULL}.
+\item \code{doc_data}: stored sidecar document data, or \code{NULL}.
 \item \code{call}: matched function call.
 }
 
@@ -116,6 +125,9 @@ interface for downstream helpers such as \code{get_dtw()}, \code{get_tww()},
 
 The standardized DTW/TWW outputs always use topic identifiers of the form
 \code{Topic001}, \code{Topic002}, and so on, regardless of backend-specific naming.
+
+Stored \code{docvars} and \code{doc_data} are used only for downstream alignment and
+enrichment. They are never passed to the backend estimator itself.
 
 The API currently covers these model families and fitting algorithms:
 \itemize{
@@ -149,8 +161,10 @@ fit <- fit_topic_model(
   engine = "text2vec",
   model = "lda",
   k = 2,
-  model_control = list(doc_topic_prior = 0.1, topic_word_prior = 0.01),
-  fit_control = list(n_iter = 25, progressbar = FALSE)
+  control = list(
+    model = list(doc_topic_prior = 0.1, topic_word_prior = 0.01),
+    fit = list(n_iter = 25, progressbar = FALSE)
+  )
 )
 
 class(fit)
@@ -162,7 +176,9 @@ if (requireNamespace("topicmodels", quietly = TRUE)) {
     engine = "topicmodels",
     model = "lda",
     k = 2,
-    fit_control = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+    control = list(
+      fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+    )
   )
 
   fit_topic_model(
@@ -170,7 +186,9 @@ if (requireNamespace("topicmodels", quietly = TRUE)) {
     engine = "topicmodels",
     model = "ctm",
     k = 2,
-    fit_control = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+    control = list(
+      fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+    )
   )
 }
 
@@ -180,7 +198,7 @@ if (requireNamespace("seededlda", quietly = TRUE)) {
     engine = "seededlda",
     model = "lda",
     k = 2,
-    fit_control = list(max_iter = 100, verbose = FALSE)
+    control = list(fit = list(max_iter = 100, verbose = FALSE))
   )
 
   suppressWarnings(
@@ -189,7 +207,7 @@ if (requireNamespace("seededlda", quietly = TRUE)) {
       engine = "seededlda",
       model = "seqlda",
       k = 2,
-      fit_control = list(max_iter = 100, verbose = FALSE)
+      control = list(fit = list(max_iter = 100, verbose = FALSE))
     )
   )
 
@@ -203,7 +221,7 @@ if (requireNamespace("seededlda", quietly = TRUE)) {
     engine = "seededlda",
     model = "seededlda",
     dictionary = dict,
-    fit_control = list(max_iter = 100, verbose = FALSE)
+    control = list(fit = list(max_iter = 100, verbose = FALSE))
   )
 }
 

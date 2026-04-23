@@ -36,23 +36,28 @@ if (getRversion() >= "2.15.1") {
 #'   - `topicmodels + ctm`: `"VEM"` only
 #'   - `text2vec + lda`: `NULL` only
 #'   - `seededlda`: `NULL` only
-#' @param data Optional document metadata to store alongside the fitted model.
-#'   This can be a corpus, dfm, data.frame, or data.table with a document-ID
-#'   column. Explicit `data` is used by `get_dtw()` and
-#'   `get_representative_candidates()` in preference to metadata embedded in the
-#'   fitted backend object.
+#' @param docvars Should a compact document-variable table be stored alongside
+#'   the fitted model? Defaults to `TRUE`. Stored docvars always include the
+#'   fitted `doc_id` values and, when `x` is a [dfm][quanteda::dfm], any
+#'   available document variables. This does not retain original text.
+#' @param doc_data Optional sidecar document data to store for downstream
+#'   enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
+#'   by `doc_id`. Text can only be attached downstream when this sidecar
+#'   contains text or when it is supplied as a corpus.
 #' @param return_dtw Should DTW be cached in the returned object? Defaults to
 #'   `TRUE`.
 #' @param return_tww Should TWW be cached in the returned object? Defaults to
 #'   `TRUE`.
-#' @param model_control A named list routed to the model-construction stage.
-#'   In v0.6.0 this is used only for `engine = "text2vec"` and is forwarded to
-#'   [`LDA$new()`][text2vec::LDA].
-#' @param fit_control A named list routed to the fitting stage.
+#' @param control A named list of backend controls with optional `model` and
+#'   `fit` entries. Use `control$model` for model-construction arguments and
+#'   `control$fit` for fitting arguments.
 #'
-#'   - `text2vec`: forwarded to `LDA$fit_transform()`
-#'   - `topicmodels`: passed as `control =`
-#'   - `seededlda`: spliced into the selected `textmodel_*()` call
+#'   - `text2vec`: `control$model` is forwarded to `LDA$initialize()` and
+#'     `control$fit` is forwarded to `LDA$fit_transform()`
+#'   - `topicmodels`: `control$model` must be empty and `control$fit` is passed
+#'     as backend `control =`
+#'   - `seededlda`: `control$model` must be empty and `control$fit` is spliced
+#'     into the selected `textmodel_*()` call
 #' @param dictionary Dictionary required for
 #'   `engine = "seededlda", model = "seededlda"`.
 #' @param seedwords Optional `seedwords` argument forwarded only to
@@ -67,9 +72,13 @@ if (getRversion() >= "2.15.1") {
 #'   - `model`: model family requested.
 #'   - `method`: fitting method used, if applicable.
 #'   - `model_object`: raw backend fit.
-#'   - `dtw`: cached DTW in standardized `data.table` form, or `NULL`.
-#'   - `tww`: cached TWW in standardized `data.table` form, or `NULL`.
-#'   - `data`: stored metadata supplied at fit time, or `NULL`.
+#'   - `dtw`: cached DTW matrix with `doc_id` rownames and `Topic###` columns,
+#'     or `NULL`.
+#'   - `tww`: cached TWW matrix with `Topic###` rownames and term columns, or
+#'     `NULL`.
+#'   - `doc_ids`: fitted document IDs in model order.
+#'   - `docvars`: compact stored docvars keyed by `doc_id`, or `NULL`.
+#'   - `doc_data`: stored sidecar document data, or `NULL`.
 #'   - `call`: matched function call.
 #'
 #'   Users access these components with `$`, for example `fit$dtw` or
@@ -84,6 +93,9 @@ if (getRversion() >= "2.15.1") {
 #'
 #' The standardized DTW/TWW outputs always use topic identifiers of the form
 #' `Topic001`, `Topic002`, and so on, regardless of backend-specific naming.
+#'
+#' Stored `docvars` and `doc_data` are used only for downstream alignment and
+#' enrichment. They are never passed to the backend estimator itself.
 #'
 #' The API currently covers these model families and fitting algorithms:
 #'
@@ -157,8 +169,10 @@ if (getRversion() >= "2.15.1") {
 #'   engine = "text2vec",
 #'   model = "lda",
 #'   k = 2,
-#'   model_control = list(doc_topic_prior = 0.1, topic_word_prior = 0.01),
-#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#'   control = list(
+#'     model = list(doc_topic_prior = 0.1, topic_word_prior = 0.01),
+#'     fit = list(n_iter = 25, progressbar = FALSE)
+#'   )
 #' )
 #'
 #' class(fit)
@@ -170,7 +184,9 @@ if (getRversion() >= "2.15.1") {
 #'     engine = "topicmodels",
 #'     model = "lda",
 #'     k = 2,
-#'     fit_control = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+#'     control = list(
+#'       fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+#'     )
 #'   )
 #'
 #'   fit_topic_model(
@@ -178,7 +194,9 @@ if (getRversion() >= "2.15.1") {
 #'     engine = "topicmodels",
 #'     model = "ctm",
 #'     k = 2,
-#'     fit_control = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+#'     control = list(
+#'       fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+#'     )
 #'   )
 #' }
 #'
@@ -188,7 +206,7 @@ if (getRversion() >= "2.15.1") {
 #'     engine = "seededlda",
 #'     model = "lda",
 #'     k = 2,
-#'     fit_control = list(max_iter = 100, verbose = FALSE)
+#'     control = list(fit = list(max_iter = 100, verbose = FALSE))
 #'   )
 #'
 #'   suppressWarnings(
@@ -197,7 +215,7 @@ if (getRversion() >= "2.15.1") {
 #'       engine = "seededlda",
 #'       model = "seqlda",
 #'       k = 2,
-#'       fit_control = list(max_iter = 100, verbose = FALSE)
+#'       control = list(fit = list(max_iter = 100, verbose = FALSE))
 #'     )
 #'   )
 #'
@@ -211,24 +229,29 @@ if (getRversion() >= "2.15.1") {
 #'     engine = "seededlda",
 #'     model = "seededlda",
 #'     dictionary = dict,
-#'     fit_control = list(max_iter = 100, verbose = FALSE)
+#'     control = list(fit = list(max_iter = 100, verbose = FALSE))
 #'   )
 #' }
 #'
 #' @export
 fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
-                            data = NULL, return_dtw = TRUE,
-                            return_tww = TRUE, model_control = list(),
-                            fit_control = list(), dictionary = NULL,
+                            docvars = TRUE, doc_data = NULL,
+                            return_dtw = TRUE, return_tww = TRUE,
+                            control = list(model = list(), fit = list()),
+                            dictionary = NULL,
                             seedwords = NULL, initial_model = NULL) {
 
   call <- match.call()
   engine <- match.arg(engine, c("text2vec", "topicmodels", "seededlda"))
   model <- .match_topic_model(engine, model)
   method <- .normalize_topic_method(engine, model, method)
+  control <- .normalize_topic_control(control)
 
   if (!is.null(k) && (!is.numeric(k) || length(k) != 1L || k < 1L || k != as.integer(k))) {
     stop("k must be NULL or a single positive integer.")
+  }
+  if (!is.logical(docvars) || length(docvars) != 1L) {
+    stop("docvars must be a single TRUE/FALSE value.")
   }
   if (!is.logical(return_dtw) || length(return_dtw) != 1L) {
     stop("return_dtw must be a single TRUE/FALSE value.")
@@ -236,19 +259,13 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
   if (!is.logical(return_tww) || length(return_tww) != 1L) {
     stop("return_tww must be a single TRUE/FALSE value.")
   }
-  if (!is.list(model_control)) {
-    stop("model_control must be a list.")
-  }
-  if (!is.list(fit_control)) {
-    stop("fit_control must be a list.")
-  }
 
   .validate_topic_fit_args(
     engine = engine,
     model = model,
     method = method,
     k = k,
-    model_control = model_control,
+    control = control,
     dictionary = dictionary,
     seedwords = seedwords,
     initial_model = initial_model
@@ -259,15 +276,14 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
     text2vec = .fit_text2vec_topic_model(
       x = x,
       k = as.integer(k),
-      model_control = model_control,
-      fit_control = fit_control
+      control = control
     ),
     topicmodels = .fit_topicmodels_topic_model(
       x = x,
       model = model,
       k = as.integer(k),
       method = method,
-      fit_control = fit_control,
+      control = control,
       seedwords = seedwords,
       initial_model = initial_model
     ),
@@ -275,28 +291,32 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
       x = x,
       model = model,
       k = if (is.null(k)) NULL else as.integer(k),
-      fit_control = fit_control,
+      control = control,
       dictionary = dictionary,
       initial_model = initial_model
     )
   )
-
-  embedded_data <- .default_topic_data(x = x, data = data)
 
   .new_nlp_topic_fit(
     engine = engine,
     model = model,
     method = fit_result$method,
     model_object = fit_result$model_object,
-    dtw = if (return_dtw) .dtw_dt_from_matrix(
+    dtw = if (return_dtw) .dtw_matrix_from_matrix(
       fit_result$dtw,
       doc_ids = fit_result$doc_ids
     ) else NULL,
-    tww = if (return_tww) .tww_dt_from_matrix(
+    tww = if (return_tww) .tww_matrix_from_matrix(
       fit_result$tww,
       term_names = fit_result$term_names
     ) else NULL,
-    data = embedded_data,
+    doc_ids = as.character(fit_result$doc_ids),
+    docvars = if (docvars) .docvars_table_from_input(x, doc_ids = fit_result$doc_ids) else NULL,
+    doc_data = if (is.null(doc_data)) NULL else .normalize_doc_data_table(
+      doc_data,
+      include_text = TRUE,
+      arg_name = "doc_data"
+    ),
     call = call
   )
 }
@@ -309,14 +329,16 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' @param x A supported topic-model object. This includes `nlp_topic_fit`,
 #'   `warp_lda()` output, raw `topicmodels` fits, raw `seededlda` fits, and
 #'   already standardized DTW tables.
-#' @param data Optional metadata override. When supplied, this is used instead
-#'   of metadata embedded in `x`.
-#' @param include_text Should a text column be attached when text is available?
-#'   Defaults to `FALSE`.
-#' @param doc_id_col Document-ID column name when `data` is a data.frame or
+#' @param doc_data Optional document-data override. When supplied, this is used
+#'   instead of any `doc_data` stored in `x`. Accepted inputs are a corpus,
+#'   data.frame, or data.table keyed by `doc_id`.
+#' @param include_text Should a `text` column be attached when a text-bearing
+#'   `doc_data` source is available? Defaults to `FALSE`. When `TRUE` but no
+#'   text-bearing `doc_data` is available, the function emits a warning.
+#' @param doc_id_col Document-ID column name when `doc_data` is a data.frame or
 #'   data.table. Defaults to `"doc_id"`.
-#' @param text_col Text column name when `data` is a data.frame or data.table.
-#'   Defaults to `"text"`.
+#' @param text_col Text column name when `doc_data` is a data.frame or
+#'   data.table. Defaults to `"text"`.
 #'
 #' @returns A `data.table` with:
 #'
@@ -350,28 +372,44 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #'   engine = "text2vec",
 #'   model = "lda",
 #'   k = 2,
-#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#'   control = list(fit = list(n_iter = 25, progressbar = FALSE))
 #' )
 #'
 #' get_dtw(fit)
 #'
 #' @export
-get_dtw <- function(x, data = NULL, include_text = FALSE,
+get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
                     doc_id_col = "doc_id", text_col = "text") {
   if (!is.logical(include_text) || length(include_text) != 1L) {
     stop("include_text must be a single TRUE/FALSE value.")
   }
 
   dtw <- .extract_dtw_table(x)
-  meta_source <- .topic_data_override(x = x, data = data)
-  meta <- .topic_metadata_table(
-    data = meta_source,
-    include_text = include_text,
-    doc_id_col = doc_id_col,
-    text_col = text_col
+  dtw <- .bind_topic_metadata(
+    dtw,
+    .stored_docvars_table(x, doc_ids = dtw$doc_id),
+    overwrite = FALSE
+  )
+  dtw <- .bind_topic_metadata(
+    dtw,
+    .resolved_doc_data_table(
+      x = x,
+      doc_data = doc_data,
+      include_text = include_text,
+      doc_id_col = doc_id_col,
+      text_col = text_col
+    ),
+    overwrite = TRUE
   )
 
-  .bind_topic_metadata(dtw, meta)
+  if (include_text && !"text" %in% names(dtw)) {
+    warning(
+      "include_text = TRUE, but no text-bearing doc_data was available.",
+      call. = FALSE
+    )
+  }
+
+  dtw[]
 }
 
 #' Extract Standardized Topic Word Weights
@@ -409,7 +447,7 @@ get_dtw <- function(x, data = NULL, include_text = FALSE,
 #'   engine = "text2vec",
 #'   model = "lda",
 #'   k = 2,
-#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#'   control = list(fit = list(n_iter = 25, progressbar = FALSE))
 #' )
 #'
 #' get_tww(fit)
@@ -479,14 +517,14 @@ get_tww <- function(x) {
 #'   engine = "text2vec",
 #'   model = "lda",
 #'   k = 2,
-#'   data = metadata,
-#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#'   doc_data = metadata,
+#'   control = list(fit = list(n_iter = 25, progressbar = FALSE))
 #' )
 #'
 #' get_representative_candidates(fit, include_text = TRUE)
 #'
 #' @export
-get_representative_candidates <- function(x, data = NULL, topics = NULL,
+get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
                                           include_text = FALSE,
                                           quantile_probs = c(0.25, 0.50, 0.75),
                                           labels = c("VLOW", "LOW", "HIGH", "VHIGH"),
@@ -504,7 +542,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 
   out <- get_dtw(
     x = x,
-    data = data,
+    doc_data = doc_data,
     include_text = include_text,
     doc_id_col = doc_id_col,
     text_col = text_col
@@ -533,7 +571,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 
 #' @keywords internal
 .new_nlp_topic_fit <- function(engine, model, method, model_object, dtw, tww,
-                               data, call) {
+                               doc_ids, docvars, doc_data, call) {
   structure(
     list(
       engine = engine,
@@ -542,11 +580,57 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
       model_object = model_object,
       dtw = dtw,
       tww = tww,
-      data = data,
+      doc_ids = doc_ids,
+      docvars = docvars,
+      doc_data = doc_data,
       call = call
     ),
     class = c("nlp_topic_fit", "list")
   )
+}
+
+#' Print a Compact Summary of a Topic-Model Fit
+#'
+#' Print a compact summary of an object returned by [fit_topic_model()] without
+#' expanding the cached DTW, TWW, or backend fit internals.
+#'
+#' @param x An object returned by [fit_topic_model()].
+#' @param ... Unused.
+#'
+#' @returns Invisibly returns `x`.
+#' @seealso [fit_topic_model()]
+#' @export
+print.nlp_topic_fit <- function(x, ...) {
+  n_docs <- length(x$doc_ids)
+  n_topics <- if (!is.null(x$dtw)) {
+    ncol(x$dtw)
+  } else if (!is.null(x$tww)) {
+    nrow(x$tww)
+  } else {
+    NA_integer_
+  }
+  n_terms <- if (!is.null(x$tww)) ncol(x$tww) else NA_integer_
+
+  cat("<nlp_topic_fit>\n")
+  cat("  engine: ", x$engine, "\n", sep = "")
+  cat("  model: ", x$model, sep = "")
+  if (!is.null(x$method)) {
+    cat(" (", x$method, ")", sep = "")
+  }
+  cat("\n")
+  cat("  documents: ", n_docs, "\n", sep = "")
+  if (!is.na(n_topics)) {
+    cat("  topics: ", n_topics, "\n", sep = "")
+  }
+  if (!is.na(n_terms)) {
+    cat("  terms: ", n_terms, "\n", sep = "")
+  }
+  cat("  cached DTW: ", !is.null(x$dtw), "\n", sep = "")
+  cat("  cached TWW: ", !is.null(x$tww), "\n", sep = "")
+  cat("  stored docvars: ", !is.null(x$docvars), "\n", sep = "")
+  cat("  stored doc_data: ", !is.null(x$doc_data), "\n", sep = "")
+
+  invisible(x)
 }
 
 #' @keywords internal
@@ -615,7 +699,50 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 }
 
 #' @keywords internal
-.validate_topic_fit_args <- function(engine, model, method, k, model_control,
+.normalize_topic_control <- function(control) {
+  if (is.null(control) || !length(control)) {
+    return(list(model = list(), fit = list()))
+  }
+  if (!is.list(control)) {
+    stop("control must be a list.")
+  }
+
+  nms <- names(control)
+  if (is.null(nms) || any(nms == "")) {
+    stop("control must be a named list with optional 'model' and 'fit' entries.")
+  }
+
+  extra <- setdiff(nms, c("model", "fit"))
+  if (length(extra)) {
+    stop(
+      sprintf(
+        "Unknown top-level control entries: %s.",
+        paste(extra, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+
+  out <- list(
+    model = if ("model" %in% nms) control$model else list(),
+    fit = if ("fit" %in% nms) control$fit else list()
+  )
+
+  if (is.null(out$model)) {
+    out$model <- list()
+  }
+  if (is.null(out$fit)) {
+    out$fit <- list()
+  }
+  if (!is.list(out$model) || !is.list(out$fit)) {
+    stop("control$model and control$fit must both be lists.")
+  }
+
+  out
+}
+
+#' @keywords internal
+.validate_topic_fit_args <- function(engine, model, method, k, control,
                                      dictionary, seedwords, initial_model) {
   if (is.null(k) && !(engine == "seededlda" && model == "seededlda")) {
     stop("k must be supplied for the selected engine/model combination.")
@@ -636,9 +763,9 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
       !(engine == "topicmodels" && model == "lda" && identical(method, "Gibbs"))) {
     stop("seedwords is only valid for topicmodels LDA with method = 'Gibbs'.")
   }
-  if (engine != "text2vec" && length(model_control)) {
-    warning(
-      "model_control is only used when engine = 'text2vec'; ignoring it.",
+  if (engine != "text2vec" && length(control$model)) {
+    stop(
+      "control$model must be empty unless engine = 'text2vec'.",
       call. = FALSE
     )
   }
@@ -651,7 +778,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 }
 
 #' @keywords internal
-.fit_text2vec_topic_model <- function(x, k, model_control, fit_control) {
+.fit_text2vec_topic_model <- function(x, k, control) {
   x_sparse <- .as_topic_dgCMatrix(x)
 
   lda_args <- utils::modifyList(
@@ -660,7 +787,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
       doc_topic_prior = 0.1,
       topic_word_prior = 0.001
     ),
-    model_control
+    control$model
   )
   lda_args$n_topics <- k
   lda_args$method <- NULL
@@ -673,7 +800,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
       n_check_convergence = 25,
       progressbar = TRUE
     ),
-    fit_control
+    control$fit
   )
   fit_args$x <- x_sparse
 
@@ -685,21 +812,21 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
     model_object = model_object,
     dtw = dtw,
     tww = tww,
-    doc_ids = rownames(dtw),
+    doc_ids = .matrix_doc_ids(dtw, fallback = rownames(x_sparse)),
     term_names = colnames(tww),
     method = NULL
   )
 }
 
 #' @keywords internal
-.fit_topicmodels_topic_model <- function(x, model, k, method, fit_control,
+.fit_topicmodels_topic_model <- function(x, model, k, method, control,
                                          seedwords, initial_model) {
   if (!requireNamespace("topicmodels", quietly = TRUE)) {
     stop("Package 'topicmodels' must be installed to use engine = 'topicmodels'.", call. = FALSE)
   }
 
   x_topicmodels <- .as_topicmodels_input(x)
-  control_arg <- if (length(fit_control)) fit_control else NULL
+  control_arg <- if (length(control$fit)) control$fit else NULL
 
   fit_args <- list(
     x = x_topicmodels,
@@ -723,14 +850,14 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
     model_object = model_object,
     dtw = model_object@gamma,
     tww = exp(model_object@beta),
-    doc_ids = model_object@documents,
+    doc_ids = .topicmodels_doc_ids(model_object),
     term_names = model_object@terms,
     method = method
   )
 }
 
 #' @keywords internal
-.fit_seededlda_topic_model <- function(x, model, k, fit_control, dictionary,
+.fit_seededlda_topic_model <- function(x, model, k, control, dictionary,
                                        initial_model) {
   if (!requireNamespace("seededlda", quietly = TRUE)) {
     stop("Package 'seededlda' must be installed to use engine = 'seededlda'.", call. = FALSE)
@@ -738,7 +865,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 
   x_dfm <- .as_topic_dfm(x)
 
-  fit_args <- utils::modifyList(list(x = x_dfm), fit_control)
+  fit_args <- utils::modifyList(list(x = x_dfm), control$fit)
   fit_fun <- switch(
     model,
     lda = seededlda::textmodel_lda,
@@ -769,40 +896,10 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 }
 
 #' @keywords internal
-.default_topic_data <- function(x, data) {
-  if (!is.null(data)) {
-    return(data)
-  }
-
-  if (quanteda::is.corpus(x) || inherits(x, "dfm") ||
-      data.table::is.data.table(x) || is.data.frame(x)) {
-    return(x)
-  }
-
-  NULL
-}
-
-#' @keywords internal
-.topic_data_override <- function(x, data) {
-  if (!is.null(data)) {
-    return(data)
-  }
-
-  if (inherits(x, "nlp_topic_fit")) {
-    return(x$data)
-  }
-  if (inherits(x, "textmodel")) {
-    return(x$data)
-  }
-
-  NULL
-}
-
-#' @keywords internal
 .extract_dtw_table <- function(x) {
   if (inherits(x, "nlp_topic_fit")) {
     if (!is.null(x$dtw)) {
-      return(.coerce_existing_dtw_table(x$dtw))
+      return(.dtw_dt_from_matrix(x$dtw))
     }
     if (identical(x$engine, "text2vec")) {
       stop(
@@ -828,7 +925,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
   }
 
   if (methods::is(x, "TopicModel")) {
-    return(.dtw_dt_from_matrix(x@gamma, doc_ids = x@documents))
+    return(.dtw_dt_from_matrix(x@gamma, doc_ids = .topicmodels_doc_ids(x)))
   }
 
   if (inherits(x, "textmodel")) {
@@ -849,7 +946,7 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 .extract_tww_table <- function(x) {
   if (inherits(x, "nlp_topic_fit")) {
     if (!is.null(x$tww)) {
-      return(.coerce_existing_tww_table(x$tww))
+      return(.tww_dt_from_matrix(x$tww))
     }
     return(.extract_tww_table(x$model_object))
   }
@@ -943,23 +1040,28 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 }
 
 #' @keywords internal
-.dtw_dt_from_matrix <- function(x, doc_ids = NULL) {
-  mat <- as.matrix(x)
+.matrix_doc_ids <- function(x, fallback = NULL) {
+  doc_ids <- rownames(x)
   if (is.null(doc_ids)) {
-    doc_ids <- rownames(mat)
+    doc_ids <- fallback
   }
   if (is.null(doc_ids)) {
-    doc_ids <- as.character(seq_len(nrow(mat)))
+    doc_ids <- as.character(seq_len(nrow(x)))
   }
-
-  colnames(mat) <- .topic_ids(ncol(mat))
-  out <- data.table::data.table(doc_id = as.character(doc_ids))
-  out <- cbind(out, data.table::as.data.table(mat))
-  .add_topic_max_columns(out)
+  as.character(doc_ids)
 }
 
 #' @keywords internal
-.tww_dt_from_matrix <- function(x, term_names = NULL, log_scale = FALSE) {
+.dtw_matrix_from_matrix <- function(x, doc_ids = NULL) {
+  mat <- as.matrix(x)
+  rownames(mat) <- .matrix_doc_ids(mat, fallback = doc_ids)
+  colnames(mat) <- .topic_ids(ncol(mat))
+  storage.mode(mat) <- "double"
+  mat
+}
+
+#' @keywords internal
+.tww_matrix_from_matrix <- function(x, term_names = NULL, log_scale = FALSE) {
   mat <- as.matrix(x)
   if (log_scale) {
     mat <- exp(mat)
@@ -971,8 +1073,24 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
     term_names <- paste0("term", seq_len(ncol(mat)))
   }
 
+  rownames(mat) <- .topic_ids(nrow(mat))
   colnames(mat) <- term_names
-  out <- data.table::data.table(topic_id = .topic_ids(nrow(mat)))
+  storage.mode(mat) <- "double"
+  mat
+}
+
+#' @keywords internal
+.dtw_dt_from_matrix <- function(x, doc_ids = NULL) {
+  mat <- .dtw_matrix_from_matrix(x, doc_ids = doc_ids)
+  out <- data.table::data.table(doc_id = rownames(mat))
+  out <- cbind(out, data.table::as.data.table(mat))
+  .add_topic_max_columns(out)
+}
+
+#' @keywords internal
+.tww_dt_from_matrix <- function(x, term_names = NULL, log_scale = FALSE) {
+  mat <- .tww_matrix_from_matrix(x, term_names = term_names, log_scale = log_scale)
+  out <- data.table::data.table(topic_id = rownames(mat))
   cbind(out, data.table::as.data.table(mat))
 }
 
@@ -1047,16 +1165,43 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
 }
 
 #' @keywords internal
-.topic_metadata_table <- function(data, include_text, doc_id_col, text_col) {
+.docvars_table_from_input <- function(x, doc_ids) {
+  doc_ids <- as.character(doc_ids)
+  base <- data.table::data.table(doc_id = doc_ids)
+
+  if (quanteda::is.corpus(x)) {
+    meta <- data.table::data.table(doc_id = quanteda::docnames(x))
+    x_docvars <- quanteda::docvars(x)
+    if (ncol(x_docvars)) {
+      meta <- cbind(meta, data.table::as.data.table(x_docvars))
+    }
+    return(.bind_topic_metadata(base, meta, overwrite = TRUE))
+  }
+
+  if (inherits(x, "dfm")) {
+    meta <- data.table::data.table(doc_id = quanteda::docnames(x))
+    x_docvars <- quanteda::docvars(x)
+    if (ncol(x_docvars)) {
+      meta <- cbind(meta, data.table::as.data.table(x_docvars))
+    }
+    return(.bind_topic_metadata(base, meta, overwrite = TRUE))
+  }
+
+  base[]
+}
+
+#' @keywords internal
+.normalize_doc_data_table <- function(data, include_text, doc_id_col = "doc_id",
+                                      text_col = "text", arg_name = "doc_data") {
   if (is.null(data)) {
     return(NULL)
   }
 
   if (quanteda::is.corpus(data)) {
     meta <- data.table::data.table(doc_id = quanteda::docnames(data))
-    docvars <- quanteda::docvars(data)
-    if (ncol(docvars)) {
-      meta <- cbind(meta, data.table::as.data.table(docvars))
+    x_docvars <- quanteda::docvars(data)
+    if (ncol(x_docvars)) {
+      meta <- cbind(meta, data.table::as.data.table(x_docvars))
     }
     if (include_text) {
       meta[, text := as.character(data)]
@@ -1064,22 +1209,10 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
     return(meta[])
   }
 
-  if (inherits(data, "dfm")) {
-    meta <- data.table::data.table(doc_id = quanteda::docnames(data))
-    docvars <- quanteda::docvars(data)
-    if (ncol(docvars)) {
-      meta <- cbind(meta, data.table::as.data.table(docvars))
-    }
-    if (include_text && text_col %in% names(meta) && text_col != "text") {
-      data.table::setnames(meta, text_col, "text")
-    }
-    return(meta[])
-  }
-
   if (data.table::is.data.table(data) || is.data.frame(data)) {
     meta <- data.table::as.data.table(data)
     if (!doc_id_col %in% names(meta)) {
-      stop(sprintf("data must contain a '%s' column.", doc_id_col), call. = FALSE)
+      stop(sprintf("%s must contain a '%s' column.", arg_name, doc_id_col), call. = FALSE)
     }
     if (doc_id_col != "doc_id") {
       data.table::setnames(meta, doc_id_col, "doc_id")
@@ -1094,19 +1227,63 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
     return(meta[])
   }
 
-  if (methods::is(data, "dgCMatrix")) {
-    return(data.table::data.table(doc_id = rownames(data)))
+  stop(
+    sprintf("%s must be a corpus, data.frame, or data.table.", arg_name),
+    call. = FALSE
+  )
+}
+
+#' @keywords internal
+.stored_docvars_table <- function(x, doc_ids) {
+  if (inherits(x, "nlp_topic_fit")) {
+    if (is.null(x$docvars)) {
+      return(NULL)
+    }
+    return(.bind_topic_metadata(
+      data.table::data.table(doc_id = as.character(doc_ids)),
+      x$docvars,
+      overwrite = TRUE
+    ))
   }
 
-  if (methods::is(data, "DocumentTermMatrix")) {
-    return(data.table::data.table(doc_id = data$dimnames$Docs))
+  if (inherits(x, "textmodel") && !is.null(x$data) &&
+      (inherits(x$data, "dfm") || quanteda::is.corpus(x$data))) {
+    return(.docvars_table_from_input(x$data, doc_ids = doc_ids))
   }
 
   NULL
 }
 
 #' @keywords internal
-.bind_topic_metadata <- function(dtw, meta) {
+.resolved_doc_data_table <- function(x, doc_data, include_text,
+                                     doc_id_col, text_col) {
+  source <- doc_data
+  explicit_override <- !is.null(doc_data)
+  if (is.null(source) && inherits(x, "nlp_topic_fit")) {
+    source <- x$doc_data
+  }
+  if (is.null(source) && inherits(x, "textmodel") &&
+      !is.null(x$data) &&
+      (quanteda::is.corpus(x$data) ||
+       data.table::is.data.table(x$data) ||
+       is.data.frame(x$data))) {
+    source <- x$data
+  }
+  if (is.null(source)) {
+    return(NULL)
+  }
+
+  .normalize_doc_data_table(
+    source,
+    include_text = include_text,
+    doc_id_col = if (explicit_override) doc_id_col else "doc_id",
+    text_col = if (explicit_override) text_col else "text",
+    arg_name = "doc_data"
+  )
+}
+
+#' @keywords internal
+.bind_topic_metadata <- function(dtw, meta, overwrite = FALSE) {
   if (is.null(meta)) {
     return(dtw[])
   }
@@ -1114,16 +1291,33 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
   meta <- data.table::as.data.table(meta)
   meta <- meta[!duplicated(doc_id)]
   extra_cols <- setdiff(names(meta), "doc_id")
+  protected <- c("doc_id", .find_topic_columns(dtw, id_col = "doc_id"), "topic_max_id", "topic_max_value")
   conflicts <- intersect(extra_cols, names(dtw))
-  if (length(conflicts)) {
+  protected_conflicts <- intersect(conflicts, protected)
+  if (length(protected_conflicts)) {
     warning(
       sprintf(
         "Dropping metadata columns that conflict with DTW columns: %s",
-        paste(conflicts, collapse = ", ")
+        paste(protected_conflicts, collapse = ", ")
       ),
       call. = FALSE
     )
-    extra_cols <- setdiff(extra_cols, conflicts)
+    extra_cols <- setdiff(extra_cols, protected_conflicts)
+    conflicts <- setdiff(conflicts, protected_conflicts)
+  }
+  if (length(conflicts)) {
+    if (overwrite) {
+      dtw[, (conflicts) := NULL]
+    } else {
+      warning(
+        sprintf(
+          "Dropping metadata columns that conflict with DTW columns: %s",
+          paste(conflicts, collapse = ", ")
+        ),
+        call. = FALSE
+      )
+      extra_cols <- setdiff(extra_cols, conflicts)
+    }
   }
 
   if (!length(extra_cols)) {
@@ -1191,6 +1385,18 @@ get_representative_candidates <- function(x, data = NULL, topics = NULL,
     include.lowest = TRUE,
     right = TRUE
   ))
+}
+
+#' @keywords internal
+.topicmodels_doc_ids <- function(x) {
+  doc_ids <- rownames(x@gamma)
+  if (is.null(doc_ids)) {
+    doc_ids <- x@documents
+  }
+  if (is.null(doc_ids)) {
+    doc_ids <- as.character(seq_len(nrow(x@gamma)))
+  }
+  as.character(doc_ids)
 }
 
 #' @keywords internal

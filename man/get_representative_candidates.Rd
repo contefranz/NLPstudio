@@ -6,7 +6,7 @@
 \usage{
 get_representative_candidates(
   x,
-  data = NULL,
+  doc_data = NULL,
   topics = NULL,
   include_text = FALSE,
   quantile_probs = c(0.25, 0.5, 0.75),
@@ -20,14 +20,16 @@ get_representative_candidates(
 \code{warp_lda()} output, raw \code{topicmodels} fits, raw \code{seededlda} fits, and
 already standardized DTW tables.}
 
-\item{data}{Optional metadata override. When supplied, this is used instead
-of metadata embedded in \code{x}.}
+\item{doc_data}{Optional document-data override. When supplied, this is used
+instead of any \code{doc_data} stored in \code{x}. Accepted inputs are a corpus,
+data.frame, or data.table keyed by \code{doc_id}.}
 
 \item{topics}{Optional topic filter. May be supplied as numeric indices or
 \code{Topic###} identifiers. Filtering occurs after dominant-topic assignment.}
 
-\item{include_text}{Should a text column be attached when text is available?
-Defaults to \code{FALSE}.}
+\item{include_text}{Should a \code{text} column be attached when a text-bearing
+\code{doc_data} source is available? Defaults to \code{FALSE}. When \code{TRUE} but no
+text-bearing \code{doc_data} is available, the function emits a warning.}
 
 \item{quantile_probs}{Numeric vector of cumulative probabilities used to form
 candidate bands within each dominant topic. Defaults to quartiles:
@@ -36,11 +38,11 @@ candidate bands within each dominant topic. Defaults to quartiles:
 \item{labels}{Labels used for the candidate bands. Must have length
 \code{length(quantile_probs) + 1L}. Defaults to \code{c("VLOW", "LOW", "HIGH", "VHIGH")}.}
 
-\item{doc_id_col}{Document-ID column name when \code{data} is a data.frame or
+\item{doc_id_col}{Document-ID column name when \code{doc_data} is a data.frame or
 data.table. Defaults to \code{"doc_id"}.}
 
-\item{text_col}{Text column name when \code{data} is a data.frame or data.table.
-Defaults to \code{"text"}.}
+\item{text_col}{Text column name when \code{doc_data} is a data.frame or
+data.table. Defaults to \code{"text"}.}
 }
 \value{
 A \code{data.table} with one row per document and these core columns:
@@ -94,8 +96,8 @@ fit <- fit_topic_model(
   engine = "text2vec",
   model = "lda",
   k = 2,
-  data = metadata,
-  fit_control = list(n_iter = 25, progressbar = FALSE)
+  doc_data = metadata,
+  control = list(fit = list(n_iter = 25, progressbar = FALSE))
 )
 
 get_representative_candidates(fit, include_text = TRUE)

@@ -1,5 +1,23 @@
 # NLPstudio News
 
+## NLPstudio 0.6.1  (2026-04-23)
+
+### CHANGES
+
+1. `fit_topic_model()` now uses a single `control = list(model = ..., fit = ...)`
+   argument instead of separate `model_control` and `fit_control` inputs.
+
+2. The returned `nlp_topic_fit` object now stores compact `docvars`,
+   optional `doc_data`, fitted `doc_ids`, and matrix-backed DTW/TWW caches
+   instead of retaining the raw modeling input.
+
+3. `get_dtw()` and `get_representative_candidates()` now align post-fit
+   outputs through fitted `doc_id` values, auto-join stored docvars, and use
+   `doc_data` only for explicit metadata or text enrichment.
+
+4. `print.nlp_topic_fit()` now prints a compact summary so large topic-model
+   fits can be inspected at the console without expanding huge internals.
+
 ## NLPstudio 0.6.0  (2026-04-22)
 
 ### BREAKING CHANGES

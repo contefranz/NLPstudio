@@ -60,7 +60,7 @@ model <- fit_topic_model(
   engine = "text2vec",
   model = "lda",
   k = 2,
-  fit_control = list(n_iter = 25, progressbar = FALSE)
+  control = list(fit = list(n_iter = 25, progressbar = FALSE))
 )
 top_terms <- get_top_terms(model, n = 3, format = "long")
 

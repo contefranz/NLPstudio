@@ -40,43 +40,55 @@ make_seed_dictionary <- function() {
   ))
 }
 
-topic_cols <- function(x) grep("^Topic\\d+$", names(x), value = TRUE)
+topic_cols <- function(x) {
+  if (is.matrix(x)) {
+    return(grep("^Topic\\d+$", colnames(x), value = TRUE))
+  }
+  grep("^Topic\\d+$", names(x), value = TRUE)
+}
 
-test_that("fit_topic_model returns standardized text2vec fit output", {
+test_that("fit_topic_model returns lean standardized text2vec output", {
   fit <- fit_topic_model(
-    make_topic_dtm(),
+    make_topic_dfm(),
     engine = "text2vec",
     model = "lda",
     k = 2,
-    fit_control = list(n_iter = 25, progressbar = FALSE)
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
   )
 
   expect_s3_class(fit, "nlp_topic_fit")
   expect_equal(class(fit), c("nlp_topic_fit", "list"))
   expect_named(
     fit,
-    c("engine", "model", "method", "model_object", "dtw", "tww", "data", "call")
+    c("engine", "model", "method", "model_object", "dtw", "tww", "doc_ids", "docvars", "doc_data", "call")
   )
   expect_equal(fit$engine, "text2vec")
   expect_equal(fit$model, "lda")
   expect_null(fit$method)
   expect_true(inherits(fit$model_object, "WarpLDA"))
+  expect_true(is.matrix(fit$dtw))
+  expect_true(is.matrix(fit$tww))
   expect_equal(topic_cols(fit$dtw), c("Topic001", "Topic002"))
-  expect_equal(fit$tww$topic_id, c("Topic001", "Topic002"))
+  expect_equal(rownames(fit$tww), c("Topic001", "Topic002"))
+  expect_equal(fit$doc_ids, paste0("doc", 1:6))
+  expect_true(data.table::is.data.table(fit$docvars))
+  expect_equal(fit$docvars$year, 2020:2025)
+  expect_equal(fit$docvars$group, c("a", "a", "b", "b", "c", "c"))
+  expect_null(fit$doc_data)
 
   expect_equal(
-    rowSums(as.matrix(fit$dtw[, topic_cols(fit$dtw), with = FALSE])),
+    unname(rowSums(fit$dtw)),
     rep(1, nrow(fit$dtw)),
     tolerance = 1e-8
   )
   expect_equal(
-    rowSums(as.matrix(fit$tww[, setdiff(names(fit$tww), "topic_id"), with = FALSE])),
+    unname(rowSums(fit$tww)),
     rep(1, nrow(fit$tww)),
     tolerance = 1e-8
   )
 })
 
-test_that("fit_topic_model validates unsupported combinations", {
+test_that("fit_topic_model validates unsupported combinations and control structure", {
   expect_error(
     fit_topic_model(make_topic_dtm(), engine = "topicmodels", model = "ctm", k = 2, method = "Gibbs"),
     "CTM only supports"
@@ -97,6 +109,26 @@ test_that("fit_topic_model validates unsupported combinations", {
     fit_topic_model(make_topic_dtm(), engine = "text2vec", model = "lda", k = 2, seedwords = matrix(1, 1, 1)),
     "seedwords is only valid"
   )
+  expect_error(
+    fit_topic_model(
+      make_topic_dtm(),
+      engine = "topicmodels",
+      model = "lda",
+      k = 2,
+      control = list(model = list(alpha = 0.1))
+    ),
+    "control\\$model must be empty"
+  )
+  expect_error(
+    fit_topic_model(
+      make_topic_dtm(),
+      engine = "text2vec",
+      model = "lda",
+      k = 2,
+      control = list(extra = list())
+    ),
+    "Unknown top-level control entries"
+  )
 })
 
 test_that("topicmodels LDA and CTM fits are supported", {
@@ -107,14 +139,14 @@ test_that("topicmodels LDA and CTM fits are supported", {
     engine = "topicmodels",
     model = "lda",
     k = 2,
-    fit_control = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+    control = list(fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5)))
   )
   ctm_fit <- fit_topic_model(
     make_topic_dtm(),
     engine = "topicmodels",
     model = "ctm",
     k = 2,
-    fit_control = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5))
+    control = list(fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5)))
   )
   gibbs_fit <- fit_topic_model(
     make_topic_dtm(),
@@ -122,7 +154,7 @@ test_that("topicmodels LDA and CTM fits are supported", {
     model = "lda",
     k = 2,
     method = "Gibbs",
-    fit_control = list(seed = 1, iter = 50, burnin = 0, thin = 1)
+    control = list(fit = list(seed = 1, iter = 50, burnin = 0, thin = 1))
   )
 
   expect_equal(vem_fit$method, "VEM")
@@ -146,7 +178,7 @@ test_that("seededlda engines are supported", {
     engine = "seededlda",
     model = "lda",
     k = 2,
-    fit_control = list(max_iter = 100, verbose = FALSE)
+    control = list(fit = list(max_iter = 100, verbose = FALSE))
   )
   seq_fit <- suppressWarnings(
     fit_topic_model(
@@ -154,7 +186,7 @@ test_that("seededlda engines are supported", {
       engine = "seededlda",
       model = "seqlda",
       k = 2,
-      fit_control = list(max_iter = 100, verbose = FALSE)
+      control = list(fit = list(max_iter = 100, verbose = FALSE))
     )
   )
   seeded_fit <- fit_topic_model(
@@ -162,7 +194,7 @@ test_that("seededlda engines are supported", {
     engine = "seededlda",
     model = "seededlda",
     dictionary = make_seed_dictionary(),
-    fit_control = list(max_iter = 100, verbose = FALSE)
+    control = list(fit = list(max_iter = 100, verbose = FALSE))
   )
 
   expect_null(lda_fit$method)
@@ -177,21 +209,43 @@ test_that("seededlda engines are supported", {
   )
 })
 
-test_that("get_dtw uses explicit metadata override and can attach text", {
+test_that("get_dtw stores docvars, supports doc_data, and warns when text is unavailable", {
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
     model = "lda",
     k = 2,
-    fit_control = list(n_iter = 25, progressbar = FALSE)
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
   )
 
   embedded <- get_dtw(fit)
   expect_equal(embedded$year, 2020:2025)
   expect_equal(embedded$group, c("a", "a", "b", "b", "c", "c"))
 
-  override <- get_dtw(fit, data = make_topic_metadata(), include_text = TRUE)
-  expect_equal(override$group, paste0("override_", 1:6))
+  expect_warning(
+    no_text <- get_dtw(fit, include_text = TRUE),
+    "text-bearing doc_data"
+  )
+  expect_false("text" %in% names(no_text))
+
+  fit_with_doc_data <- fit_topic_model(
+    make_topic_dfm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    doc_data = make_topic_metadata(),
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+
+  stored <- get_dtw(fit_with_doc_data, include_text = TRUE)
+  expect_equal(stored$group, paste0("override_", 1:6))
+  expect_equal(stored$text, paste("text", 1:6))
+
+  override_meta <- make_topic_metadata()
+  override_meta[, group := paste0("manual_", 1:6)]
+
+  override <- get_dtw(fit_with_doc_data, doc_data = override_meta, include_text = TRUE)
+  expect_equal(override$group, paste0("manual_", 1:6))
   expect_equal(override$text, paste("text", 1:6))
 })
 
@@ -201,7 +255,7 @@ test_that("get_top_terms and plot_dtw use standardized extractors", {
     engine = "text2vec",
     model = "lda",
     k = 2,
-    fit_control = list(n_iter = 25, progressbar = FALSE)
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
   )
 
   top_terms <- get_top_terms(fit, n = 2, format = "long")
@@ -261,4 +315,20 @@ test_that("warp_lda remains available as a deprecated compatibility wrapper", {
   expect_true(inherits(fit$lda_object, "WarpLDA"))
   expect_equal(topic_cols(fit$theta), c("Topic001", "Topic002"))
   expect_false(exists("warpLDA", envir = asNamespace("NLPstudio"), inherits = FALSE))
+})
+
+test_that("print.nlp_topic_fit stays compact", {
+  fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+
+  out <- capture.output(print(fit))
+  expect_true(any(grepl("<nlp_topic_fit>", out, fixed = TRUE)))
+  expect_true(any(grepl("engine: text2vec", out, fixed = TRUE)))
+  expect_true(any(grepl("cached DTW: TRUE", out, fixed = TRUE)))
+  expect_false(any(grepl("term1", out, fixed = TRUE)))
 })

@@ -45,7 +45,7 @@ if (getRversion() >= "2.15.1") {
 #'   engine = "text2vec",
 #'   model = "lda",
 #'   k = 2,
-#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#'   control = list(fit = list(n_iter = 25, progressbar = FALSE))
 #' )
 #'
 #' plot_dtw(fit, topics = 1:2, bins = 5)

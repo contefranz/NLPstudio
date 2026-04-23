@@ -49,7 +49,7 @@ if (getRversion() >= "2.15.1") {
 #'   engine = "text2vec",
 #'   model = "lda",
 #'   k = 2,
-#'   fit_control = list(n_iter = 25, progressbar = FALSE)
+#'   control = list(fit = list(n_iter = 25, progressbar = FALSE))
 #' )
 #'
 #' get_top_terms(fit, n = 2, format = "long")

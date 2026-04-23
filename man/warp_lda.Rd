@@ -29,7 +29,8 @@ name? Defaults to \code{TRUE}.}
 \code{\link[text2vec:LatentDirichletAllocation]{LDA$new()}}.}
 
 \item{fit_control}{A named list of arguments forwarded to
-\code{LDA$fit_transform()}.}
+\code{LDA$fit_transform()}. Internally this legacy wrapper maps \code{lda_control}
+and \code{fit_control} into \code{control = list(model = lda_control, fit = fit_control)}.}
 }
 \value{
 A named list with the historical structure:
@@ -40,7 +41,7 @@ A named list with the historical structure:
 }
 }
 \description{
-\code{warp_lda()} remains available in v0.6.0 as a compatibility wrapper for the
+\code{warp_lda()} remains available in v0.6.1 as a compatibility wrapper for the
 legacy WarpLDA workflow. New code should call \code{fit_topic_model()} with
 \code{engine = "text2vec"} and \code{model = "lda"} instead.
 }

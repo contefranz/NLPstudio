@@ -1,6 +1,6 @@
 #' Backward-Compatible Wrapper for `fit_topic_model()`
 #'
-#' `warp_lda()` remains available in v0.6.0 as a compatibility wrapper for the
+#' `warp_lda()` remains available in v0.6.1 as a compatibility wrapper for the
 #' legacy WarpLDA workflow. New code should call `fit_topic_model()` with
 #' `engine = "text2vec"` and `model = "lda"` instead.
 #'
@@ -14,7 +14,8 @@
 #' @param lda_control A named list of arguments forwarded to
 #'   [`LDA$new()`][text2vec::LDA].
 #' @param fit_control A named list of arguments forwarded to
-#'   `LDA$fit_transform()`.
+#'   `LDA$fit_transform()`. Internally this legacy wrapper maps `lda_control`
+#'   and `fit_control` into `control = list(model = lda_control, fit = fit_control)`.
 #'
 #' @returns A named list with the historical structure:
 #'
@@ -71,13 +72,13 @@ warp_lda <- function(x, k, return_theta = TRUE, return_phi = TRUE,
 
   if (requireNamespace("lifecycle", quietly = TRUE)) {
     lifecycle::deprecate_warn(
-      when = "0.6.0",
+      when = "0.6.1",
       what = "warp_lda()",
       with = "fit_topic_model()"
     )
   } else {
     warning(
-      "warp_lda() is deprecated as of v0.6.0. Use fit_topic_model() instead.",
+      "warp_lda() is deprecated as of v0.6.1. Use fit_topic_model() instead.",
       call. = FALSE
     )
   }
@@ -89,16 +90,15 @@ warp_lda <- function(x, k, return_theta = TRUE, return_phi = TRUE,
     k = k,
     return_dtw = return_theta,
     return_tww = return_phi,
-    model_control = lda_control,
-    fit_control = fit_control
+    control = list(model = lda_control, fit = fit_control)
   )
 
   out <- list(lda_object = fit$model_object)
   if (return_theta) {
-    out$theta <- fit$dtw
+    out$theta <- get_dtw(fit)
   }
   if (return_phi) {
-    out$phi <- fit$tww
+    out$phi <- get_tww(fit)
   }
   out
 }
