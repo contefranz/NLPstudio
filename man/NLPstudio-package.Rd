@@ -24,7 +24,9 @@ In addition to core NLP functionality, \strong{NLPstudio} provides a unified
 topic-modeling API spanning
 \strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}},
 \strong{\href{https://cran.r-project.org/package=topicmodels}{topicmodels}}, and
-\strong{\href{https://cran.r-project.org/package=seededlda}{seededlda}}. Utility
+\strong{\href{https://cran.r-project.org/package=seededlda}{seededlda}}, with
+optional \strong{\href{https://cran.r-project.org/package=topicmodels.etm}{topicmodels.etm}}
+support for embedded topic models. Utility
 functions standardize document-topic weights (DTW), topic-word weights
 (TWW), top-term extraction, representative-candidate retrieval, and
 visualization across those engines.
@@ -52,10 +54,11 @@ and \code{calculate_distance()} provide fast document-level metrics and
 statistics built on \code{quanteda.textstats}.
 \item \strong{Topic modeling:}
 \code{fit_topic_model()} provides a common fitting interface across
-\strong{text2vec}, \strong{topicmodels}, and \strong{seededlda}. Downstream helpers such
-as \code{get_dtw()}, \code{get_tww()}, \code{get_top_terms()}, \code{plot_top_terms()},
-\code{plot_dtw()}, and \code{get_representative_candidates()} work with the
-standardized DTW/TWW representation regardless of the fitting backend.
+\strong{text2vec}, \strong{topicmodels}, \strong{seededlda}, and optional
+\strong{topicmodels.etm}. Downstream helpers such as \code{get_dtw()}, \code{get_tww()},
+\code{get_top_terms()}, \code{plot_top_terms()}, \code{plot_dtw()}, and
+\code{get_representative_candidates()} work with the standardized DTW/TWW
+representation regardless of the fitting backend.
 \item \strong{Corpus ingestion:}
 \code{from_json_to_df()} converts user-supplied SEC-style JSON filings into
 tidy data.tables, with chunking controlled by \code{nchunks} and optional

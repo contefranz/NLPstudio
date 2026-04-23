@@ -8,8 +8,9 @@ get_tww(x)
 }
 \arguments{
 \item{x}{A supported topic-model object. This includes \code{nlp_topic_fit},
-\code{warp_lda()} output, raw \code{topicmodels} fits, raw \code{seededlda} fits, raw
-\code{text2vec::LDA} objects, and already standardized TWW tables.}
+raw \code{topicmodels} fits, raw \code{seededlda} fits, raw \code{topicmodels.etm}
+objects, raw \code{text2vec::LDA} objects, and already standardized TWW
+tables.}
 }
 \value{
 A \code{data.table} with one row per topic, a \code{topic_id} column using

@@ -129,6 +129,26 @@ test_that("fit_topic_model validates unsupported combinations and control struct
     ),
     "Unknown top-level control entries"
   )
+  expect_error(
+    fit_topic_model(
+      make_topic_dtm(),
+      engine = "text2vec",
+      model = "lda",
+      k = 2,
+      control = list(optimizer = list(lr = 0.01))
+    ),
+    "control\\$optimizer must be empty"
+  )
+  expect_error(
+    fit_topic_model(
+      make_topic_dtm(),
+      engine = "topicmodels.etm",
+      model = "etm",
+      k = 2,
+      method = "VEM"
+    ),
+    "method must be NULL"
+  )
 })
 
 test_that("topicmodels LDA and CTM fits are supported", {
@@ -207,6 +227,119 @@ test_that("seededlda engines are supported", {
     rep(1, nrow(get_tww(seeded_fit))),
     tolerance = 1e-8
   )
+})
+
+test_that("ETM fits are supported with learned and pretrained embeddings", {
+  skip_if_not_installed("topicmodels.etm")
+  skip_if_not_installed("torch")
+  if (!torch::torch_is_installed()) {
+    skip("torch backend is not installed")
+  }
+
+  torch::torch_manual_seed(1)
+  learned_fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "topicmodels.etm",
+    model = "etm",
+    k = 2,
+    control = list(
+      model = list(embeddings = 5),
+      fit = list(epoch = 2, batch_size = 2, normalize = TRUE),
+      optimizer = list(lr = 0.005, weight_decay = 1.2e-06)
+    )
+  )
+
+  embeddings <- matrix(
+    seq_len(ncol(make_topic_dtm()) * 4),
+    nrow = ncol(make_topic_dtm()),
+    ncol = 4,
+    dimnames = list(colnames(make_topic_dtm()), NULL)
+  )
+  torch::torch_manual_seed(1)
+  pretrained_fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "topicmodels.etm",
+    model = "etm",
+    k = 2,
+    control = list(
+      model = list(embeddings = embeddings),
+      fit = list(epoch = 2, batch_size = 2)
+    )
+  )
+
+  expect_equal(learned_fit$engine, "topicmodels.etm")
+  expect_equal(pretrained_fit$engine, "topicmodels.etm")
+  expect_equal(topic_cols(learned_fit$dtw), c("Topic001", "Topic002"))
+  expect_equal(rownames(pretrained_fit$tww), c("Topic001", "Topic002"))
+  expect_equal(unname(rowSums(learned_fit$dtw)), rep(1, nrow(learned_fit$dtw)), tolerance = 1e-6)
+  expect_equal(unname(rowSums(pretrained_fit$tww)), rep(1, nrow(pretrained_fit$tww)), tolerance = 1e-6)
+  expect_equal(get_tww(learned_fit$model_object)$topic_id, c("Topic001", "Topic002"))
+  expect_true(all(c("rank", "topic", "term", "probability") %in% names(get_top_terms(pretrained_fit, n = 2))))
+  expect_error(get_dtw(learned_fit$model_object), "Raw ETM objects do not retain fitted DTW")
+})
+
+test_that("ETM validates pretrained embeddings and keeps alignment after pruning", {
+  skip_if_not_installed("topicmodels.etm")
+  skip_if_not_installed("torch")
+  if (!torch::torch_is_installed()) {
+    skip("torch backend is not installed")
+  }
+
+  expect_error(
+    fit_topic_model(
+      make_topic_dtm(),
+      engine = "topicmodels.etm",
+      model = "etm",
+      k = 2,
+      control = list(
+        model = list(embeddings = matrix(1:8, nrow = 4)),
+        fit = list(epoch = 2, batch_size = 2)
+      )
+    ),
+    "rownames"
+  )
+
+  x <- Matrix::Matrix(
+    matrix(
+      c(2, 0, 0, 0,
+        1, 1, 1, 0,
+        0, 1, 2, 1,
+        0, 0, 1, 2),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+  rownames(x) <- paste0("doc", 1:4)
+  colnames(x) <- paste0("term", 1:4)
+  x <- quanteda::as.dfm(x)
+  quanteda::docvars(x, "year") <- 2020:2023
+
+  embeddings <- matrix(
+    seq_len(3 * 4),
+    nrow = 3,
+    ncol = 4,
+    dimnames = list(c("term2", "term3", "term4"), NULL)
+  )
+
+  expect_warning(
+    fit <- fit_topic_model(
+      x,
+      engine = "topicmodels.etm",
+      model = "etm",
+      k = 2,
+      control = list(
+        model = list(embeddings = embeddings),
+        fit = list(epoch = 2, batch_size = 2)
+      )
+    ),
+    "Dropping"
+  )
+
+  expect_equal(fit$doc_ids, c("doc2", "doc3", "doc4"))
+  expect_equal(fit$docvars$doc_id, c("doc2", "doc3", "doc4"))
+  expect_equal(get_dtw(fit)$doc_id, c("doc2", "doc3", "doc4"))
 })
 
 test_that("get_dtw stores docvars, supports doc_data, and warns when text is unavailable", {
@@ -300,20 +433,8 @@ test_that("representative candidates band within topic and fall back on ties", {
   expect_equal(sort(unique(tied_out$candidate_band)), c("HIGH", "LOW"))
 })
 
-test_that("warp_lda remains available as a deprecated compatibility wrapper", {
-  expect_warning(
-    fit <- warp_lda(
-      make_topic_dtm(),
-      k = 2,
-      fit_control = list(n_iter = 25, progressbar = FALSE)
-    ),
-    "deprecated|fit_topic_model"
-  )
-
-  expect_type(fit, "list")
-  expect_named(fit, c("lda_object", "theta", "phi"), ignore.order = TRUE)
-  expect_true(inherits(fit$lda_object, "WarpLDA"))
-  expect_equal(topic_cols(fit$theta), c("Topic001", "Topic002"))
+test_that("warp_lda and warpLDA are no longer exported", {
+  expect_false(exists("warp_lda", envir = asNamespace("NLPstudio"), inherits = FALSE))
   expect_false(exists("warpLDA", envir = asNamespace("NLPstudio"), inherits = FALSE))
 })
 

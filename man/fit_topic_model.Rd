@@ -14,7 +14,7 @@ fit_topic_model(
   doc_data = NULL,
   return_dtw = TRUE,
   return_tww = TRUE,
-  control = list(model = list(), fit = list()),
+  control = list(model = list(), fit = list(), optimizer = list()),
   dictionary = NULL,
   seedwords = NULL,
   initial_model = NULL
@@ -26,8 +26,8 @@ fit_topic_model(
 \link[quanteda:dfm]{dfm}, and
 \code{DocumentTermMatrix}.}
 
-\item{engine}{Backend package. One of \code{"text2vec"}, \code{"topicmodels"}, or
-\code{"seededlda"}.}
+\item{engine}{Backend package. One of \code{"text2vec"}, \code{"topicmodels"},
+\code{"seededlda"}, or \code{"topicmodels.etm"}.}
 
 \item{model}{Model family within the selected backend.
 Supported combinations are:
@@ -35,6 +35,7 @@ Supported combinations are:
 \item \code{engine = "text2vec"} with \code{model = "lda"}
 \item \code{engine = "topicmodels"} with \code{model = "lda"} or \code{"ctm"}
 \item \code{engine = "seededlda"} with \code{model = "lda"}, \code{"seqlda"}, or \code{"seededlda"}
+\item \code{engine = "topicmodels.etm"} with \code{model = "etm"}
 }}
 
 \item{k}{Number of topics. Required for all supported models except
@@ -46,6 +47,7 @@ Supported combinations are:
 \item \code{topicmodels + ctm}: \code{"VEM"} only
 \item \code{text2vec + lda}: \code{NULL} only
 \item \code{seededlda}: \code{NULL} only
+\item \code{topicmodels.etm + etm}: \code{NULL} only
 }}
 
 \item{docvars}{Should a compact document-variable table be stored alongside
@@ -58,22 +60,28 @@ enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
 by \code{doc_id}. Text can only be attached downstream when this sidecar
 contains text or when it is supplied as a corpus.}
 
-\item{return_dtw}{Should DTW be cached in the returned object? Defaults to
+\item{return_dtw}{Should document-topic-weights (DTW) be cached in the returned object? Defaults to
 \code{TRUE}.}
 
-\item{return_tww}{Should TWW be cached in the returned object? Defaults to
+\item{return_tww}{Should topic-term-weights (TWW) be cached in the returned object? Defaults to
 \code{TRUE}.}
 
-\item{control}{A named list of backend controls with optional \code{model} and
-\code{fit} entries. Use \code{control$model} for model-construction arguments and
-\code{control$fit} for fitting arguments.
+\item{control}{A named list of backend controls with optional \code{model},
+\code{fit}, and \code{optimizer} entries. Use \code{control$model} for model-construction
+arguments, \code{control$fit} for fitting arguments, and \code{control$optimizer}
+for ETM optimizer arguments.
 \itemize{
-\item \code{text2vec}: \code{control$model} is forwarded to \code{LDA$initialize()} and
-\code{control$fit} is forwarded to \code{LDA$fit_transform()}
+\item \code{text2vec}: \code{control$model} is forwarded to LDA$initialize()\code{and}control$fit\verb{is forwarded to}LDA$fit_transform()\verb{; }control$optimizer`
+must be empty
 \item \code{topicmodels}: \code{control$model} must be empty and \code{control$fit} is passed
-as backend \verb{control =}
+as backend \verb{control =}; \code{control$optimizer} must be empty
 \item \code{seededlda}: \code{control$model} must be empty and \code{control$fit} is spliced
-into the selected \verb{textmodel_*()} call
+into the selected \verb{textmodel_*()} call; \code{control$optimizer} must be
+empty
+\item \code{topicmodels.etm}: \code{control$model} is forwarded to
+\code{topicmodels.etm::ETM()}, \code{control$fit} is forwarded to \verb{$fit(...)}, and
+\code{control$optimizer} is forwarded to
+\code{torch::optim_adam(params = model$parameters, ...)}
 }}
 
 \item{dictionary}{Dictionary required for
@@ -108,19 +116,15 @@ Users access these components with \code{$}, for example \code{fit$dtw} or
 }
 \description{
 Fit a topic model with a unified API across \strong{text2vec}, \strong{topicmodels},
-and \strong{seededlda}. The fitted object stores both the raw backend fit and, by
-default, cached DTW/TWW outputs following Lewis and Grossetti (2022):
+\strong{seededlda}, and \strong{topicmodels.etm}. The fitted object stores both the
+raw backend fit and, by default, cached DTW/TWW outputs following the convention of Lewis and
+Grossetti (2022):
 }
 \details{
-\itemize{
-\item \strong{DTW}: document-topic weights
-\item \strong{TWW}: topic-word weights
-}
-
 \code{fit_topic_model()} standardizes model fitting while preserving the original
 backend object in \code{model_object}. That design avoids brittle inheritance
 across R6, S4, and list-based classes while still providing a stable package
-interface for downstream helpers such as \code{get_dtw()}, \code{get_tww()},
+interface for downstream helpers such as \code{\link[=get_dtw]{get_dtw()}}, \code{\link[=get_tww]{get_tww()}},
 \code{\link[=get_top_terms]{get_top_terms()}}, and \code{\link[=plot_dtw]{plot_dtw()}}.
 
 The standardized DTW/TWW outputs always use topic identifiers of the form
@@ -129,6 +133,14 @@ The standardized DTW/TWW outputs always use topic identifiers of the form
 Stored \code{docvars} and \code{doc_data} are used only for downstream alignment and
 enrichment. They are never passed to the backend estimator itself.
 
+ETM requires \code{control$model$embeddings}, supplied either as a single integer
+embedding dimension or as a pretrained embedding matrix. When learned
+embeddings are requested, \code{vocab} defaults to the input terms unless
+explicitly supplied. When pretrained embeddings are supplied, the input
+vocabulary is aligned to the embedding rownames; unmatched terms and any
+documents that become empty after alignment are dropped with a warning while
+preserving surviving \code{doc_id}, \code{docvars}, and \code{doc_data} alignment.
+
 The API currently covers these model families and fitting algorithms:
 \itemize{
 \item LDA via \strong{text2vec}, \strong{topicmodels}, and \strong{seededlda}
@@ -136,6 +148,7 @@ The API currently covers these model families and fitting algorithms:
 \item WarpLDA as the \strong{text2vec} estimation algorithm for LDA
 \item Sequential LDA via \strong{seededlda}
 \item Seeded LDA via \strong{seededlda}
+\item Embedded Topic Models via \strong{topicmodels.etm}
 }
 }
 \examples{
@@ -225,6 +238,37 @@ if (requireNamespace("seededlda", quietly = TRUE)) {
   )
 }
 
+\dontshow{if (requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed()) withAutoprint(\{ # examplesIf}
+fit_topic_model(
+  dtm,
+  engine = "topicmodels.etm",
+  model = "etm",
+  k = 2,
+  control = list(
+    model = list(embeddings = 5),
+    fit = list(epoch = 5, batch_size = 2, normalize = TRUE),
+    optimizer = list(lr = 0.005, weight_decay = 1.2e-06)
+  )
+)
+
+embeddings <- matrix(
+  seq_len(ncol(dtm) * 4),
+  nrow = ncol(dtm),
+  ncol = 4,
+  dimnames = list(colnames(dtm), NULL)
+)
+
+fit_topic_model(
+  dtm,
+  engine = "topicmodels.etm",
+  model = "etm",
+  k = 2,
+  control = list(
+    model = list(embeddings = embeddings),
+    fit = list(epoch = 5, batch_size = 2)
+  )
+)
+\dontshow{\}) # examplesIf}
 }
 \references{
 Lewis, C. M., & Grossetti, F. (2022).
@@ -247,6 +291,10 @@ Chen, J., Li, K., Zhu, J., & Chen, W. (2016).
 \href{https://pacman.cs.tsinghua.edu.cn/~cwg/publication/vldb16/vldb16.pdf}{WarpLDA: A Cache Efficient O(1) Algorithm for Latent Dirichlet Allocation}.
 \emph{Proceedings of the VLDB Endowment}, 9(10), 744-755.
 
+Dieng, A. B., Ruiz, F. J. R., & Blei, D. M. (2020).
+\href{https://arxiv.org/pdf/1907.04907}{Topic Modeling in Embedding Spaces}.
+\emph{Transactions of the Association for Computational Linguistics}, 8, 439-453.
+
 Du, L., Buntine, W. L., Jin, H., & Chen, C. (2012).
 \href{https://doi.org/10.1007/s10115-011-0425-1}{Sequential latent Dirichlet allocation}.
 \emph{Knowledge and Information Systems}, 31(3), 475-503.
@@ -266,4 +314,8 @@ Watanabe, K., & Zhou, Y. (2022).
 Watanabe, K., & Baturo, A. (2024).
 \href{https://journals.sagepub.com/doi/10.1177/08944393231178605}{Seeded Sequential LDA: A Semi-Supervised Algorithm for Topic-Specific Analysis of Sentences}.
 \emph{Social Science Computer Review}, 42(1), 224-248.
+}
+\seealso{
+\code{\link[topicmodels:lda]{topicmodels::LDA()}} \code{\link[topicmodels:ctm]{topicmodels::CTM()}} \code{\link[text2vec:LatentDirichletAllocation]{text2vec::LDA()}} \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}
+\code{\link[topicmodels.etm:ETM]{topicmodels.etm::ETM()}}
 }

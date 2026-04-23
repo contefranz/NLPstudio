@@ -10,8 +10,8 @@ Description: NLPstudio provides a streamlined and high-performance workflow for 
   via quanteda, all with parallel backend support through the parallel package. In addition,
   NLPstudio includes tools for computing readability, similarity, and distance measures using
   quanteda.textstats. The package also provides a unified topic-modeling API across text2vec,
-  topicmodels, and seededlda, with standardized document-topic weights (DTW), topic-word weights
-  (TWW), representative-candidate extraction, and visualization helpers. NLPstudio supports
+  topicmodels, seededlda, and topicmodels.etm, with standardized document-topic weights (DTW),
+  topic-word weights (TWW), representative-candidate extraction, and visualization helpers. NLPstudio supports
   export-ready wide and long formats and includes curated domain dictionaries for financial text analysis.
   Built on data.table, quanteda, and parallel, NLPstudio is intended for scalable text analysis in an
   academic context with a particular focus on accounting and finance research domains.
@@ -37,6 +37,8 @@ Suggests:
     spacyr (>= 1.3.0),
     testthat (>= 3.0.0),
     tidytext (>= 0.4.2),
-    topicmodels (>= 0.2)
+    topicmodels (>= 0.2),
+    topicmodels.etm,
+    torch
 Config/testthat/edition: 3
 LazyData: true

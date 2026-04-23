@@ -23,10 +23,15 @@ In addition to preprocessing tasks such as tokenization, singularization,
 reshaping, summarization, and similarity computations, **NLPstudio** includes a
 unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/package=text2vec),
 [**topicmodels**](https://cran.r-project.org/package=topicmodels), and
-[**seededlda**](https://cran.r-project.org/package=seededlda). The package
+[**seededlda**](https://cran.r-project.org/package=seededlda), with optional
+[**topicmodels.etm**](https://cran.r-project.org/package=topicmodels.etm)
+support for embedded topic models. The package
 standardizes document-topic weights (DTW), topic-word weights (TWW),
 representative-candidate extraction, and downstream visualization across those
 engines.
+
+Embedded topic models are available through the optional **topicmodels.etm** and
+**torch** packages when those backends are installed locally.
 
 The package also provides curated **quanteda** dictionaries tailored to
 financial and regulatory text, including forward-looking statements, firm

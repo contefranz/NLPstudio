@@ -17,8 +17,8 @@ get_representative_candidates(
 }
 \arguments{
 \item{x}{A supported topic-model object. This includes \code{nlp_topic_fit},
-\code{warp_lda()} output, raw \code{topicmodels} fits, raw \code{seededlda} fits, and
-already standardized DTW tables.}
+raw \code{topicmodels} fits, raw \code{seededlda} fits, and already standardized DTW
+tables.}
 
 \item{doc_data}{Optional document-data override. When supplied, this is used
 instead of any \code{doc_data} stored in \code{x}. Accepted inputs are a corpus,

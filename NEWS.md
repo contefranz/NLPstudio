@@ -4,8 +4,9 @@
 
 ### CHANGES
 
-1. `fit_topic_model()` now uses a single `control = list(model = ..., fit = ...)`
-   argument instead of separate `model_control` and `fit_control` inputs.
+1. `fit_topic_model()` now uses a single
+   `control = list(model = ..., fit = ..., optimizer = ...)` argument instead
+   of separate `model_control` and `fit_control` inputs.
 
 2. The returned `nlp_topic_fit` object now stores compact `docvars`,
    optional `doc_data`, fitted `doc_ids`, and matrix-backed DTW/TWW caches
@@ -17,6 +18,13 @@
 
 4. `print.nlp_topic_fit()` now prints a compact summary so large topic-model
    fits can be inspected at the console without expanding huge internals.
+
+5. `warp_lda()` has been removed from the package surface. Text2vec support is
+   now available only through `fit_topic_model(engine = "text2vec", model = "lda")`.
+
+6. `fit_topic_model()` now supports embedded topic models via
+   `engine = "topicmodels.etm", model = "etm"`, with ETM controls routed
+   through `control$model`, `control$fit`, and `control$optimizer`.
 
 ## NLPstudio 0.6.0  (2026-04-22)
 
@@ -41,8 +49,8 @@
 1. `get_top_terms()` and `plot_dtw()` now route through the standardized
    DTW/TWW extractor layer instead of backend-specific logic.
 
-2. `warp_lda()` remains available only as a soft-deprecated compatibility
-   wrapper around `fit_topic_model(engine = "text2vec", model = "lda")`.
+2. Text2vec topic modeling is routed through `fit_topic_model()` using
+   `engine = "text2vec", model = "lda"`.
 
 3. Package documentation now uses DTW/TWW terminology following Lewis and
    Grossetti (2022) and documents the returned `nlp_topic_fit` S3 wrapper.

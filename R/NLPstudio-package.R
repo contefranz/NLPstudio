@@ -19,7 +19,9 @@
 #' topic-modeling API spanning
 #' **[text2vec](https://cran.r-project.org/package=text2vec)**,
 #' **[topicmodels](https://cran.r-project.org/package=topicmodels)**, and
-#' **[seededlda](https://cran.r-project.org/package=seededlda)**. Utility
+#' **[seededlda](https://cran.r-project.org/package=seededlda)**, with
+#' optional **[topicmodels.etm](https://cran.r-project.org/package=topicmodels.etm)**
+#' support for embedded topic models. Utility
 #' functions standardize document-topic weights (DTW), topic-word weights
 #' (TWW), top-term extraction, representative-candidate retrieval, and
 #' visualization across those engines.
@@ -49,10 +51,11 @@
 #'   
 #' - **Topic modeling:**  
 #'   `fit_topic_model()` provides a common fitting interface across
-#'   **text2vec**, **topicmodels**, and **seededlda**. Downstream helpers such
-#'   as `get_dtw()`, `get_tww()`, `get_top_terms()`, `plot_top_terms()`,
-#'   `plot_dtw()`, and `get_representative_candidates()` work with the
-#'   standardized DTW/TWW representation regardless of the fitting backend.
+#'   **text2vec**, **topicmodels**, **seededlda**, and optional
+#'   **topicmodels.etm**. Downstream helpers such as `get_dtw()`, `get_tww()`,
+#'   `get_top_terms()`, `plot_top_terms()`, `plot_dtw()`, and
+#'   `get_representative_candidates()` work with the standardized DTW/TWW
+#'   representation regardless of the fitting backend.
 #' - **Corpus ingestion:**  
 #'   `from_json_to_df()` converts user-supplied SEC-style JSON filings into
 #'   tidy data.tables, with chunking controlled by `nchunks` and optional

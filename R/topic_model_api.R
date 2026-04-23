@@ -10,24 +10,23 @@ if (getRversion() >= "2.15.1") {
 #' Fit a Topic Model Across Supported Backends
 #'
 #' Fit a topic model with a unified API across **text2vec**, **topicmodels**,
-#' and **seededlda**. The fitted object stores both the raw backend fit and, by
-#' default, cached DTW/TWW outputs following Lewis and Grossetti (2022):
-#'
-#' - **DTW**: document-topic weights
-#' - **TWW**: topic-word weights
+#' **seededlda**, and **topicmodels.etm**. The fitted object stores both the
+#' raw backend fit and, by default, cached DTW/TWW outputs following the convention of Lewis and
+#' Grossetti (2022):
 #'
 #' @param x A document-feature input. Supported classes are
 #'   [dgCMatrix-class][Matrix::dgCMatrix-class],
 #'   [dfm][quanteda::dfm], and
 #'   `DocumentTermMatrix`.
-#' @param engine Backend package. One of `"text2vec"`, `"topicmodels"`, or
-#'   `"seededlda"`.
+#' @param engine Backend package. One of `"text2vec"`, `"topicmodels"`,
+#'   `"seededlda"`, or `"topicmodels.etm"`.
 #' @param model Model family within the selected backend.
 #'   Supported combinations are:
 #'
 #'   - `engine = "text2vec"` with `model = "lda"`
 #'   - `engine = "topicmodels"` with `model = "lda"` or `"ctm"`
 #'   - `engine = "seededlda"` with `model = "lda"`, `"seqlda"`, or `"seededlda"`
+#'   - `engine = "topicmodels.etm"` with `model = "etm"`
 #' @param k Number of topics. Required for all supported models except
 #'   `engine = "seededlda", model = "seededlda"`.
 #' @param method Fitting method within the selected model family.
@@ -36,6 +35,7 @@ if (getRversion() >= "2.15.1") {
 #'   - `topicmodels + ctm`: `"VEM"` only
 #'   - `text2vec + lda`: `NULL` only
 #'   - `seededlda`: `NULL` only
+#'   - `topicmodels.etm + etm`: `NULL` only
 #' @param docvars Should a compact document-variable table be stored alongside
 #'   the fitted model? Defaults to `TRUE`. Stored docvars always include the
 #'   fitted `doc_id` values and, when `x` is a [dfm][quanteda::dfm], any
@@ -44,20 +44,27 @@ if (getRversion() >= "2.15.1") {
 #'   enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
 #'   by `doc_id`. Text can only be attached downstream when this sidecar
 #'   contains text or when it is supplied as a corpus.
-#' @param return_dtw Should DTW be cached in the returned object? Defaults to
+#' @param return_dtw Should document-topic-weights (DTW) be cached in the returned object? Defaults to
 #'   `TRUE`.
-#' @param return_tww Should TWW be cached in the returned object? Defaults to
+#' @param return_tww Should topic-term-weights (TWW) be cached in the returned object? Defaults to
 #'   `TRUE`.
-#' @param control A named list of backend controls with optional `model` and
-#'   `fit` entries. Use `control$model` for model-construction arguments and
-#'   `control$fit` for fitting arguments.
+#' @param control A named list of backend controls with optional `model`,
+#'   `fit`, and `optimizer` entries. Use `control$model` for model-construction
+#'   arguments, `control$fit` for fitting arguments, and `control$optimizer`
+#'   for ETM optimizer arguments.
 #'
-#'   - `text2vec`: `control$model` is forwarded to `LDA$initialize()` and
-#'     `control$fit` is forwarded to `LDA$fit_transform()`
+#'   - `text2vec`: `control$model` is forwarded to LDA$initialize()` and
+#'     `control$fit` is forwarded to `LDA$fit_transform()`; `control$optimizer`
+#'     must be empty
 #'   - `topicmodels`: `control$model` must be empty and `control$fit` is passed
-#'     as backend `control =`
+#'     as backend `control =`; `control$optimizer` must be empty
 #'   - `seededlda`: `control$model` must be empty and `control$fit` is spliced
-#'     into the selected `textmodel_*()` call
+#'     into the selected `textmodel_*()` call; `control$optimizer` must be
+#'     empty
+#'   - `topicmodels.etm`: `control$model` is forwarded to
+#'     `topicmodels.etm::ETM()`, `control$fit` is forwarded to `$fit(...)`, and
+#'     `control$optimizer` is forwarded to
+#'     `torch::optim_adam(params = model$parameters, ...)`
 #' @param dictionary Dictionary required for
 #'   `engine = "seededlda", model = "seededlda"`.
 #' @param seedwords Optional `seedwords` argument forwarded only to
@@ -88,7 +95,7 @@ if (getRversion() >= "2.15.1") {
 #' `fit_topic_model()` standardizes model fitting while preserving the original
 #' backend object in `model_object`. That design avoids brittle inheritance
 #' across R6, S4, and list-based classes while still providing a stable package
-#' interface for downstream helpers such as `get_dtw()`, `get_tww()`,
+#' interface for downstream helpers such as [get_dtw()], [get_tww()],
 #' [get_top_terms()], and [plot_dtw()].
 #'
 #' The standardized DTW/TWW outputs always use topic identifiers of the form
@@ -97,6 +104,14 @@ if (getRversion() >= "2.15.1") {
 #' Stored `docvars` and `doc_data` are used only for downstream alignment and
 #' enrichment. They are never passed to the backend estimator itself.
 #'
+#' ETM requires `control$model$embeddings`, supplied either as a single integer
+#' embedding dimension or as a pretrained embedding matrix. When learned
+#' embeddings are requested, `vocab` defaults to the input terms unless
+#' explicitly supplied. When pretrained embeddings are supplied, the input
+#' vocabulary is aligned to the embedding rownames; unmatched terms and any
+#' documents that become empty after alignment are dropped with a warning while
+#' preserving surviving `doc_id`, `docvars`, and `doc_data` alignment.
+#'
 #' The API currently covers these model families and fitting algorithms:
 #'
 #' - LDA via **text2vec**, **topicmodels**, and **seededlda**
@@ -104,6 +119,7 @@ if (getRversion() >= "2.15.1") {
 #' - WarpLDA as the **text2vec** estimation algorithm for LDA
 #' - Sequential LDA via **seededlda**
 #' - Seeded LDA via **seededlda**
+#' - Embedded Topic Models via **topicmodels.etm**
 #'
 #' @references
 #' Lewis, C. M., & Grossetti, F. (2022).
@@ -117,14 +133,18 @@ if (getRversion() >= "2.15.1") {
 #' Blei, D. M., & Lafferty, J. D. (2006).
 #' [Correlated topic models](https://www.cs.cmu.edu/afs/cs/usr/lafferty/www/pub/ctm.pdf).
 #' _Advances in Neural Information Processing Systems_, 18, 147.
-#' 
+#'
 #' Blei, D. M., & Lafferty, J. D. (2007).
 #' [A correlated topic model of Science](https://doi.org/10.1214/07-AOAS114).
 #' _The Annals of Applied Statistics_, 1(1), 17-35.
-#' 
+#'
 #' Chen, J., Li, K., Zhu, J., & Chen, W. (2016).
 #' [WarpLDA: A Cache Efficient O(1) Algorithm for Latent Dirichlet Allocation](https://pacman.cs.tsinghua.edu.cn/~cwg/publication/vldb16/vldb16.pdf).
 #' _Proceedings of the VLDB Endowment_, 9(10), 744-755.
+#'
+#' Dieng, A. B., Ruiz, F. J. R., & Blei, D. M. (2020).
+#' [Topic Modeling in Embedding Spaces](https://arxiv.org/pdf/1907.04907).
+#' _Transactions of the Association for Computational Linguistics_, 8, 439-453.
 #'
 #' Du, L., Buntine, W. L., Jin, H., & Chen, C. (2012).
 #' [Sequential latent Dirichlet allocation](https://doi.org/10.1007/s10115-011-0425-1).
@@ -145,6 +165,9 @@ if (getRversion() >= "2.15.1") {
 #' Watanabe, K., & Baturo, A. (2024).
 #' [Seeded Sequential LDA: A Semi-Supervised Algorithm for Topic-Specific Analysis of Sentences](https://journals.sagepub.com/doi/10.1177/08944393231178605).
 #' _Social Science Computer Review_, 42(1), 224-248.
+#' 
+#' @seealso [topicmodels::LDA()] [topicmodels::CTM()] [text2vec::LDA()] [seededlda::textmodel_seqlda()]
+#' [topicmodels.etm::ETM()]
 #'
 #' @examples
 #' dtm <- methods::as(
@@ -233,16 +256,47 @@ if (getRversion() >= "2.15.1") {
 #'   )
 #' }
 #'
+#' @examplesIf requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed()
+#' fit_topic_model(
+#'   dtm,
+#'   engine = "topicmodels.etm",
+#'   model = "etm",
+#'   k = 2,
+#'   control = list(
+#'     model = list(embeddings = 5),
+#'     fit = list(epoch = 5, batch_size = 2, normalize = TRUE),
+#'     optimizer = list(lr = 0.005, weight_decay = 1.2e-06)
+#'   )
+#' )
+#'
+#' embeddings <- matrix(
+#'   seq_len(ncol(dtm) * 4),
+#'   nrow = ncol(dtm),
+#'   ncol = 4,
+#'   dimnames = list(colnames(dtm), NULL)
+#' )
+#'
+#' fit_topic_model(
+#'   dtm,
+#'   engine = "topicmodels.etm",
+#'   model = "etm",
+#'   k = 2,
+#'   control = list(
+#'     model = list(embeddings = embeddings),
+#'     fit = list(epoch = 5, batch_size = 2)
+#'   )
+#' )
+#'
 #' @export
 fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
                             docvars = TRUE, doc_data = NULL,
                             return_dtw = TRUE, return_tww = TRUE,
-                            control = list(model = list(), fit = list()),
+                            control = list(model = list(), fit = list(), optimizer = list()),
                             dictionary = NULL,
                             seedwords = NULL, initial_model = NULL) {
 
   call <- match.call()
-  engine <- match.arg(engine, c("text2vec", "topicmodels", "seededlda"))
+  engine <- match.arg(engine, c("text2vec", "topicmodels", "seededlda", "topicmodels.etm"))
   model <- .match_topic_model(engine, model)
   method <- .normalize_topic_method(engine, model, method)
   control <- .normalize_topic_control(control)
@@ -294,6 +348,11 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
       control = control,
       dictionary = dictionary,
       initial_model = initial_model
+    ),
+    `topicmodels.etm` = .fit_etm_topic_model(
+      x = x,
+      k = as.integer(k),
+      control = control
     )
   )
 
@@ -327,8 +386,8 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' return a standardized [data.table][data.table::data.table].
 #'
 #' @param x A supported topic-model object. This includes `nlp_topic_fit`,
-#'   `warp_lda()` output, raw `topicmodels` fits, raw `seededlda` fits, and
-#'   already standardized DTW tables.
+#'   raw `topicmodels` fits, raw `seededlda` fits, and already standardized DTW
+#'   tables.
 #' @param doc_data Optional document-data override. When supplied, this is used
 #'   instead of any `doc_data` stored in `x`. Accepted inputs are a corpus,
 #'   data.frame, or data.table keyed by `doc_id`.
@@ -418,8 +477,9 @@ get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
 #' return a standardized wide [data.table][data.table::data.table].
 #'
 #' @param x A supported topic-model object. This includes `nlp_topic_fit`,
-#'   `warp_lda()` output, raw `topicmodels` fits, raw `seededlda` fits, raw
-#'   `text2vec::LDA` objects, and already standardized TWW tables.
+#'   raw `topicmodels` fits, raw `seededlda` fits, raw `topicmodels.etm`
+#'   objects, raw `text2vec::LDA` objects, and already standardized TWW
+#'   tables.
 #'
 #' @returns A `data.table` with one row per topic, a `topic_id` column using
 #'   the `Topic###` convention, and one column per term.
@@ -644,7 +704,8 @@ print.nlp_topic_fit <- function(x, ...) {
     engine,
     text2vec = "lda",
     topicmodels = c("lda", "ctm"),
-    seededlda = c("lda", "seqlda", "seededlda")
+    seededlda = c("lda", "seqlda", "seededlda"),
+    `topicmodels.etm` = "etm"
   )
 
   if (!model %in% allowed) {
@@ -701,7 +762,7 @@ print.nlp_topic_fit <- function(x, ...) {
 #' @keywords internal
 .normalize_topic_control <- function(control) {
   if (is.null(control) || !length(control)) {
-    return(list(model = list(), fit = list()))
+    return(list(model = list(), fit = list(), optimizer = list()))
   }
   if (!is.list(control)) {
     stop("control must be a list.")
@@ -709,10 +770,10 @@ print.nlp_topic_fit <- function(x, ...) {
 
   nms <- names(control)
   if (is.null(nms) || any(nms == "")) {
-    stop("control must be a named list with optional 'model' and 'fit' entries.")
+    stop("control must be a named list with optional 'model', 'fit', and 'optimizer' entries.")
   }
 
-  extra <- setdiff(nms, c("model", "fit"))
+  extra <- setdiff(nms, c("model", "fit", "optimizer"))
   if (length(extra)) {
     stop(
       sprintf(
@@ -725,7 +786,8 @@ print.nlp_topic_fit <- function(x, ...) {
 
   out <- list(
     model = if ("model" %in% nms) control$model else list(),
-    fit = if ("fit" %in% nms) control$fit else list()
+    fit = if ("fit" %in% nms) control$fit else list(),
+    optimizer = if ("optimizer" %in% nms) control$optimizer else list()
   )
 
   if (is.null(out$model)) {
@@ -734,8 +796,11 @@ print.nlp_topic_fit <- function(x, ...) {
   if (is.null(out$fit)) {
     out$fit <- list()
   }
-  if (!is.list(out$model) || !is.list(out$fit)) {
-    stop("control$model and control$fit must both be lists.")
+  if (is.null(out$optimizer)) {
+    out$optimizer <- list()
+  }
+  if (!is.list(out$model) || !is.list(out$fit) || !is.list(out$optimizer)) {
+    stop("control$model, control$fit, and control$optimizer must all be lists.")
   }
 
   out
@@ -763,9 +828,15 @@ print.nlp_topic_fit <- function(x, ...) {
       !(engine == "topicmodels" && model == "lda" && identical(method, "Gibbs"))) {
     stop("seedwords is only valid for topicmodels LDA with method = 'Gibbs'.")
   }
-  if (engine != "text2vec" && length(control$model)) {
+  if (!(engine %in% c("text2vec", "topicmodels.etm")) && length(control$model)) {
     stop(
-      "control$model must be empty unless engine = 'text2vec'.",
+      "control$model must be empty unless engine = 'text2vec' or 'topicmodels.etm'.",
+      call. = FALSE
+    )
+  }
+  if (engine != "topicmodels.etm" && length(control$optimizer)) {
+    stop(
+      "control$optimizer must be empty unless engine = 'topicmodels.etm'.",
       call. = FALSE
     )
   }
@@ -774,6 +845,9 @@ print.nlp_topic_fit <- function(x, ...) {
   }
   if (engine == "seededlda" && model == "seededlda" && !is.null(initial_model)) {
     stop("initial_model is not supported for engine = 'seededlda', model = 'seededlda'.")
+  }
+  if (engine == "topicmodels.etm" && !is.null(initial_model)) {
+    stop("initial_model is not supported for engine = 'topicmodels.etm'.")
   }
 }
 
@@ -896,6 +970,190 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.fit_etm_topic_model <- function(x, k, control) {
+  if (!requireNamespace("topicmodels.etm", quietly = TRUE)) {
+    stop("Package 'topicmodels.etm' must be installed to use engine = 'topicmodels.etm'.", call. = FALSE)
+  }
+  if (!requireNamespace("torch", quietly = TRUE)) {
+    stop("Package 'torch' must be installed to use engine = 'topicmodels.etm'.", call. = FALSE)
+  }
+  if (!torch::torch_is_installed()) {
+    stop(
+      "The torch backend is not installed. Run torch::install_torch() to use engine = 'topicmodels.etm'.",
+      call. = FALSE
+    )
+  }
+
+  prep <- .prepare_etm_input(x, control$model)
+
+  model_args <- utils::modifyList(
+    list(k = k),
+    prep$model_control
+  )
+  model_args$k <- k
+
+  fit_args <- utils::modifyList(
+    list(
+      data = prep$x,
+      epoch = 40L,
+      batch_size = as.integer(min(1000L, nrow(prep$x))),
+      normalize = TRUE,
+      clip = 0,
+      lr_anneal_factor = 4,
+      lr_anneal_nonmono = 10
+    ),
+    control$fit
+  )
+  fit_args$data <- prep$x
+
+  if (is.null(fit_args$epoch) || !is.numeric(fit_args$epoch) || length(fit_args$epoch) != 1L ||
+      fit_args$epoch < 1 || fit_args$epoch != as.integer(fit_args$epoch)) {
+    stop("For ETM, control$fit$epoch must be a single positive integer.", call. = FALSE)
+  }
+  if (is.null(fit_args$batch_size) || !is.numeric(fit_args$batch_size) || length(fit_args$batch_size) != 1L ||
+      fit_args$batch_size < 1 || fit_args$batch_size != as.integer(fit_args$batch_size)) {
+    stop("For ETM, control$fit$batch_size must be a single positive integer.", call. = FALSE)
+  }
+  fit_args$epoch <- as.integer(fit_args$epoch)
+  fit_args$batch_size <- as.integer(min(fit_args$batch_size, nrow(prep$x)))
+
+  model_object <- do.call(topicmodels.etm::ETM, model_args)
+  optimizer_args <- utils::modifyList(
+    list(params = model_object$parameters, lr = 0.005, weight_decay = 1.2e-06),
+    control$optimizer
+  )
+  optimizer_args$params <- model_object$parameters
+  optimizer <- do.call(torch::optim_adam, optimizer_args)
+  fit_args$optimizer <- optimizer
+
+  do.call(model_object$fit, fit_args)
+
+  dtw <- stats::predict(
+    model_object,
+    newdata = prep$x,
+    type = "topics",
+    batch_size = as.integer(min(fit_args$batch_size, nrow(prep$x))),
+    normalize = if ("normalize" %in% names(fit_args)) fit_args$normalize else TRUE
+  )
+  tww <- as.matrix(model_object, type = "beta")
+
+  list(
+    model_object = model_object,
+    dtw = dtw,
+    tww = tww,
+    doc_ids = prep$doc_ids,
+    term_names = prep$term_names,
+    method = NULL
+  )
+}
+
+#' @keywords internal
+.prepare_etm_input <- function(x, model_control) {
+  x_sparse <- .as_topic_dgCMatrix(x)
+  doc_ids <- .matrix_doc_ids(x_sparse, fallback = rownames(x_sparse))
+  rownames(x_sparse) <- doc_ids
+
+  if (is.null(colnames(x_sparse))) {
+    stop("ETM requires term names on the input matrix.", call. = FALSE)
+  }
+
+  embeddings <- model_control$embeddings
+  if (is.null(embeddings)) {
+    stop("For ETM, control$model$embeddings must be supplied as an integer dimension or embedding matrix.", call. = FALSE)
+  }
+
+  if (is.matrix(embeddings)) {
+    if (is.null(rownames(embeddings))) {
+      stop("Pretrained ETM embeddings must have rownames.", call. = FALSE)
+    }
+    if (!is.null(model_control$vocab) &&
+        !identical(as.character(model_control$vocab), rownames(embeddings))) {
+      stop(
+        "When ETM embeddings are supplied as a matrix, control$model$vocab must match the embedding rownames or be omitted.",
+        call. = FALSE
+      )
+    }
+
+    common_terms <- rownames(embeddings)[rownames(embeddings) %in% colnames(x_sparse)]
+    if (!length(common_terms)) {
+      stop("No overlap was found between the ETM embedding vocabulary and the input terms.", call. = FALSE)
+    }
+
+    dropped_terms <- setdiff(colnames(x_sparse), common_terms)
+    if (length(dropped_terms)) {
+      warning(
+        sprintf(
+          "Dropping %d terms that were not found in the ETM embedding vocabulary.",
+          length(dropped_terms)
+        ),
+        call. = FALSE
+      )
+    }
+
+    x_sparse <- x_sparse[, match(common_terms, colnames(x_sparse)), drop = FALSE]
+    colnames(x_sparse) <- common_terms
+    model_control$embeddings <- embeddings[common_terms, , drop = FALSE]
+    model_control$vocab <- common_terms
+  } else {
+    if (!is.numeric(embeddings) || length(embeddings) != 1L ||
+        embeddings < 1 || embeddings != as.integer(embeddings)) {
+      stop(
+        "For ETM, control$model$embeddings must be either a single positive integer or a numeric matrix.",
+        call. = FALSE
+      )
+    }
+
+    vocab <- model_control$vocab
+    if (is.null(vocab)) {
+      vocab <- colnames(x_sparse)
+    } else {
+      vocab <- as.character(vocab)
+      if (length(vocab) != ncol(x_sparse)) {
+        stop(
+          "For learned ETM embeddings, control$model$vocab must have length equal to the number of input terms.",
+          call. = FALSE
+        )
+      }
+
+      idx <- match(vocab, colnames(x_sparse))
+      if (anyNA(idx) || anyDuplicated(idx)) {
+        stop(
+          "For learned ETM embeddings, control$model$vocab must match the input terms exactly, up to ordering.",
+          call. = FALSE
+        )
+      }
+      x_sparse <- x_sparse[, idx, drop = FALSE]
+      colnames(x_sparse) <- vocab
+    }
+
+    model_control$embeddings <- as.integer(embeddings)
+    model_control$vocab <- vocab
+  }
+
+  keep <- Matrix::rowSums(x_sparse) > 0
+  if (!all(keep)) {
+    warning(
+      sprintf(
+        "Dropping %d documents with zero counts after ETM vocabulary alignment.",
+        sum(!keep)
+      ),
+      call. = FALSE
+    )
+    x_sparse <- x_sparse[keep, , drop = FALSE]
+  }
+  if (!nrow(x_sparse)) {
+    stop("No documents remain after ETM vocabulary alignment.", call. = FALSE)
+  }
+
+  list(
+    x = x_sparse,
+    doc_ids = .matrix_doc_ids(x_sparse, fallback = rownames(x_sparse)),
+    term_names = colnames(x_sparse),
+    model_control = model_control
+  )
+}
+
+#' @keywords internal
 .extract_dtw_table <- function(x) {
   if (inherits(x, "nlp_topic_fit")) {
     if (!is.null(x$dtw)) {
@@ -907,17 +1165,13 @@ print.nlp_topic_fit <- function(x, ...) {
         call. = FALSE
       )
     }
-    return(.extract_dtw_table(x$model_object))
-  }
-
-  if (.is_warp_lda_result(x)) {
-    if (is.null(x$theta)) {
+    if (identical(x$engine, "topicmodels.etm")) {
       stop(
-        "This warp_lda() result does not contain cached theta/DTW. Refit with return_theta = TRUE.",
+        "This ETM fit does not contain cached DTW. Refit with return_dtw = TRUE.",
         call. = FALSE
       )
     }
-    return(.coerce_existing_dtw_table(x$theta))
+    return(.extract_dtw_table(x$model_object))
   }
 
   if (.looks_like_dtw_table(x)) {
@@ -932,9 +1186,16 @@ print.nlp_topic_fit <- function(x, ...) {
     return(.dtw_dt_from_matrix(x$theta, doc_ids = .seededlda_doc_ids(x)))
   }
 
+  if (.is_etm_object(x)) {
+    stop(
+      "Raw ETM objects do not retain fitted DTW in a stable package interface. Use fit_topic_model(..., return_dtw = TRUE).",
+      call. = FALSE
+    )
+  }
+
   if (inherits(x, "WarpLDA")) {
     stop(
-      "Raw text2vec WarpLDA objects do not retain DTW. Use fit_topic_model(..., return_dtw = TRUE) or warp_lda(..., return_theta = TRUE).",
+      "Raw text2vec WarpLDA objects do not retain DTW. Use fit_topic_model(..., return_dtw = TRUE).",
       call. = FALSE
     )
   }
@@ -951,22 +1212,6 @@ print.nlp_topic_fit <- function(x, ...) {
     return(.extract_tww_table(x$model_object))
   }
 
-  if (.is_warp_lda_result(x)) {
-    if (!is.null(x$phi)) {
-      if (.looks_like_tww_table(x$phi)) {
-        return(.coerce_existing_tww_table(x$phi))
-      }
-      return(.tww_dt_from_matrix(
-        x$phi,
-        term_names = colnames(as.matrix(x$phi))
-      ))
-    }
-    return(.tww_dt_from_matrix(
-      x$lda_object$topic_word_distribution,
-      term_names = colnames(x$lda_object$topic_word_distribution)
-    ))
-  }
-
   if (.looks_like_tww_table(x)) {
     return(.coerce_existing_tww_table(x))
   }
@@ -977,6 +1222,14 @@ print.nlp_topic_fit <- function(x, ...) {
 
   if (inherits(x, "textmodel")) {
     return(.tww_dt_from_matrix(x$phi, term_names = colnames(x$phi)))
+  }
+
+  if (.is_etm_object(x)) {
+    beta <- as.matrix(x, type = "beta")
+    return(.tww_dt_from_matrix(
+      beta,
+      term_names = colnames(beta)
+    ))
   }
 
   if (inherits(x, "WarpLDA")) {
@@ -1412,8 +1665,8 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
-.is_warp_lda_result <- function(x) {
-  is.list(x) && !is.null(x$lda_object) && inherits(x$lda_object, "WarpLDA")
+.is_etm_object <- function(x) {
+  inherits(x, "ETM")
 }
 
 #' @keywords internal
