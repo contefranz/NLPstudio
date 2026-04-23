@@ -1,5 +1,26 @@
 # NLPstudio News
 
+## NLPstudio 0.7.0  (2026-04-23)
+
+### NEW FEATURES
+
+1. Added `predict_topic_model()`, a generic post-fit prediction interface that
+   aligns new data to the fitted vocabulary and returns standardized DTW tables
+   across **text2vec**, **topicmodels**, **seededlda**, and
+   **topicmodels.etm**.
+
+2. Extended the `nlp_topic_fit` object contract with a stored `vocab` field so
+   prediction and downstream helpers no longer depend on cached TWW to recover
+   fitted term order.
+
+3. Added `get_topic_embeddings()` and `get_term_embeddings()` for
+   **topicmodels.etm**, exposing ETM topic-center and term embeddings in a
+   standardized `data.table` format.
+
+4. Added `plot_topic_embeddings()`, an ETM-specific visualization that uses the
+   backend UMAP summary path to display topic centers and their top associated
+   words in two dimensions.
+
 ## NLPstudio 0.6.1  (2026-04-23)
 
 ### CHANGES

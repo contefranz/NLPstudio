@@ -28,8 +28,10 @@ topic-modeling API spanning
 optional \strong{\href{https://cran.r-project.org/package=topicmodels.etm}{topicmodels.etm}}
 support for embedded topic models. Utility
 functions standardize document-topic weights (DTW), topic-word weights
-(TWW), top-term extraction, representative-candidate retrieval, and
-visualization across those engines.
+(TWW), generic topic prediction for new documents, top-term extraction,
+representative-candidate retrieval, and visualization across those engines.
+When \strong{topicmodels.etm} is available, the package also exposes ETM-specific
+topic and term embeddings plus a dedicated topic-embedding plot.
 
 To support domain-specific content analysis, \strong{NLPstudio} ships with curated,
 pre-compiled \strong{quanteda} dictionaries tailored to financial and regulatory
@@ -56,9 +58,12 @@ statistics built on \code{quanteda.textstats}.
 \code{fit_topic_model()} provides a common fitting interface across
 \strong{text2vec}, \strong{topicmodels}, \strong{seededlda}, and optional
 \strong{topicmodels.etm}. Downstream helpers such as \code{get_dtw()}, \code{get_tww()},
-\code{get_top_terms()}, \code{plot_top_terms()}, \code{plot_dtw()}, and
-\code{get_representative_candidates()} work with the standardized DTW/TWW
-representation regardless of the fitting backend.
+\code{predict_topic_model()}, \code{get_top_terms()}, \code{plot_top_terms()},
+\code{plot_dtw()}, and \code{get_representative_candidates()} work with the
+standardized DTW/TWW representation regardless of the fitting backend.
+For embedded topic models, \code{get_topic_embeddings()},
+\code{get_term_embeddings()}, and \code{plot_topic_embeddings()} expose the
+embedding-space structure that is specific to ETM.
 \item \strong{Corpus ingestion:}
 \code{from_json_to_df()} converts user-supplied SEC-style JSON filings into
 tidy data.tables, with chunking controlled by \code{nchunks} and optional

@@ -106,6 +106,7 @@ or \code{NULL}.
 \item \code{tww}: cached TWW matrix with \code{Topic###} rownames and term columns, or
 \code{NULL}.
 \item \code{doc_ids}: fitted document IDs in model order.
+\item \code{vocab}: fitted vocabulary in term order.
 \item \code{docvars}: compact stored docvars keyed by \code{doc_id}, or \code{NULL}.
 \item \code{doc_data}: stored sidecar document data, or \code{NULL}.
 \item \code{call}: matched function call.
@@ -125,7 +126,7 @@ Grossetti (2022):
 backend object in \code{model_object}. That design avoids brittle inheritance
 across R6, S4, and list-based classes while still providing a stable package
 interface for downstream helpers such as \code{\link[=get_dtw]{get_dtw()}}, \code{\link[=get_tww]{get_tww()}},
-\code{\link[=get_top_terms]{get_top_terms()}}, and \code{\link[=plot_dtw]{plot_dtw()}}.
+\code{predict_topic_model()}, \code{\link[=get_top_terms]{get_top_terms()}}, and \code{\link[=plot_dtw]{plot_dtw()}}.
 
 The standardized DTW/TWW outputs always use topic identifiers of the form
 \code{Topic001}, \code{Topic002}, and so on, regardless of backend-specific naming.
