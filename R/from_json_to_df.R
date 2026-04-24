@@ -57,7 +57,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' * When `socket = "FORK"`, [parallel::mclapply()] is used, which can be
 #'   faster on Linux/macOS because it avoids copying large objects to workers.
 #'
-#' @return A [data.table::data.table] with one row per `(document × item)`
+#' @returns A [data.table::data.table] with one row per `(document × item)`
 #'   and columns:
 #'   - `cik`: Central Index Key (integer)  
 #'   - `filing_date`, `period_of_report` (IDate)  

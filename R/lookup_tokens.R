@@ -20,7 +20,7 @@
 #' `OMP_NUM_THREADS=1` and/or `quanteda_options(threads = 1)`) to reduce conflicts. 
 #' On Windows, setting `socket = "FORK"` will result in an error.
 #'
-#' @return A [quanteda::tokens()] object with lookups applied and
+#' @returns A [quanteda::tokens()] object with lookups applied and
 #' documents in the same order as the input.
 #'
 #' @examples

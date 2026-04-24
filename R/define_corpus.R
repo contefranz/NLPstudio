@@ -29,7 +29,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' ensures consistent handling of document IDs, automatic duplicate checks,
 #' and integration with the rest of the **NLPstudio** pipeline.
 #' 
-#' @return A [quanteda::corpus()] object with a set of document-level variables (i.e., `docvars`).
+#' @returns A [quanteda::corpus()] object with a set of document-level variables (i.e., `docvars`).
 #'
 #' @examples
 #' dt <- data.table::data.table(
@@ -74,8 +74,8 @@ define_corpus.data.table <- function(x, ...) {
                 paste(missing_cols, collapse = ", ")))
   }
   
-  x[, filename2 := stringr::str_remove(filename, "\\.htm|\\.txt")]
-  x[, doc_id_corpus := stringr::str_c(filename2, item, sep = "_")]
+  x[, filename2 := sub("\\.htm|\\.txt", "", filename)]
+  x[, doc_id_corpus := paste(filename2, item, sep = "_")]
   
   # Check for duplicate doc IDs
   x[, checkdup := duplicated(x, by = "doc_id_corpus")]

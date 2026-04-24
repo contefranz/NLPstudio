@@ -33,6 +33,55 @@ make_topic_metadata <- function() {
   )
 }
 
+make_prediction_dfm <- function() {
+  x <- Matrix::Matrix(
+    matrix(
+      c(1, 1, 0, 0, 0,
+        0, 0, 0, 1, 0,
+        0, 0, 0, 0, 2,
+        0, 1, 0, 0, 1),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+  rownames(x) <- paste0("pred", seq_len(nrow(x)))
+  colnames(x) <- paste0("term", seq_len(ncol(x)))
+  x <- quanteda::as.dfm(x)
+  quanteda::docvars(x, "year") <- 2030:2033
+  quanteda::docvars(x, "group") <- c("p", "p", "q", "q")
+  x
+}
+
+make_prediction_metadata <- function() {
+  data.table::data.table(
+    doc_id = paste0("pred", 1:4),
+    source = paste0("manual_", 1:4),
+    text = paste("prediction", 1:4)
+  )
+}
+
+make_prediction_clean_dfm <- function() {
+  x <- Matrix::Matrix(
+    matrix(
+      c(1, 1, 0, 0,
+        0, 0, 1, 1,
+        1, 0, 1, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+  rownames(x) <- paste0("pred_clean", seq_len(nrow(x)))
+  colnames(x) <- paste0("term", seq_len(ncol(x)))
+  x <- quanteda::as.dfm(x)
+  quanteda::docvars(x, "year") <- 2040:2042
+  quanteda::docvars(x, "group") <- c("x", "y", "z")
+  x
+}
+
 make_seed_dictionary <- function() {
   quanteda::dictionary(list(
     topic_a = c("term1", "term2"),
@@ -48,6 +97,7 @@ topic_cols <- function(x) {
 }
 
 test_that("fit_topic_model returns lean standardized text2vec output", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
@@ -60,7 +110,7 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
   expect_equal(class(fit), c("nlp_topic_fit", "list"))
   expect_named(
     fit,
-    c("engine", "model", "method", "model_object", "dtw", "tww", "doc_ids", "docvars", "doc_data", "call")
+    c("engine", "model", "method", "model_object", "dtw", "tww", "doc_ids", "vocab", "docvars", "doc_data", "call")
   )
   expect_equal(fit$engine, "text2vec")
   expect_equal(fit$model, "lda")
@@ -71,6 +121,7 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
   expect_equal(topic_cols(fit$dtw), c("Topic001", "Topic002"))
   expect_equal(rownames(fit$tww), c("Topic001", "Topic002"))
   expect_equal(fit$doc_ids, paste0("doc", 1:6))
+  expect_equal(fit$vocab, paste0("term", 1:4))
   expect_true(data.table::is.data.table(fit$docvars))
   expect_equal(fit$docvars$year, 2020:2025)
   expect_equal(fit$docvars$group, c("a", "a", "b", "b", "c", "c"))
@@ -85,6 +136,55 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
     unname(rowSums(fit$tww)),
     rep(1, nrow(fit$tww)),
     tolerance = 1e-8
+  )
+})
+
+test_that("predict_topic_model aligns new vocabulary and optionally joins docvars/doc_data", {
+  skip_if_not_installed("text2vec")
+  fit <- fit_topic_model(
+    make_topic_dfm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+
+  pred <- NULL
+  expect_warning(
+    expect_warning(
+      pred <- predict_topic_model(
+        fit,
+        make_prediction_dfm(),
+        doc_data = make_prediction_metadata(),
+        include_text = TRUE
+      ),
+      "Dropping 1 terms"
+    ),
+    "Dropping 1 documents"
+  )
+
+  expect_equal(pred$doc_id, c("pred1", "pred2", "pred4"))
+  expect_equal(topic_cols(pred), c("Topic001", "Topic002"))
+  expect_false("year" %in% names(pred))
+  expect_false("group" %in% names(pred))
+  expect_equal(pred$source, c("manual_1", "manual_2", "manual_4"))
+  expect_equal(pred$text, c("prediction 1", "prediction 2", "prediction 4"))
+  expect_equal(
+    names(pred),
+    c("doc_id", "source", topic_cols(pred), "topic_max_id", "topic_max_int", "topic_max_value", "text")
+  )
+  expect_equal(
+    rowSums(as.matrix(pred[, topic_cols(pred), with = FALSE])),
+    rep(1, nrow(pred)),
+    tolerance = 1e-8
+  )
+
+  pred_docvars <- predict_topic_model(fit, make_prediction_clean_dfm(), docvars = TRUE)
+  expect_equal(pred_docvars$year, 2040:2042)
+  expect_equal(pred_docvars$group, c("x", "y", "z"))
+  expect_equal(
+    names(pred_docvars),
+    c("doc_id", "year", "group", topic_cols(pred_docvars), "topic_max_id", "topic_max_int", "topic_max_value")
   )
 })
 
@@ -148,6 +248,44 @@ test_that("fit_topic_model validates unsupported combinations and control struct
       method = "VEM"
     ),
     "method must be NULL"
+  )
+})
+
+test_that("predict_topic_model works for topicmodels LDA and CTM", {
+  skip_if_not_installed("topicmodels")
+
+  lda_fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "topicmodels",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5)))
+  )
+  ctm_fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "topicmodels",
+    model = "ctm",
+    k = 2,
+    control = list(fit = list(seed = 1, em = list(iter.max = 5), var = list(iter.max = 5)))
+  )
+
+  lda_pred <- predict_topic_model(lda_fit, make_prediction_clean_dfm())
+  ctm_pred <- predict_topic_model(ctm_fit, make_prediction_clean_dfm(), docvars = TRUE)
+
+  expect_equal(topic_cols(lda_pred), c("Topic001", "Topic002"))
+  expect_equal(topic_cols(ctm_pred), c("Topic001", "Topic002"))
+  expect_equal(lda_pred$doc_id, paste0("pred_clean", 1:3))
+  expect_false("year" %in% names(lda_pred))
+  expect_equal(ctm_pred$year, 2040:2042)
+  expect_equal(
+    rowSums(as.matrix(lda_pred[, topic_cols(lda_pred), with = FALSE])),
+    rep(1, nrow(lda_pred)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    rowSums(as.matrix(ctm_pred[, topic_cols(ctm_pred), with = FALSE])),
+    rep(1, nrow(ctm_pred)),
+    tolerance = 1e-8
   )
 })
 
@@ -229,6 +367,58 @@ test_that("seededlda engines are supported", {
   )
 })
 
+test_that("predict_topic_model works for seededlda fits", {
+  skip_if_not_installed("seededlda")
+
+  lda_fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "seededlda",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(max_iter = 100, verbose = FALSE))
+  )
+  seq_fit <- suppressWarnings(
+    fit_topic_model(
+      make_topic_dtm(),
+      engine = "seededlda",
+      model = "seqlda",
+      k = 2,
+      control = list(fit = list(max_iter = 100, verbose = FALSE))
+    )
+  )
+  seeded_fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "seededlda",
+    model = "seededlda",
+    dictionary = make_seed_dictionary(),
+    control = list(fit = list(max_iter = 100, verbose = FALSE))
+  )
+
+  lda_pred <- predict_topic_model(lda_fit, make_prediction_clean_dfm())
+  seq_pred <- predict_topic_model(seq_fit, make_prediction_clean_dfm(), docvars = TRUE)
+  seeded_pred <- predict_topic_model(seeded_fit, make_prediction_clean_dfm(), docvars = TRUE)
+
+  expect_equal(lda_pred$doc_id, paste0("pred_clean", 1:3))
+  expect_false("group" %in% names(lda_pred))
+  expect_equal(seq_pred$group, c("x", "y", "z"))
+  expect_equal(seeded_pred$year, 2040:2042)
+  expect_equal(
+    rowSums(as.matrix(lda_pred[, topic_cols(lda_pred), with = FALSE])),
+    rep(1, nrow(lda_pred)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    rowSums(as.matrix(seq_pred[, topic_cols(seq_pred), with = FALSE])),
+    rep(1, nrow(seq_pred)),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    rowSums(as.matrix(seeded_pred[, topic_cols(seeded_pred), with = FALSE])),
+    rep(1, nrow(seeded_pred)),
+    tolerance = 1e-8
+  )
+})
+
 test_that("ETM fits are supported with learned and pretrained embeddings", {
   skip_if_not_installed("topicmodels.etm")
   skip_if_not_installed("torch")
@@ -276,6 +466,62 @@ test_that("ETM fits are supported with learned and pretrained embeddings", {
   expect_equal(get_tww(learned_fit$model_object)$topic_id, c("Topic001", "Topic002"))
   expect_true(all(c("rank", "topic", "term", "probability") %in% names(get_top_terms(pretrained_fit, n = 2))))
   expect_error(get_dtw(learned_fit$model_object), "Raw ETM objects do not retain fitted DTW")
+})
+
+test_that("ETM prediction and embedding helpers are supported", {
+  skip_if_not_installed("topicmodels.etm")
+  skip_if_not_installed("torch")
+  skip_if_not_installed("uwot")
+  if (!torch::torch_is_installed()) {
+    skip("torch backend is not installed")
+  }
+
+  torch::torch_manual_seed(1)
+  fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "topicmodels.etm",
+    model = "etm",
+    k = 2,
+    control = list(
+      model = list(embeddings = 5),
+      fit = list(epoch = 2, batch_size = 2, normalize = TRUE),
+      optimizer = list(lr = 0.005, weight_decay = 1.2e-06)
+    )
+  )
+
+  pred <- predict_topic_model(
+    fit,
+    make_prediction_clean_dfm(),
+    doc_data = data.table::data.table(
+      doc_id = paste0("pred_clean", 1:3),
+      text = paste("clean", 1:3)
+    ),
+    include_text = TRUE
+  )
+  topic_emb <- get_topic_embeddings(fit)
+  raw_topic_emb <- get_topic_embeddings(fit$model_object)
+  term_emb <- get_term_embeddings(fit)
+  plot_obj <- plot_topic_embeddings(
+    fit,
+    top_n = 3,
+    metric = "cosine",
+    n_neighbors = 2,
+    fast_sgd = FALSE,
+    verbose = FALSE
+  )
+
+  expect_equal(topic_cols(pred), c("Topic001", "Topic002"))
+  expect_equal(pred$text, c("clean 1", "clean 2", "clean 3"))
+  expect_equal(
+    rowSums(as.matrix(pred[, topic_cols(pred), with = FALSE])),
+    rep(1, nrow(pred)),
+    tolerance = 1e-6
+  )
+  expect_equal(names(topic_emb), c("topic_id", "dim_001", "dim_002", "dim_003", "dim_004", "dim_005"))
+  expect_equal(topic_emb$topic_id, c("Topic001", "Topic002"))
+  expect_equal(raw_topic_emb$topic_id, c("Topic001", "Topic002"))
+  expect_equal(term_emb$term, fit$vocab)
+  expect_s3_class(plot_obj, "ggplot")
 })
 
 test_that("ETM validates pretrained embeddings and keeps alignment after pruning", {
@@ -342,7 +588,8 @@ test_that("ETM validates pretrained embeddings and keeps alignment after pruning
   expect_equal(get_dtw(fit)$doc_id, c("doc2", "doc3", "doc4"))
 })
 
-test_that("get_dtw stores docvars, supports doc_data, and warns when text is unavailable", {
+test_that("get_dtw stores docvars but omits them by default", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
@@ -351,9 +598,28 @@ test_that("get_dtw stores docvars, supports doc_data, and warns when text is una
     control = list(fit = list(n_iter = 25, progressbar = FALSE))
   )
 
-  embedded <- get_dtw(fit)
+  lean <- get_dtw(fit)
+  expect_false("year" %in% names(lean))
+  expect_false("group" %in% names(lean))
+
+  embedded <- get_dtw(fit, docvars = TRUE)
   expect_equal(embedded$year, 2020:2025)
   expect_equal(embedded$group, c("a", "a", "b", "b", "c", "c"))
+  expect_equal(
+    names(embedded),
+    c("doc_id", "year", "group", topic_cols(embedded), "topic_max_id", "topic_max_int", "topic_max_value")
+  )
+  expect_type(embedded$topic_max_int, "integer")
+  expect_equal(embedded$topic_max_int, as.integer(sub("^Topic", "", embedded$topic_max_id)))
+
+  lean_from_enriched <- get_dtw(embedded)
+  expect_false("year" %in% names(lean_from_enriched))
+  expect_false("group" %in% names(lean_from_enriched))
+
+  enriched_from_enriched <- get_dtw(embedded, docvars = TRUE)
+  expect_equal(enriched_from_enriched$year, 2020:2025)
+  expect_equal(enriched_from_enriched$group, c("a", "a", "b", "b", "c", "c"))
+  expect_equal(names(embedded), c("doc_id", "year", "group", topic_cols(embedded), "topic_max_id", "topic_max_int", "topic_max_value"))
 
   expect_warning(
     no_text <- get_dtw(fit, include_text = TRUE),
@@ -371,8 +637,13 @@ test_that("get_dtw stores docvars, supports doc_data, and warns when text is una
   )
 
   stored <- get_dtw(fit_with_doc_data, include_text = TRUE)
+  expect_false("year" %in% names(stored))
   expect_equal(stored$group, paste0("override_", 1:6))
   expect_equal(stored$text, paste("text", 1:6))
+  expect_equal(
+    names(stored),
+    c("doc_id", "group", topic_cols(stored), "topic_max_id", "topic_max_int", "topic_max_value", "text")
+  )
 
   override_meta <- make_topic_metadata()
   override_meta[, group := paste0("manual_", 1:6)]
@@ -380,9 +651,18 @@ test_that("get_dtw stores docvars, supports doc_data, and warns when text is una
   override <- get_dtw(fit_with_doc_data, doc_data = override_meta, include_text = TRUE)
   expect_equal(override$group, paste0("manual_", 1:6))
   expect_equal(override$text, paste("text", 1:6))
+
+  enriched <- get_dtw(fit_with_doc_data, docvars = TRUE, include_text = TRUE)
+  expect_equal(enriched$year, 2020:2025)
+  expect_equal(enriched$group, paste0("override_", 1:6))
+  expect_equal(
+    names(enriched),
+    c("doc_id", "year", "group", topic_cols(enriched), "topic_max_id", "topic_max_int", "topic_max_value", "text")
+  )
 })
 
 test_that("get_top_terms and plot_dtw use standardized extractors", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dtm(),
     engine = "text2vec",
@@ -415,7 +695,15 @@ test_that("representative candidates band within topic and fall back on ties", {
   )
 
   expect_true(all(c("candidate_band", "topic_rank", "text") %in% names(bands)))
+  expect_equal(tail(names(bands), 1), "text")
   expect_equal(sort(unique(bands$candidate_band)), c("HIGH", "LOW"))
+
+  lean_bands <- get_representative_candidates(
+    dtw,
+    quantile_probs = 0.5,
+    labels = c("LOW", "HIGH")
+  )
+  expect_false("text" %in% names(lean_bands))
 
   tied <- data.table::data.table(
     doc_id = paste0("doc", 1:4),
@@ -433,12 +721,97 @@ test_that("representative candidates band within topic and fall back on ties", {
   expect_equal(sort(unique(tied_out$candidate_band)), c("HIGH", "LOW"))
 })
 
+test_that("representative candidates optionally include stored docvars", {
+  skip_if_not_installed("text2vec")
+  fit <- fit_topic_model(
+    make_topic_dfm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+
+  candidates <- get_representative_candidates(fit)
+  expect_false("year" %in% names(candidates))
+  expect_false("group" %in% names(candidates))
+
+  enriched <- get_representative_candidates(fit, docvars = TRUE)
+  expect_equal(enriched$year[order(enriched$doc_id)], 2020:2025)
+  expect_equal(enriched$group[order(enriched$doc_id)], c("a", "a", "b", "b", "c", "c"))
+  expect_equal(
+    names(enriched),
+    c(
+      "doc_id", "year", "group", topic_cols(enriched), "topic_max_id",
+      "topic_max_int", "topic_max_value", "candidate_band", "topic_rank"
+    )
+  )
+  expect_type(enriched$topic_max_int, "integer")
+  expect_equal(enriched$topic_max_int, as.integer(sub("^Topic", "", enriched$topic_max_id)))
+
+  enriched_dtw <- get_dtw(fit, docvars = TRUE)
+  enriched_dtw_names <- names(enriched_dtw)
+  candidates_from_enriched_dtw <- get_representative_candidates(enriched_dtw)
+  expect_false("year" %in% names(candidates_from_enriched_dtw))
+  expect_false("group" %in% names(candidates_from_enriched_dtw))
+  expect_equal(names(enriched_dtw), enriched_dtw_names)
+  expect_false("candidate_band" %in% names(enriched_dtw))
+  expect_false("topic_rank" %in% names(enriched_dtw))
+
+  enriched_from_enriched_dtw <- get_representative_candidates(enriched_dtw, docvars = TRUE)
+  expect_equal(enriched_from_enriched_dtw$year[order(enriched_from_enriched_dtw$doc_id)], 2020:2025)
+  expect_equal(enriched_from_enriched_dtw$group[order(enriched_from_enriched_dtw$doc_id)], c("a", "a", "b", "b", "c", "c"))
+
+  doc_data <- data.table::data.table(
+    doc_id = paste0("doc", 1:6),
+    year = 2030:2035,
+    group = paste0("metadata_group_", 1:6),
+    source = paste0("source_", 1:6),
+    text = paste("metadata text", 1:6)
+  )
+  fit_with_doc_data <- fit_topic_model(
+    make_topic_dfm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    doc_data = doc_data,
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+
+  candidates_with_doc_data <- get_representative_candidates(
+    fit_with_doc_data,
+    include_text = TRUE
+  )
+  expect_false("year" %in% names(candidates_with_doc_data))
+  expect_false("group" %in% names(candidates_with_doc_data))
+  expect_equal(
+    candidates_with_doc_data$source[order(candidates_with_doc_data$doc_id)],
+    paste0("source_", 1:6)
+  )
+  expect_equal(tail(names(candidates_with_doc_data), 1), "text")
+})
+
 test_that("warp_lda and warpLDA are no longer exported", {
   expect_false(exists("warp_lda", envir = asNamespace("NLPstudio"), inherits = FALSE))
   expect_false(exists("warpLDA", envir = asNamespace("NLPstudio"), inherits = FALSE))
 })
 
+test_that("ETM-specific helpers reject non-ETM inputs", {
+  skip_if_not_installed("text2vec")
+  fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+
+  expect_error(get_topic_embeddings(fit), "ETM fit or a raw ETM object")
+  expect_error(get_term_embeddings(fit), "ETM fit or a raw ETM object")
+  expect_error(plot_topic_embeddings(fit), "ETM fit or a raw ETM object")
+})
+
 test_that("print.nlp_topic_fit stays compact", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dtm(),
     engine = "text2vec",

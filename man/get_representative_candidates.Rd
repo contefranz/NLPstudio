@@ -8,6 +8,7 @@ get_representative_candidates(
   x,
   doc_data = NULL,
   topics = NULL,
+  docvars = FALSE,
   include_text = FALSE,
   quantile_probs = c(0.25, 0.5, 0.75),
   labels = c("VLOW", "LOW", "HIGH", "VHIGH"),
@@ -26,6 +27,9 @@ data.frame, or data.table keyed by \code{doc_id}.}
 
 \item{topics}{Optional topic filter. May be supplied as numeric indices or
 \code{Topic###} identifiers. Filtering occurs after dominant-topic assignment.}
+
+\item{docvars}{Should stored or pre-existing document metadata be joined
+onto the returned DTW table? Defaults to \code{FALSE}.}
 
 \item{include_text}{Should a \code{text} column be attached when a text-bearing
 \code{doc_data} source is available? Defaults to \code{FALSE}. When \code{TRUE} but no
@@ -49,12 +53,18 @@ A \code{data.table} with one row per document and these core columns:
 \itemize{
 \item \code{doc_id}
 \item \code{topic_max_id}
+\item \code{topic_max_int}
 \item \code{topic_max_value}
 \item \code{candidate_band}
 \item \code{topic_rank}
 }
 
-Metadata columns and optional \code{text} are included when available.
+Stored docvars are included when \code{docvars = TRUE}. Metadata columns from
+\code{doc_data} and optional \code{text} are included when available.
+When \code{docvars = FALSE}, columns that match stored docvar names are omitted
+even if they are also present in \code{doc_data}.
+Columns are ordered as \code{doc_id}, document metadata, representative-candidate
+output columns, and finally \code{text} when text is requested and available.
 }
 \description{
 Identify representative document candidates from a topic model by assigning
@@ -68,6 +78,7 @@ groups or tied values, the function falls back to deterministic rank-based
 banding.
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -101,5 +112,5 @@ fit <- fit_topic_model(
 )
 
 get_representative_candidates(fit, include_text = TRUE)
-
+\dontshow{\}) # examplesIf}
 }

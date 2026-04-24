@@ -36,7 +36,7 @@ combination with \code{\link[=get_top_terms]{get_top_terms()}} (with \code{forma
 the input data.
 }
 \examples{
-\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
+\dontshow{if (interactive() && requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 # Requires the optional tidytext package.
 dtm <- methods::as(
   Matrix::Matrix(

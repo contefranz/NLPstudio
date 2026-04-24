@@ -106,6 +106,7 @@ or \code{NULL}.
 \item \code{tww}: cached TWW matrix with \code{Topic###} rownames and term columns, or
 \code{NULL}.
 \item \code{doc_ids}: fitted document IDs in model order.
+\item \code{vocab}: fitted vocabulary in term order.
 \item \code{docvars}: compact stored docvars keyed by \code{doc_id}, or \code{NULL}.
 \item \code{doc_data}: stored sidecar document data, or \code{NULL}.
 \item \code{call}: matched function call.
@@ -125,7 +126,7 @@ Grossetti (2022):
 backend object in \code{model_object}. That design avoids brittle inheritance
 across R6, S4, and list-based classes while still providing a stable package
 interface for downstream helpers such as \code{\link[=get_dtw]{get_dtw()}}, \code{\link[=get_tww]{get_tww()}},
-\code{\link[=get_top_terms]{get_top_terms()}}, and \code{\link[=plot_dtw]{plot_dtw()}}.
+\code{predict_topic_model()}, \code{\link[=get_top_terms]{get_top_terms()}}, and \code{\link[=plot_dtw]{plot_dtw()}}.
 
 The standardized DTW/TWW outputs always use topic identifiers of the form
 \code{Topic001}, \code{Topic002}, and so on, regardless of backend-specific naming.
@@ -140,6 +141,10 @@ explicitly supplied. When pretrained embeddings are supplied, the input
 vocabulary is aligned to the embedding rownames; unmatched terms and any
 documents that become empty after alignment are dropped with a warning while
 preserving surviving \code{doc_id}, \code{docvars}, and \code{doc_data} alignment.
+Using \code{engine = "topicmodels.etm"} also requires both the \strong{topicmodels.etm}
+package and a working \strong{torch} backend. Installing the R \strong{torch} package is
+not sufficient by itself on a clean machine; run \code{torch::install_torch()} and
+confirm that \code{torch::torch_is_installed()} returns \code{TRUE}.
 
 The API currently covers these model families and fitting algorithms:
 \itemize{
@@ -152,6 +157,7 @@ The API currently covers these model families and fitting algorithms:
 }
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -237,7 +243,7 @@ if (requireNamespace("seededlda", quietly = TRUE)) {
     control = list(fit = list(max_iter = 100, verbose = FALSE))
   )
 }
-
+\dontshow{\}) # examplesIf}
 \dontshow{if (requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed()) withAutoprint(\{ # examplesIf}
 fit_topic_model(
   dtm,

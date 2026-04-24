@@ -21,6 +21,7 @@ Extract TWW (topic-word weights) from a supported topic-model object and
 return a standardized wide \link[data.table:data.table]{data.table}.
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -47,5 +48,5 @@ fit <- fit_topic_model(
 )
 
 get_tww(fit)
-
+\dontshow{\}) # examplesIf}
 }

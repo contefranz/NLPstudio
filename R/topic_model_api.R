@@ -1,8 +1,9 @@
 if (getRversion() >= "2.15.1") {
   utils::globalVariables(
     c(
-      "candidate_band", "doc_id", "probability", "rank", "term", "text",
-      "topic", "topic_id", "topic_max_id", "topic_max_value", "topic_rank"
+      "candidate_band", "cluster", "dim_001", "dim_002", "doc_id", "label", "probability",
+      "rank", "term", "text", "topic", "topic_id", "topic_max_id",
+      "topic_max_int", "topic_max_value", "topic_rank", "type", "weight", "x", "y"
     )
   )
 }
@@ -84,6 +85,7 @@ if (getRversion() >= "2.15.1") {
 #'   - `tww`: cached TWW matrix with `Topic###` rownames and term columns, or
 #'     `NULL`.
 #'   - `doc_ids`: fitted document IDs in model order.
+#'   - `vocab`: fitted vocabulary in term order.
 #'   - `docvars`: compact stored docvars keyed by `doc_id`, or `NULL`.
 #'   - `doc_data`: stored sidecar document data, or `NULL`.
 #'   - `call`: matched function call.
@@ -96,7 +98,7 @@ if (getRversion() >= "2.15.1") {
 #' backend object in `model_object`. That design avoids brittle inheritance
 #' across R6, S4, and list-based classes while still providing a stable package
 #' interface for downstream helpers such as [get_dtw()], [get_tww()],
-#' [get_top_terms()], and [plot_dtw()].
+#' `predict_topic_model()`, [get_top_terms()], and [plot_dtw()].
 #'
 #' The standardized DTW/TWW outputs always use topic identifiers of the form
 #' `Topic001`, `Topic002`, and so on, regardless of backend-specific naming.
@@ -111,6 +113,10 @@ if (getRversion() >= "2.15.1") {
 #' vocabulary is aligned to the embedding rownames; unmatched terms and any
 #' documents that become empty after alignment are dropped with a warning while
 #' preserving surviving `doc_id`, `docvars`, and `doc_data` alignment.
+#' Using `engine = "topicmodels.etm"` also requires both the **topicmodels.etm**
+#' package and a working **torch** backend. Installing the R **torch** package is
+#' not sufficient by itself on a clean machine; run `torch::install_torch()` and
+#' confirm that `torch::torch_is_installed()` returns `TRUE`.
 #'
 #' The API currently covers these model families and fitting algorithms:
 #'
@@ -169,7 +175,7 @@ if (getRversion() >= "2.15.1") {
 #' @seealso [topicmodels::LDA()] [topicmodels::CTM()] [text2vec::LDA()] [seededlda::textmodel_seqlda()]
 #' [topicmodels.etm::ETM()]
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -370,6 +376,7 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
       term_names = fit_result$term_names
     ) else NULL,
     doc_ids = as.character(fit_result$doc_ids),
+    vocab = as.character(fit_result$term_names),
     docvars = if (docvars) .docvars_table_from_input(x, doc_ids = fit_result$doc_ids) else NULL,
     doc_data = if (is.null(doc_data)) NULL else .normalize_doc_data_table(
       doc_data,
@@ -378,6 +385,156 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
     ),
     call = call
   )
+}
+
+#' Predict Document Topic Weights for New Data
+#'
+#' Predict standardized document-topic weights (DTW) for new documents using a
+#' fitted object returned by [fit_topic_model()].
+#'
+#' @param x An object of class `nlp_topic_fit`.
+#' @param newdata New document-feature input. Supported classes are
+#'   [dgCMatrix-class][Matrix::dgCMatrix-class], [dfm][quanteda::dfm], and
+#'   `DocumentTermMatrix`.
+#' @param control A named list of backend-specific prediction arguments.
+#'   Defaults to `list()`.
+#'
+#'   - `text2vec`: forwarded to `model_object$transform()`
+#'   - `topicmodels`: forwarded to `topicmodels::posterior()`
+#'   - `seededlda`: forwarded to the relevant `textmodel_*()` update call
+#'   - `topicmodels.etm`: forwarded to [stats::predict()] with `type = "topics"`
+#' @param docvars Should available docvars from `newdata` be joined onto the
+#'   returned DTW table? Defaults to `FALSE`.
+#' @param doc_data Optional document-data sidecar for metadata or text
+#'   enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
+#'   by `doc_id`.
+#' @param include_text Should a `text` column be attached when a text-bearing
+#'   `doc_data` source is available? Defaults to `FALSE`.
+#' @param doc_id_col Document-ID column name when `doc_data` is a data.frame or
+#'   data.table. Defaults to `"doc_id"`.
+#' @param text_col Text column name when `doc_data` is a data.frame or
+#'   data.table. Defaults to `"text"`.
+#'
+#' @returns A standardized DTW [data.table][data.table::data.table] with:
+#'
+#' - `doc_id`
+#' - topic columns named `Topic001`, `Topic002`, ...
+#' - `topic_max_id`
+#' - `topic_max_int`
+#' - `topic_max_value`
+#' - available docvars when `docvars = TRUE`
+#' - optional metadata/text joined from `doc_data`
+#'
+#' Columns are ordered as `doc_id`, document metadata, DTW output columns, and
+#' finally `text` when text is requested and available.
+#'
+#' @details
+#' Prediction input is first aligned to the fitted vocabulary stored in `x$vocab`.
+#' Terms absent from the fitted vocabulary are dropped with a warning, missing
+#' fitted terms are added as zero columns, columns are reordered to fitted
+#' vocabulary order, and any documents that become empty after alignment are
+#' dropped with a warning.
+#'
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
+#' dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(
+#'       c(2, 1, 0, 0,
+#'         1, 1, 1, 0,
+#'         0, 1, 2, 1,
+#'         0, 0, 1, 2),
+#'       nrow = 4,
+#'       byrow = TRUE
+#'     ),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' rownames(dtm) <- paste0("doc", 1:4)
+#' colnames(dtm) <- paste0("term", 1:4)
+#'
+#' fit <- fit_topic_model(
+#'   dtm,
+#'   engine = "text2vec",
+#'   model = "lda",
+#'   k = 2,
+#'   control = list(fit = list(n_iter = 25, progressbar = FALSE))
+#' )
+#'
+#' new_dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(
+#'       c(1, 0, 0, 1,
+#'         0, 1, 1, 0),
+#'       nrow = 2,
+#'       byrow = TRUE
+#'     ),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' rownames(new_dtm) <- c("new1", "new2")
+#' colnames(new_dtm) <- paste0("term", 1:4)
+#'
+#' predict_topic_model(fit, new_dtm)
+#'
+#' @export
+predict_topic_model <- function(x, newdata, control = list(), docvars = FALSE,
+                                doc_data = NULL, include_text = FALSE,
+                                doc_id_col = "doc_id", text_col = "text") {
+  if (!inherits(x, "nlp_topic_fit")) {
+    stop("x must be an object returned by fit_topic_model().", call. = FALSE)
+  }
+  if (!is.logical(docvars) || length(docvars) != 1L) {
+    stop("docvars must be a single TRUE/FALSE value.")
+  }
+  if (!is.logical(include_text) || length(include_text) != 1L) {
+    stop("include_text must be a single TRUE/FALSE value.")
+  }
+
+  control <- .normalize_prediction_control(control)
+  vocab <- .stored_topic_vocab(x)
+  aligned <- .align_topic_input_to_vocab(
+    newdata,
+    vocab = vocab,
+    vocab_label = "fitted vocabulary",
+    context = "prediction vocabulary alignment"
+  )
+
+  dtw <- .predict_topic_matrix(
+    fit = x,
+    newdata_aligned = aligned,
+    control = control
+  )
+  out <- .dtw_dt_from_matrix(dtw, doc_ids = aligned$doc_ids)
+
+  if (docvars) {
+    out <- .bind_topic_metadata(
+      out,
+      .docvars_table_from_input(aligned$dfm, doc_ids = aligned$doc_ids),
+      overwrite = FALSE
+    )
+  }
+  out <- .bind_topic_metadata(
+    out,
+    if (is.null(doc_data)) NULL else .normalize_doc_data_table(
+      doc_data,
+      include_text = include_text,
+      doc_id_col = doc_id_col,
+      text_col = text_col,
+      arg_name = "doc_data"
+    ),
+    overwrite = TRUE
+  )
+
+  if (include_text && !"text" %in% names(out)) {
+    warning(
+      "include_text = TRUE, but no text-bearing doc_data was available.",
+      call. = FALSE
+    )
+  }
+
+  .order_dtw_output(out)
 }
 
 #' Extract Standardized Document Topic Weights
@@ -391,6 +548,8 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' @param doc_data Optional document-data override. When supplied, this is used
 #'   instead of any `doc_data` stored in `x`. Accepted inputs are a corpus,
 #'   data.frame, or data.table keyed by `doc_id`.
+#' @param docvars Should stored or pre-existing document metadata be joined
+#'   onto the returned DTW table? Defaults to `FALSE`.
 #' @param include_text Should a `text` column be attached when a text-bearing
 #'   `doc_data` source is available? Defaults to `FALSE`. When `TRUE` but no
 #'   text-bearing `doc_data` is available, the function emits a warning.
@@ -404,11 +563,19 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' - `doc_id`
 #' - topic columns named `Topic001`, `Topic002`, ...
 #' - `topic_max_id`
+#' - `topic_max_int`
 #' - `topic_max_value`
-#' - metadata columns when available
+#' - stored docvars when `docvars = TRUE`
+#' - metadata columns from `doc_data` when available
 #' - `text` when `include_text = TRUE` and text is available
 #'
-#' @examples
+#' Columns are ordered as `doc_id`, document metadata, DTW output columns, and
+#' finally `text` when text is requested and available.
+#' For already standardized DTW-table inputs, non-topic metadata columns are
+#' treated as pre-existing document metadata and retained only when
+#' `docvars = TRUE`.
+#'
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -435,20 +602,34 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' )
 #'
 #' get_dtw(fit)
+#' get_dtw(fit, docvars = TRUE)
 #'
 #' @export
-get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
+get_dtw <- function(x, doc_data = NULL, docvars = FALSE, include_text = FALSE,
                     doc_id_col = "doc_id", text_col = "text") {
+  if (!is.logical(docvars) || length(docvars) != 1L) {
+    stop("docvars must be a single TRUE/FALSE value.")
+  }
   if (!is.logical(include_text) || length(include_text) != 1L) {
     stop("include_text must be a single TRUE/FALSE value.")
   }
 
+  existing_dtw_input <- .looks_like_dtw_table(x)
   dtw <- .extract_dtw_table(x)
-  dtw <- .bind_topic_metadata(
-    dtw,
-    .stored_docvars_table(x, doc_ids = dtw$doc_id),
-    overwrite = FALSE
-  )
+  if (existing_dtw_input) {
+    dtw <- .filter_existing_dtw_metadata(
+      dtw,
+      docvars = docvars,
+      include_text = include_text
+    )
+  }
+  if (docvars) {
+    dtw <- .bind_topic_metadata(
+      dtw,
+      .stored_docvars_table(x, doc_ids = dtw$doc_id),
+      overwrite = FALSE
+    )
+  }
   dtw <- .bind_topic_metadata(
     dtw,
     .resolved_doc_data_table(
@@ -468,7 +649,7 @@ get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
     )
   }
 
-  dtw[]
+  .order_dtw_output(dtw)
 }
 
 #' Extract Standardized Topic Word Weights
@@ -484,7 +665,7 @@ get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
 #' @returns A `data.table` with one row per topic, a `topic_id` column using
 #'   the `Topic###` convention, and one column per term.
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -517,6 +698,150 @@ get_tww <- function(x) {
   .extract_tww_table(x)
 }
 
+#' Extract ETM Topic Embeddings
+#'
+#' Extract topic-center embeddings from an embedded topic model (ETM).
+#'
+#' @param x Either an `nlp_topic_fit` with `engine = "topicmodels.etm"` or a raw
+#'   ETM object.
+#'
+#' @returns A [data.table][data.table::data.table] with one row per topic,
+#'   a standardized `topic_id` column using the `Topic###` convention, and one
+#'   column per embedding dimension named `dim_001`, `dim_002`, and so on.
+#'
+#' @examplesIf requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed()
+#' path <- system.file(package = "topicmodels.etm", "example", "example_etm.ckpt")
+#' model <- torch::torch_load(path)
+#' get_topic_embeddings(model)
+#'
+#' @export
+get_topic_embeddings <- function(x) {
+  model <- .as_etm_model_object(x)
+  emb <- as.matrix(model, type = "embedding", which = "topics")
+  emb <- as.matrix(emb)
+  colnames(emb) <- sprintf("dim_%03d", seq_len(ncol(emb)))
+
+  out <- data.table::data.table(topic_id = .topic_ids(nrow(emb)))
+  cbind(out, data.table::as.data.table(emb))
+}
+
+#' Extract ETM Term Embeddings
+#'
+#' Extract term embeddings from an embedded topic model (ETM).
+#'
+#' @param x Either an `nlp_topic_fit` with `engine = "topicmodels.etm"` or a raw
+#'   ETM object.
+#'
+#' @returns A [data.table][data.table::data.table] with one row per term,
+#'   a `term` column, and one column per embedding dimension named `dim_001`,
+#'   `dim_002`, and so on.
+#'
+#' @examplesIf requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed()
+#' path <- system.file(package = "topicmodels.etm", "example", "example_etm.ckpt")
+#' model <- torch::torch_load(path)
+#' get_term_embeddings(model)
+#'
+#' @export
+get_term_embeddings <- function(x) {
+  model <- .as_etm_model_object(x)
+  emb <- as.matrix(model, type = "embedding", which = "words")
+  emb <- as.matrix(emb)
+  terms <- rownames(emb)
+  if (is.null(terms)) {
+    terms <- .stored_topic_vocab(x)
+  }
+  if (is.null(terms)) {
+    terms <- paste0("term", seq_len(nrow(emb)))
+  }
+  colnames(emb) <- sprintf("dim_%03d", seq_len(ncol(emb)))
+
+  out <- data.table::data.table(term = as.character(terms))
+  cbind(out, data.table::as.data.table(emb))
+}
+
+#' Plot ETM Topic Embeddings
+#'
+#' Project ETM topic centers and their top associated words to a two-dimensional
+#' space using the backend UMAP summary path, then visualize the result with
+#' **ggplot2**.
+#'
+#' @param x Either an `nlp_topic_fit` with `engine = "topicmodels.etm"` or a raw
+#'   ETM object.
+#' @param top_n Integer. Number of top associated words to display per topic.
+#'   Defaults to `15`.
+#' @param ... Additional arguments forwarded to `summary(model, type = "umap", ...)`.
+#'
+#' @returns A [ggplot][ggplot2::ggplot] object.
+#'
+#' @examplesIf requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed() && requireNamespace("uwot", quietly = TRUE)
+#' path <- system.file(package = "topicmodels.etm", "example", "example_etm.ckpt")
+#' model <- torch::torch_load(path)
+#' plot_topic_embeddings(model, top_n = 5)
+#'
+#' @export
+plot_topic_embeddings <- function(x, top_n = 15, ...) {
+  if (!is.numeric(top_n) || length(top_n) != 1L || top_n < 1 || top_n != as.integer(top_n)) {
+    stop("top_n must be a single positive integer.", call. = FALSE)
+  }
+  model <- .as_etm_model_object(x)
+  if (!requireNamespace("uwot", quietly = TRUE)) {
+    stop("Package 'uwot' is required for plot_topic_embeddings(). Please install it.", call. = FALSE)
+  }
+  summary_args <- list(...)
+  if ("n_components" %in% names(summary_args) &&
+      !identical(as.integer(summary_args$n_components), 2L)) {
+    stop("plot_topic_embeddings() requires n_components = 2.", call. = FALSE)
+  }
+  summary_args$n_components <- 2L
+
+  overview <- do.call(
+    summary,
+    c(
+      list(object = model, type = "umap", top_n = as.integer(top_n)),
+      summary_args
+    )
+  )
+  embed <- data.table::as.data.table(overview$embed_2d)
+  if (!all(c("type", "term", "cluster", "x", "y", "weight") %in% names(embed))) {
+    stop("The ETM summary output did not contain the expected embedding columns.", call. = FALSE)
+  }
+
+  clusters <- unique(as.character(embed$cluster))
+  embed[, topic_id := .topic_ids(length(clusters))[match(as.character(cluster), clusters)]]
+  centers <- embed[type == "centers"]
+  words <- embed[type == "words"]
+  centers[, label := topic_id]
+
+  ggplot2::ggplot() +
+    ggplot2::geom_text(
+      data = words,
+      ggplot2::aes(x = x, y = y, label = term, colour = topic_id, alpha = weight),
+      show.legend = FALSE,
+      size = 3
+    ) +
+    ggplot2::geom_point(
+      data = centers,
+      ggplot2::aes(x = x, y = y, colour = topic_id),
+      size = 2.5,
+      show.legend = TRUE
+    ) +
+    ggplot2::geom_text(
+      data = centers,
+      ggplot2::aes(x = x, y = y, label = label, colour = topic_id),
+      show.legend = FALSE,
+      fontface = "bold",
+      nudge_y = 0.05
+    ) +
+    ggplot2::scale_alpha(range = c(0.35, 1), guide = "none") +
+    ggplot2::labs(
+      title = "ETM Topic Embeddings",
+      x = "UMAP 1",
+      y = "UMAP 2",
+      colour = "Topic"
+    ) +
+    ggplot2::theme_minimal(base_size = 12)
+}
+
 #' Extract Representative Topic Candidates
 #'
 #' Identify representative document candidates from a topic model by assigning
@@ -536,11 +861,17 @@ get_tww <- function(x) {
 #'
 #' - `doc_id`
 #' - `topic_max_id`
+#' - `topic_max_int`
 #' - `topic_max_value`
 #' - `candidate_band`
 #' - `topic_rank`
 #'
-#' Metadata columns and optional `text` are included when available.
+#' Stored docvars are included when `docvars = TRUE`. Metadata columns from
+#' `doc_data` and optional `text` are included when available.
+#' When `docvars = FALSE`, columns that match stored docvar names are omitted
+#' even if they are also present in `doc_data`.
+#' Columns are ordered as `doc_id`, document metadata, representative-candidate
+#' output columns, and finally `text` when text is requested and available.
 #'
 #' @details
 #' Candidate bands are computed within each dominant topic, not globally across
@@ -548,7 +879,7 @@ get_tww <- function(x) {
 #' groups or tied values, the function falls back to deterministic rank-based
 #' banding.
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -585,6 +916,7 @@ get_tww <- function(x) {
 #'
 #' @export
 get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
+                                          docvars = FALSE,
                                           include_text = FALSE,
                                           quantile_probs = c(0.25, 0.50, 0.75),
                                           labels = c("VLOW", "LOW", "HIGH", "VHIGH"),
@@ -603,11 +935,14 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
   out <- get_dtw(
     x = x,
     doc_data = doc_data,
+    docvars = docvars,
     include_text = include_text,
     doc_id_col = doc_id_col,
     text_col = text_col
   )
-  out <- data.table::copy(out)
+  if (!docvars) {
+    out <- .drop_stored_docvars(out, x)
+  }
 
   if (!is.null(topics)) {
     keep_topics <- .resolve_topic_selector(unique(out$topic_max_id), topics)
@@ -617,7 +952,7 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
   if (!nrow(out)) {
     out[, candidate_band := character()]
     out[, topic_rank := integer()]
-    return(out[])
+    return(.order_representative_candidates_output(out))
   }
 
   out[, topic_rank := data.table::frank(-topic_max_value, ties.method = "first"),
@@ -626,12 +961,12 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
       by = topic_max_id]
 
   data.table::setorder(out, topic_max_id, topic_rank, doc_id)
-  out[]
+  .order_representative_candidates_output(out)
 }
 
 #' @keywords internal
 .new_nlp_topic_fit <- function(engine, model, method, model_object, dtw, tww,
-                               doc_ids, docvars, doc_data, call) {
+                               doc_ids, vocab, docvars, doc_data, call) {
   structure(
     list(
       engine = engine,
@@ -641,6 +976,7 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
       dtw = dtw,
       tww = tww,
       doc_ids = doc_ids,
+      vocab = vocab,
       docvars = docvars,
       doc_data = doc_data,
       call = call
@@ -669,7 +1005,13 @@ print.nlp_topic_fit <- function(x, ...) {
   } else {
     NA_integer_
   }
-  n_terms <- if (!is.null(x$tww)) ncol(x$tww) else NA_integer_
+  n_terms <- if (!is.null(x$tww)) {
+    ncol(x$tww)
+  } else if (!is.null(x$vocab)) {
+    length(x$vocab)
+  } else {
+    NA_integer_
+  }
 
   cat("<nlp_topic_fit>\n")
   cat("  engine: ", x$engine, "\n", sep = "")
@@ -807,6 +1149,21 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.normalize_prediction_control <- function(control) {
+  if (is.null(control) || !length(control)) {
+    return(list())
+  }
+  if (!is.list(control)) {
+    stop("control must be a named list of backend-specific prediction arguments.", call. = FALSE)
+  }
+  nms <- names(control)
+  if (is.null(nms) || any(nms == "")) {
+    stop("control must be a named list of backend-specific prediction arguments.", call. = FALSE)
+  }
+  control
+}
+
+#' @keywords internal
 .validate_topic_fit_args <- function(engine, model, method, k, control,
                                      dictionary, seedwords, initial_model) {
   if (is.null(k) && !(engine == "seededlda" && model == "seededlda")) {
@@ -852,7 +1209,31 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.stored_topic_vocab <- function(x) {
+  if (inherits(x, "nlp_topic_fit")) {
+    if (!is.null(x$vocab)) {
+      return(as.character(x$vocab))
+    }
+    if (!is.null(x$tww)) {
+      return(colnames(x$tww))
+    }
+    if (!is.null(x$model_object) && .is_etm_object(x$model_object) && !is.null(x$model_object$vocab)) {
+      return(as.character(x$model_object$vocab))
+    }
+    stop("This fit does not contain a stored vocabulary.", call. = FALSE)
+  }
+  if (.is_etm_object(x) && !is.null(x$vocab)) {
+    return(as.character(x$vocab))
+  }
+  NULL
+}
+
+#' @keywords internal
 .fit_text2vec_topic_model <- function(x, k, control) {
+  if (!requireNamespace("text2vec", quietly = TRUE)) {
+    stop("Package 'text2vec' must be installed to use engine = 'text2vec'.", call. = FALSE)
+  }
+
   x_sparse <- .as_topic_dgCMatrix(x)
 
   lda_args <- utils::modifyList(
@@ -1048,6 +1429,131 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.predict_topic_matrix <- function(fit, newdata_aligned, control) {
+  out <- switch(
+    fit$engine,
+    text2vec = {
+      args <- utils::modifyList(list(x = newdata_aligned$sparse), control)
+      args$x <- newdata_aligned$sparse
+      do.call(fit$model_object$transform, args)
+    },
+    topicmodels = {
+      args <- utils::modifyList(
+        list(object = fit$model_object, newdata = .as_topicmodels_input(newdata_aligned$dfm)),
+        control
+      )
+      args$object <- fit$model_object
+      args$newdata <- .as_topicmodels_input(newdata_aligned$dfm)
+      do.call(topicmodels::posterior, args)$topics
+    },
+    seededlda = .predict_seededlda_topic_matrix(
+      fit = fit,
+      newdata_dfm = newdata_aligned$dfm,
+      control = control
+    ),
+    `topicmodels.etm` = {
+      args <- utils::modifyList(
+        list(object = fit$model_object, newdata = newdata_aligned$sparse, type = "topics"),
+        control
+      )
+      args$object <- fit$model_object
+      args$newdata <- newdata_aligned$sparse
+      args$type <- "topics"
+      do.call(stats::predict, args)
+    }
+  )
+
+  .dtw_matrix_from_matrix(out, doc_ids = newdata_aligned$doc_ids)
+}
+
+#' @keywords internal
+.predict_seededlda_topic_matrix <- function(fit, newdata_dfm, control) {
+  predict_args <- utils::modifyList(
+    list(x = newdata_dfm, model = fit$model_object),
+    control
+  )
+  predict_args$x <- newdata_dfm
+  predict_args$model <- fit$model_object
+
+  if (fit$model %in% c("lda", "seededlda") &&
+      !"update_model" %in% names(predict_args)) {
+    predict_args$update_model <- FALSE
+  }
+
+  fit_fun <- switch(
+    fit$model,
+    lda = seededlda::textmodel_lda,
+    seqlda = seededlda::textmodel_seqlda,
+    seededlda = seededlda::textmodel_lda
+  )
+
+  predicted <- withCallingHandlers(
+    do.call(fit_fun, predict_args),
+    warning = function(w) {
+      if (grepl("overwritten by the fitted model", conditionMessage(w), fixed = TRUE)) {
+        tryInvokeRestart("muffleWarning")
+      }
+    }
+  )
+
+  predicted$theta
+}
+
+#' @keywords internal
+.align_topic_input_to_vocab <- function(x, vocab, vocab_label = "target vocabulary",
+                                        context = "vocabulary alignment") {
+  x_dfm <- .as_topic_dfm(x)
+  vocab <- as.character(vocab)
+  if (!length(vocab)) {
+    stop("vocab must contain at least one term.", call. = FALSE)
+  }
+
+  input_terms <- quanteda::featnames(x_dfm)
+  dropped_terms <- setdiff(input_terms, vocab)
+  if (length(dropped_terms)) {
+    warning(
+      sprintf(
+        "Dropping %d terms that were not found in the %s.",
+        length(dropped_terms),
+        vocab_label
+      ),
+      call. = FALSE
+    )
+  }
+
+  x_dfm <- quanteda::dfm_match(x_dfm, features = vocab)
+  keep <- Matrix::rowSums(methods::as(x_dfm, "dgCMatrix")) > 0
+
+  if (!all(keep)) {
+    warning(
+      sprintf(
+        "Dropping %d documents with zero counts after %s.",
+        sum(!keep),
+        context
+      ),
+      call. = FALSE
+    )
+    x_dfm <- x_dfm[keep, ]
+  }
+
+  if (!quanteda::ndoc(x_dfm)) {
+    stop(sprintf("No documents remain after %s.", context), call. = FALSE)
+  }
+
+  x_sparse <- methods::as(x_dfm, "dgCMatrix")
+  doc_ids <- quanteda::docnames(x_dfm)
+  rownames(x_sparse) <- doc_ids
+  colnames(x_sparse) <- vocab
+
+  list(
+    dfm = x_dfm,
+    sparse = x_sparse,
+    doc_ids = doc_ids,
+    term_names = vocab
+  )
+}
+
+#' @keywords internal
 .prepare_etm_input <- function(x, model_control) {
   x_sparse <- .as_topic_dgCMatrix(x)
   doc_ids <- .matrix_doc_ids(x_sparse, fallback = rownames(x_sparse))
@@ -1079,21 +1585,16 @@ print.nlp_topic_fit <- function(x, ...) {
       stop("No overlap was found between the ETM embedding vocabulary and the input terms.", call. = FALSE)
     }
 
-    dropped_terms <- setdiff(colnames(x_sparse), common_terms)
-    if (length(dropped_terms)) {
-      warning(
-        sprintf(
-          "Dropping %d terms that were not found in the ETM embedding vocabulary.",
-          length(dropped_terms)
-        ),
-        call. = FALSE
-      )
-    }
-
-    x_sparse <- x_sparse[, match(common_terms, colnames(x_sparse)), drop = FALSE]
-    colnames(x_sparse) <- common_terms
+    aligned <- .align_topic_input_to_vocab(
+      x,
+      vocab = common_terms,
+      vocab_label = "ETM embedding vocabulary",
+      context = "ETM vocabulary alignment"
+    )
+    x_sparse <- aligned$sparse
     model_control$embeddings <- embeddings[common_terms, , drop = FALSE]
     model_control$vocab <- common_terms
+    doc_ids <- aligned$doc_ids
   } else {
     if (!is.numeric(embeddings) || length(embeddings) != 1L ||
         embeddings < 1 || embeddings != as.integer(embeddings)) {
@@ -1106,6 +1607,14 @@ print.nlp_topic_fit <- function(x, ...) {
     vocab <- model_control$vocab
     if (is.null(vocab)) {
       vocab <- colnames(x_sparse)
+      aligned <- .align_topic_input_to_vocab(
+        x,
+        vocab = vocab,
+        vocab_label = "ETM learned-embedding vocabulary",
+        context = "ETM vocabulary alignment"
+      )
+      x_sparse <- aligned$sparse
+      doc_ids <- aligned$doc_ids
     } else {
       vocab <- as.character(vocab)
       if (length(vocab) != ncol(x_sparse)) {
@@ -1122,32 +1631,23 @@ print.nlp_topic_fit <- function(x, ...) {
           call. = FALSE
         )
       }
-      x_sparse <- x_sparse[, idx, drop = FALSE]
-      colnames(x_sparse) <- vocab
+      aligned <- .align_topic_input_to_vocab(
+        x,
+        vocab = vocab,
+        vocab_label = "ETM learned-embedding vocabulary",
+        context = "ETM vocabulary alignment"
+      )
+      x_sparse <- aligned$sparse
+      doc_ids <- aligned$doc_ids
     }
 
     model_control$embeddings <- as.integer(embeddings)
     model_control$vocab <- vocab
   }
 
-  keep <- Matrix::rowSums(x_sparse) > 0
-  if (!all(keep)) {
-    warning(
-      sprintf(
-        "Dropping %d documents with zero counts after ETM vocabulary alignment.",
-        sum(!keep)
-      ),
-      call. = FALSE
-    )
-    x_sparse <- x_sparse[keep, , drop = FALSE]
-  }
-  if (!nrow(x_sparse)) {
-    stop("No documents remain after ETM vocabulary alignment.", call. = FALSE)
-  }
-
   list(
     x = x_sparse,
-    doc_ids = .matrix_doc_ids(x_sparse, fallback = rownames(x_sparse)),
+    doc_ids = doc_ids,
     term_names = colnames(x_sparse),
     model_control = model_control
   )
@@ -1228,7 +1728,7 @@ print.nlp_topic_fit <- function(x, ...) {
     beta <- as.matrix(x, type = "beta")
     return(.tww_dt_from_matrix(
       beta,
-      term_names = colnames(beta)
+      term_names = if (!is.null(colnames(beta))) colnames(beta) else .stored_topic_vocab(x)
     ))
   }
 
@@ -1349,7 +1849,7 @@ print.nlp_topic_fit <- function(x, ...) {
 
 #' @keywords internal
 .coerce_existing_dtw_table <- function(x) {
-  dt <- data.table::as.data.table(x)
+  dt <- data.table::copy(data.table::as.data.table(x))
 
   if ("rn" %in% names(dt) && !"doc_id" %in% names(dt)) {
     data.table::setnames(dt, "rn", "doc_id")
@@ -1367,7 +1867,7 @@ print.nlp_topic_fit <- function(x, ...) {
   data.table::setcolorder(dt, c("doc_id", topic_cols, non_topic_cols))
   data.table::setnames(dt, topic_cols, .topic_ids(length(topic_cols)))
 
-  old_summary_cols <- intersect(c("topic_max_id", "topic_max_value"), names(dt))
+  old_summary_cols <- intersect(c("topic_max_id", "topic_max_int", "topic_max_value"), names(dt))
   if (length(old_summary_cols)) {
     dt[, (old_summary_cols) := NULL]
   }
@@ -1376,7 +1876,7 @@ print.nlp_topic_fit <- function(x, ...) {
 
 #' @keywords internal
 .coerce_existing_tww_table <- function(x) {
-  dt <- data.table::as.data.table(x)
+  dt <- data.table::copy(data.table::as.data.table(x))
 
   if (!"topic_id" %in% names(dt)) {
     stop("TWW tables must contain a 'topic_id' column.", call. = FALSE)
@@ -1394,11 +1894,11 @@ print.nlp_topic_fit <- function(x, ...) {
   nms <- names(x)
   topic_cols <- grep("^Topic\\d+$", nms, value = TRUE)
   if (length(topic_cols)) {
-    ord <- order(as.integer(stringr::str_extract(topic_cols, "\\d+")))
+    ord <- order(as.integer(sub("^Topic", "", topic_cols)))
     return(topic_cols[ord])
   }
 
-  candidate_cols <- setdiff(nms, c(id_col, "topic_max_id", "topic_max_value"))
+  candidate_cols <- setdiff(nms, c(id_col, "topic_max_id", "topic_max_int", "topic_max_value"))
   if (length(candidate_cols) &&
       all(vapply(x[, candidate_cols, with = FALSE], is.numeric, logical(1)))) {
     return(candidate_cols)
@@ -1408,11 +1908,76 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.dtw_output_columns <- function(x) {
+  topic_cols <- .find_topic_columns(x, id_col = "doc_id")
+  intersect(c(topic_cols, "topic_max_id", "topic_max_int", "topic_max_value"), names(x))
+}
+
+#' @keywords internal
+.representative_candidates_output_columns <- function(x) {
+  intersect(
+    c(.dtw_output_columns(x), "candidate_band", "topic_rank"),
+    names(x)
+  )
+}
+
+#' @keywords internal
+.filter_existing_dtw_metadata <- function(x, docvars, include_text) {
+  output_cols <- .dtw_output_columns(x)
+  keep <- c("doc_id", output_cols)
+  if (docvars) {
+    keep <- c(keep, setdiff(names(x), c(keep, "text")))
+  }
+  if (include_text && "text" %in% names(x)) {
+    keep <- c(keep, "text")
+  }
+
+  x[, intersect(keep, names(x)), with = FALSE]
+}
+
+#' @keywords internal
+.drop_stored_docvars <- function(x, source) {
+  stored <- .stored_docvars_table(source, doc_ids = x$doc_id)
+  if (is.null(stored)) {
+    return(x[])
+  }
+
+  drop_cols <- intersect(setdiff(names(stored), "doc_id"), names(x))
+  if (length(drop_cols)) {
+    x[, (drop_cols) := NULL]
+  }
+  x[]
+}
+
+#' @keywords internal
+.order_document_topic_output <- function(x, output_cols) {
+  text_cols <- intersect("text", names(x))
+  metadata_cols <- setdiff(names(x), c("doc_id", output_cols, text_cols))
+  data.table::setcolorder(
+    x,
+    c("doc_id", metadata_cols, output_cols, text_cols)
+  )
+  x[]
+}
+
+#' @keywords internal
+.order_dtw_output <- function(x) {
+  .order_document_topic_output(x, .dtw_output_columns(x))
+}
+
+#' @keywords internal
+.order_representative_candidates_output <- function(x) {
+  .order_document_topic_output(x, .representative_candidates_output_columns(x))
+}
+
+#' @keywords internal
 .add_topic_max_columns <- function(x) {
   topic_cols <- .find_topic_columns(x, id_col = "doc_id")
   topic_mat <- as.matrix(x[, topic_cols, with = FALSE])
   max_idx <- max.col(topic_mat, ties.method = "first")
+  topic_ints <- as.integer(sub("^Topic", "", topic_cols))
   x[, topic_max_id := topic_cols[max_idx]]
+  x[, topic_max_int := topic_ints[max_idx]]
   x[, topic_max_value := topic_mat[cbind(seq_len(nrow(topic_mat)), max_idx)]]
   x[]
 }
@@ -1544,7 +2109,7 @@ print.nlp_topic_fit <- function(x, ...) {
   meta <- data.table::as.data.table(meta)
   meta <- meta[!duplicated(doc_id)]
   extra_cols <- setdiff(names(meta), "doc_id")
-  protected <- c("doc_id", .find_topic_columns(dtw, id_col = "doc_id"), "topic_max_id", "topic_max_value")
+  protected <- c("doc_id", .find_topic_columns(dtw, id_col = "doc_id"), "topic_max_id", "topic_max_int", "topic_max_value")
   conflicts <- intersect(extra_cols, names(dtw))
   protected_conflicts <- intersect(conflicts, protected)
   if (length(protected_conflicts)) {
@@ -1667,6 +2232,20 @@ print.nlp_topic_fit <- function(x, ...) {
 #' @keywords internal
 .is_etm_object <- function(x) {
   inherits(x, "ETM")
+}
+
+#' @keywords internal
+.as_etm_model_object <- function(x) {
+  if (inherits(x, "nlp_topic_fit")) {
+    if (!identical(x$engine, "topicmodels.etm")) {
+      stop("x must be an ETM fit or a raw ETM object.", call. = FALSE)
+    }
+    return(x$model_object)
+  }
+  if (.is_etm_object(x)) {
+    return(x)
+  }
+  stop("x must be an ETM fit or a raw ETM object.", call. = FALSE)
 }
 
 #' @keywords internal
