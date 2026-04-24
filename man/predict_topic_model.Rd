@@ -74,6 +74,7 @@ vocabulary order, and any documents that become empty after alignment are
 dropped with a warning.
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -115,5 +116,5 @@ rownames(new_dtm) <- c("new1", "new2")
 colnames(new_dtm) <- paste0("term", 1:4)
 
 predict_topic_model(fit, new_dtm)
-
+\dontshow{\}) # examplesIf}
 }

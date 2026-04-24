@@ -36,6 +36,7 @@ Visualize the distribution of standardized DTW values as faceted histograms,
 one facet per topic.
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -62,7 +63,7 @@ fit <- fit_topic_model(
 )
 
 plot_dtw(fit, topics = 1:2, bins = 5)
-
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{fit_topic_model()}, \code{get_dtw()}, \code{\link[=get_top_terms]{get_top_terms()}}, \code{\link[=plot_top_terms]{plot_top_terms()}}

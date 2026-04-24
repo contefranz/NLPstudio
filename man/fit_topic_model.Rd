@@ -157,6 +157,7 @@ The API currently covers these model families and fitting algorithms:
 }
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -242,7 +243,7 @@ if (requireNamespace("seededlda", quietly = TRUE)) {
     control = list(fit = list(max_iter = 100, verbose = FALSE))
   )
 }
-
+\dontshow{\}) # examplesIf}
 \dontshow{if (requireNamespace("topicmodels.etm", quietly = TRUE) && requireNamespace("torch", quietly = TRUE) && torch::torch_is_installed()) withAutoprint(\{ # examplesIf}
 fit_topic_model(
   dtm,

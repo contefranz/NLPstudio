@@ -97,6 +97,7 @@ topic_cols <- function(x) {
 }
 
 test_that("fit_topic_model returns lean standardized text2vec output", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
@@ -139,6 +140,7 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
 })
 
 test_that("predict_topic_model aligns new vocabulary and optionally joins docvars/doc_data", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
@@ -587,6 +589,7 @@ test_that("ETM validates pretrained embeddings and keeps alignment after pruning
 })
 
 test_that("get_dtw stores docvars but omits them by default", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
@@ -659,6 +662,7 @@ test_that("get_dtw stores docvars but omits them by default", {
 })
 
 test_that("get_top_terms and plot_dtw use standardized extractors", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dtm(),
     engine = "text2vec",
@@ -718,6 +722,7 @@ test_that("representative candidates band within topic and fall back on ties", {
 })
 
 test_that("representative candidates optionally include stored docvars", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dfm(),
     engine = "text2vec",
@@ -791,6 +796,7 @@ test_that("warp_lda and warpLDA are no longer exported", {
 })
 
 test_that("ETM-specific helpers reject non-ETM inputs", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dtm(),
     engine = "text2vec",
@@ -805,6 +811,7 @@ test_that("ETM-specific helpers reject non-ETM inputs", {
 })
 
 test_that("print.nlp_topic_fit stays compact", {
+  skip_if_not_installed("text2vec")
   fit <- fit_topic_model(
     make_topic_dtm(),
     engine = "text2vec",

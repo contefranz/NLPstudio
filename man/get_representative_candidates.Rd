@@ -78,6 +78,7 @@ groups or tied values, the function falls back to deterministic rank-based
 banding.
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -111,5 +112,5 @@ fit <- fit_topic_model(
 )
 
 get_representative_candidates(fit, include_text = TRUE)
-
+\dontshow{\}) # examplesIf}
 }

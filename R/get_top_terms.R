@@ -26,7 +26,7 @@ if (getRversion() >= "2.15.1") {
 #'
 #' @seealso `fit_topic_model()`, `get_tww()`, [plot_top_terms()], [plot_dtw()]
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(

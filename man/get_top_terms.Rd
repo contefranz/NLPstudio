@@ -34,6 +34,7 @@ works across all topic-model backends supported by \code{get_tww()}.
 ranks terms within each topic by descending probability.
 }
 \examples{
+\dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 dtm <- methods::as(
   Matrix::Matrix(
     matrix(
@@ -60,7 +61,7 @@ fit <- fit_topic_model(
 )
 
 get_top_terms(fit, n = 2, format = "long")
-
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{fit_topic_model()}, \code{get_tww()}, \code{\link[=plot_top_terms]{plot_top_terms()}}, \code{\link[=plot_dtw]{plot_dtw()}}

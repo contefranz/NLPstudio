@@ -44,6 +44,14 @@
    without changing behaviour. The startup message has been updated
    accordingly.
 
+2. `text2vec` has been moved from `Imports` to `Suggests`, bringing it in line
+   with the other topic-model backends (`topicmodels`, `seededlda`,
+   `topicmodels.etm`). `fit_topic_model(engine = "text2vec")` now emits an
+   informative error if `text2vec` is not installed. Users who rely on the
+   text2vec engine should install it explicitly:
+   `install.packages("text2vec")`. The startup message now lists `text2vec`
+   under optional backends.
+
 ## NLPstudio 0.6.1  (2026-04-23)
 
 ### CHANGES

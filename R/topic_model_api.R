@@ -175,7 +175,7 @@ if (getRversion() >= "2.15.1") {
 #' @seealso [topicmodels::LDA()] [topicmodels::CTM()] [text2vec::LDA()] [seededlda::textmodel_seqlda()]
 #' [topicmodels.etm::ETM()]
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -435,7 +435,7 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' vocabulary order, and any documents that become empty after alignment are
 #' dropped with a warning.
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -575,7 +575,7 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = FALSE,
 #' treated as pre-existing document metadata and retained only when
 #' `docvars = TRUE`.
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -665,7 +665,7 @@ get_dtw <- function(x, doc_data = NULL, docvars = FALSE, include_text = FALSE,
 #' @returns A `data.table` with one row per topic, a `topic_id` column using
 #'   the `Topic###` convention, and one column per term.
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -879,7 +879,7 @@ plot_topic_embeddings <- function(x, top_n = 15, ...) {
 #' groups or tied values, the function falls back to deterministic rank-based
 #' banding.
 #'
-#' @examples
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
 #'   Matrix::Matrix(
 #'     matrix(
@@ -1230,6 +1230,10 @@ print.nlp_topic_fit <- function(x, ...) {
 
 #' @keywords internal
 .fit_text2vec_topic_model <- function(x, k, control) {
+  if (!requireNamespace("text2vec", quietly = TRUE)) {
+    stop("Package 'text2vec' must be installed to use engine = 'text2vec'.", call. = FALSE)
+  }
+
   x_sparse <- .as_topic_dgCMatrix(x)
 
   lda_args <- utils::modifyList(

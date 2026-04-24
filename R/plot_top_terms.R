@@ -28,7 +28,7 @@ if ( getRversion() >= "2.15.1" ) {
 #'
 #' @seealso [get_top_terms()], [plot_dtw()]
 #'
-#' @examplesIf interactive()
+#' @examplesIf interactive() && requireNamespace("text2vec", quietly = TRUE)
 #' # Requires the optional tidytext package.
 #' dtm <- methods::as(
 #'   Matrix::Matrix(

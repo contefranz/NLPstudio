@@ -27,14 +27,14 @@ Imports:
     Matrix (>= 1.7),
     methods,
     quanteda (>= 4.0.1),
-    quanteda.textstats (>= 0.97),
-    text2vec (>= 0.6.4)
+    quanteda.textstats (>= 0.97)
 Suggests:
     lifecycle (>= 1.0.4),
     RcppSimdJson (>= 0.1.14),
     seededlda (>= 1.4.3),
     spacyr (>= 1.3.0),
     testthat (>= 3.0.0),
+    text2vec (>= 0.6.4),
     tidytext (>= 0.4.2),
     topicmodels (>= 0.2),
     topicmodels.etm (>= 0.1.0),
