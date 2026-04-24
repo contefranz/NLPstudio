@@ -7,6 +7,7 @@
 get_dtw(
   x,
   doc_data = NULL,
+  docvars = FALSE,
   include_text = FALSE,
   doc_id_col = "doc_id",
   text_col = "text"
@@ -20,6 +21,9 @@ tables.}
 \item{doc_data}{Optional document-data override. When supplied, this is used
 instead of any \code{doc_data} stored in \code{x}. Accepted inputs are a corpus,
 data.frame, or data.table keyed by \code{doc_id}.}
+
+\item{docvars}{Should stored or pre-existing document metadata be joined
+onto the returned DTW table? Defaults to \code{FALSE}.}
 
 \item{include_text}{Should a \code{text} column be attached when a text-bearing
 \code{doc_data} source is available? Defaults to \code{FALSE}. When \code{TRUE} but no
@@ -37,10 +41,18 @@ A \code{data.table} with:
 \item \code{doc_id}
 \item topic columns named \code{Topic001}, \code{Topic002}, ...
 \item \code{topic_max_id}
+\item \code{topic_max_int}
 \item \code{topic_max_value}
-\item metadata columns when available
+\item stored docvars when \code{docvars = TRUE}
+\item metadata columns from \code{doc_data} when available
 \item \code{text} when \code{include_text = TRUE} and text is available
 }
+
+Columns are ordered as \code{doc_id}, document metadata, DTW output columns, and
+finally \code{text} when text is requested and available.
+For already standardized DTW-table inputs, non-topic metadata columns are
+treated as pre-existing document metadata and retained only when
+\code{docvars = TRUE}.
 }
 \description{
 Extract DTW (document-topic weights) from a supported topic-model object and
@@ -73,5 +85,6 @@ fit <- fit_topic_model(
 )
 
 get_dtw(fit)
+get_dtw(fit, docvars = TRUE)
 
 }

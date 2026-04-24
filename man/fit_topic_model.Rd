@@ -141,6 +141,10 @@ explicitly supplied. When pretrained embeddings are supplied, the input
 vocabulary is aligned to the embedding rownames; unmatched terms and any
 documents that become empty after alignment are dropped with a warning while
 preserving surviving \code{doc_id}, \code{docvars}, and \code{doc_data} alignment.
+Using \code{engine = "topicmodels.etm"} also requires both the \strong{topicmodels.etm}
+package and a working \strong{torch} backend. Installing the R \strong{torch} package is
+not sufficient by itself on a clean machine; run \code{torch::install_torch()} and
+confirm that \code{torch::torch_is_installed()} returns \code{TRUE}.
 
 The API currently covers these model families and fitting algorithms:
 \itemize{

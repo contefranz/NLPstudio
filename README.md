@@ -58,6 +58,16 @@ install.packages("remotes")
 remotes::install_github("contefranz/NLPstudio")
 ```
 
+Optional ETM backend support requires both **topicmodels.etm** and a working
+**torch** backend. On a clean machine, install both optional R packages and
+then install the torch backend before fitting ETM models:
+
+```r
+install.packages(c("topicmodels.etm", "torch"))
+torch::install_torch()
+torch::torch_is_installed()
+```
+
 ---
 
 #### Author

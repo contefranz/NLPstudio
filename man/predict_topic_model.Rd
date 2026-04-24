@@ -8,7 +8,7 @@ predict_topic_model(
   x,
   newdata,
   control = list(),
-  docvars = TRUE,
+  docvars = FALSE,
   doc_data = NULL,
   include_text = FALSE,
   doc_id_col = "doc_id",
@@ -32,7 +32,7 @@ Defaults to \code{list()}.
 }}
 
 \item{docvars}{Should available docvars from \code{newdata} be joined onto the
-returned DTW table? Defaults to \code{TRUE}.}
+returned DTW table? Defaults to \code{FALSE}.}
 
 \item{doc_data}{Optional document-data sidecar for metadata or text
 enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
@@ -53,10 +53,14 @@ A standardized DTW \link[data.table:data.table]{data.table} with:
 \item \code{doc_id}
 \item topic columns named \code{Topic001}, \code{Topic002}, ...
 \item \code{topic_max_id}
+\item \code{topic_max_int}
 \item \code{topic_max_value}
 \item available docvars when \code{docvars = TRUE}
 \item optional metadata/text joined from \code{doc_data}
 }
+
+Columns are ordered as \code{doc_id}, document metadata, DTW output columns, and
+finally \code{text} when text is requested and available.
 }
 \description{
 Predict standardized document-topic weights (DTW) for new documents using a

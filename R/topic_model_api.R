@@ -3,7 +3,7 @@ if (getRversion() >= "2.15.1") {
     c(
       "candidate_band", "cluster", "dim_001", "dim_002", "doc_id", "label", "probability",
       "rank", "term", "text", "topic", "topic_id", "topic_max_id",
-      "topic_max_value", "topic_rank", "type", "weight", "x", "y"
+      "topic_max_int", "topic_max_value", "topic_rank", "type", "weight", "x", "y"
     )
   )
 }
@@ -113,6 +113,10 @@ if (getRversion() >= "2.15.1") {
 #' vocabulary is aligned to the embedding rownames; unmatched terms and any
 #' documents that become empty after alignment are dropped with a warning while
 #' preserving surviving `doc_id`, `docvars`, and `doc_data` alignment.
+#' Using `engine = "topicmodels.etm"` also requires both the **topicmodels.etm**
+#' package and a working **torch** backend. Installing the R **torch** package is
+#' not sufficient by itself on a clean machine; run `torch::install_torch()` and
+#' confirm that `torch::torch_is_installed()` returns `TRUE`.
 #'
 #' The API currently covers these model families and fitting algorithms:
 #'
@@ -400,7 +404,7 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #'   - `seededlda`: forwarded to the relevant `textmodel_*()` update call
 #'   - `topicmodels.etm`: forwarded to [stats::predict()] with `type = "topics"`
 #' @param docvars Should available docvars from `newdata` be joined onto the
-#'   returned DTW table? Defaults to `TRUE`.
+#'   returned DTW table? Defaults to `FALSE`.
 #' @param doc_data Optional document-data sidecar for metadata or text
 #'   enrichment. Accepted inputs are a corpus, data.frame, or data.table keyed
 #'   by `doc_id`.
@@ -416,9 +420,13 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' - `doc_id`
 #' - topic columns named `Topic001`, `Topic002`, ...
 #' - `topic_max_id`
+#' - `topic_max_int`
 #' - `topic_max_value`
 #' - available docvars when `docvars = TRUE`
 #' - optional metadata/text joined from `doc_data`
+#'
+#' Columns are ordered as `doc_id`, document metadata, DTW output columns, and
+#' finally `text` when text is requested and available.
 #'
 #' @details
 #' Prediction input is first aligned to the fitted vocabulary stored in `x$vocab`.
@@ -471,7 +479,7 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' predict_topic_model(fit, new_dtm)
 #'
 #' @export
-predict_topic_model <- function(x, newdata, control = list(), docvars = TRUE,
+predict_topic_model <- function(x, newdata, control = list(), docvars = FALSE,
                                 doc_data = NULL, include_text = FALSE,
                                 doc_id_col = "doc_id", text_col = "text") {
   if (!inherits(x, "nlp_topic_fit")) {
@@ -526,7 +534,7 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = TRUE,
     )
   }
 
-  out[]
+  .order_dtw_output(out)
 }
 
 #' Extract Standardized Document Topic Weights
@@ -540,6 +548,8 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = TRUE,
 #' @param doc_data Optional document-data override. When supplied, this is used
 #'   instead of any `doc_data` stored in `x`. Accepted inputs are a corpus,
 #'   data.frame, or data.table keyed by `doc_id`.
+#' @param docvars Should stored or pre-existing document metadata be joined
+#'   onto the returned DTW table? Defaults to `FALSE`.
 #' @param include_text Should a `text` column be attached when a text-bearing
 #'   `doc_data` source is available? Defaults to `FALSE`. When `TRUE` but no
 #'   text-bearing `doc_data` is available, the function emits a warning.
@@ -553,9 +563,17 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = TRUE,
 #' - `doc_id`
 #' - topic columns named `Topic001`, `Topic002`, ...
 #' - `topic_max_id`
+#' - `topic_max_int`
 #' - `topic_max_value`
-#' - metadata columns when available
+#' - stored docvars when `docvars = TRUE`
+#' - metadata columns from `doc_data` when available
 #' - `text` when `include_text = TRUE` and text is available
+#'
+#' Columns are ordered as `doc_id`, document metadata, DTW output columns, and
+#' finally `text` when text is requested and available.
+#' For already standardized DTW-table inputs, non-topic metadata columns are
+#' treated as pre-existing document metadata and retained only when
+#' `docvars = TRUE`.
 #'
 #' @examples
 #' dtm <- methods::as(
@@ -584,20 +602,34 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = TRUE,
 #' )
 #'
 #' get_dtw(fit)
+#' get_dtw(fit, docvars = TRUE)
 #'
 #' @export
-get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
+get_dtw <- function(x, doc_data = NULL, docvars = FALSE, include_text = FALSE,
                     doc_id_col = "doc_id", text_col = "text") {
+  if (!is.logical(docvars) || length(docvars) != 1L) {
+    stop("docvars must be a single TRUE/FALSE value.")
+  }
   if (!is.logical(include_text) || length(include_text) != 1L) {
     stop("include_text must be a single TRUE/FALSE value.")
   }
 
+  existing_dtw_input <- .looks_like_dtw_table(x)
   dtw <- .extract_dtw_table(x)
-  dtw <- .bind_topic_metadata(
-    dtw,
-    .stored_docvars_table(x, doc_ids = dtw$doc_id),
-    overwrite = FALSE
-  )
+  if (existing_dtw_input) {
+    dtw <- .filter_existing_dtw_metadata(
+      dtw,
+      docvars = docvars,
+      include_text = include_text
+    )
+  }
+  if (docvars) {
+    dtw <- .bind_topic_metadata(
+      dtw,
+      .stored_docvars_table(x, doc_ids = dtw$doc_id),
+      overwrite = FALSE
+    )
+  }
   dtw <- .bind_topic_metadata(
     dtw,
     .resolved_doc_data_table(
@@ -617,7 +649,7 @@ get_dtw <- function(x, doc_data = NULL, include_text = FALSE,
     )
   }
 
-  dtw[]
+  .order_dtw_output(dtw)
 }
 
 #' Extract Standardized Topic Word Weights
@@ -829,11 +861,17 @@ plot_topic_embeddings <- function(x, top_n = 15, ...) {
 #'
 #' - `doc_id`
 #' - `topic_max_id`
+#' - `topic_max_int`
 #' - `topic_max_value`
 #' - `candidate_band`
 #' - `topic_rank`
 #'
-#' Metadata columns and optional `text` are included when available.
+#' Stored docvars are included when `docvars = TRUE`. Metadata columns from
+#' `doc_data` and optional `text` are included when available.
+#' When `docvars = FALSE`, columns that match stored docvar names are omitted
+#' even if they are also present in `doc_data`.
+#' Columns are ordered as `doc_id`, document metadata, representative-candidate
+#' output columns, and finally `text` when text is requested and available.
 #'
 #' @details
 #' Candidate bands are computed within each dominant topic, not globally across
@@ -878,6 +916,7 @@ plot_topic_embeddings <- function(x, top_n = 15, ...) {
 #'
 #' @export
 get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
+                                          docvars = FALSE,
                                           include_text = FALSE,
                                           quantile_probs = c(0.25, 0.50, 0.75),
                                           labels = c("VLOW", "LOW", "HIGH", "VHIGH"),
@@ -896,11 +935,14 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
   out <- get_dtw(
     x = x,
     doc_data = doc_data,
+    docvars = docvars,
     include_text = include_text,
     doc_id_col = doc_id_col,
     text_col = text_col
   )
-  out <- data.table::copy(out)
+  if (!docvars) {
+    out <- .drop_stored_docvars(out, x)
+  }
 
   if (!is.null(topics)) {
     keep_topics <- .resolve_topic_selector(unique(out$topic_max_id), topics)
@@ -910,7 +952,7 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
   if (!nrow(out)) {
     out[, candidate_band := character()]
     out[, topic_rank := integer()]
-    return(out[])
+    return(.order_representative_candidates_output(out))
   }
 
   out[, topic_rank := data.table::frank(-topic_max_value, ties.method = "first"),
@@ -919,7 +961,7 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
       by = topic_max_id]
 
   data.table::setorder(out, topic_max_id, topic_rank, doc_id)
-  out[]
+  .order_representative_candidates_output(out)
 }
 
 #' @keywords internal
@@ -1803,7 +1845,7 @@ print.nlp_topic_fit <- function(x, ...) {
 
 #' @keywords internal
 .coerce_existing_dtw_table <- function(x) {
-  dt <- data.table::as.data.table(x)
+  dt <- data.table::copy(data.table::as.data.table(x))
 
   if ("rn" %in% names(dt) && !"doc_id" %in% names(dt)) {
     data.table::setnames(dt, "rn", "doc_id")
@@ -1821,7 +1863,7 @@ print.nlp_topic_fit <- function(x, ...) {
   data.table::setcolorder(dt, c("doc_id", topic_cols, non_topic_cols))
   data.table::setnames(dt, topic_cols, .topic_ids(length(topic_cols)))
 
-  old_summary_cols <- intersect(c("topic_max_id", "topic_max_value"), names(dt))
+  old_summary_cols <- intersect(c("topic_max_id", "topic_max_int", "topic_max_value"), names(dt))
   if (length(old_summary_cols)) {
     dt[, (old_summary_cols) := NULL]
   }
@@ -1830,7 +1872,7 @@ print.nlp_topic_fit <- function(x, ...) {
 
 #' @keywords internal
 .coerce_existing_tww_table <- function(x) {
-  dt <- data.table::as.data.table(x)
+  dt <- data.table::copy(data.table::as.data.table(x))
 
   if (!"topic_id" %in% names(dt)) {
     stop("TWW tables must contain a 'topic_id' column.", call. = FALSE)
@@ -1848,11 +1890,11 @@ print.nlp_topic_fit <- function(x, ...) {
   nms <- names(x)
   topic_cols <- grep("^Topic\\d+$", nms, value = TRUE)
   if (length(topic_cols)) {
-    ord <- order(as.integer(stringr::str_extract(topic_cols, "\\d+")))
+    ord <- order(as.integer(sub("^Topic", "", topic_cols)))
     return(topic_cols[ord])
   }
 
-  candidate_cols <- setdiff(nms, c(id_col, "topic_max_id", "topic_max_value"))
+  candidate_cols <- setdiff(nms, c(id_col, "topic_max_id", "topic_max_int", "topic_max_value"))
   if (length(candidate_cols) &&
       all(vapply(x[, candidate_cols, with = FALSE], is.numeric, logical(1)))) {
     return(candidate_cols)
@@ -1862,11 +1904,76 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.dtw_output_columns <- function(x) {
+  topic_cols <- .find_topic_columns(x, id_col = "doc_id")
+  intersect(c(topic_cols, "topic_max_id", "topic_max_int", "topic_max_value"), names(x))
+}
+
+#' @keywords internal
+.representative_candidates_output_columns <- function(x) {
+  intersect(
+    c(.dtw_output_columns(x), "candidate_band", "topic_rank"),
+    names(x)
+  )
+}
+
+#' @keywords internal
+.filter_existing_dtw_metadata <- function(x, docvars, include_text) {
+  output_cols <- .dtw_output_columns(x)
+  keep <- c("doc_id", output_cols)
+  if (docvars) {
+    keep <- c(keep, setdiff(names(x), c(keep, "text")))
+  }
+  if (include_text && "text" %in% names(x)) {
+    keep <- c(keep, "text")
+  }
+
+  x[, intersect(keep, names(x)), with = FALSE]
+}
+
+#' @keywords internal
+.drop_stored_docvars <- function(x, source) {
+  stored <- .stored_docvars_table(source, doc_ids = x$doc_id)
+  if (is.null(stored)) {
+    return(x[])
+  }
+
+  drop_cols <- intersect(setdiff(names(stored), "doc_id"), names(x))
+  if (length(drop_cols)) {
+    x[, (drop_cols) := NULL]
+  }
+  x[]
+}
+
+#' @keywords internal
+.order_document_topic_output <- function(x, output_cols) {
+  text_cols <- intersect("text", names(x))
+  metadata_cols <- setdiff(names(x), c("doc_id", output_cols, text_cols))
+  data.table::setcolorder(
+    x,
+    c("doc_id", metadata_cols, output_cols, text_cols)
+  )
+  x[]
+}
+
+#' @keywords internal
+.order_dtw_output <- function(x) {
+  .order_document_topic_output(x, .dtw_output_columns(x))
+}
+
+#' @keywords internal
+.order_representative_candidates_output <- function(x) {
+  .order_document_topic_output(x, .representative_candidates_output_columns(x))
+}
+
+#' @keywords internal
 .add_topic_max_columns <- function(x) {
   topic_cols <- .find_topic_columns(x, id_col = "doc_id")
   topic_mat <- as.matrix(x[, topic_cols, with = FALSE])
   max_idx <- max.col(topic_mat, ties.method = "first")
+  topic_ints <- as.integer(sub("^Topic", "", topic_cols))
   x[, topic_max_id := topic_cols[max_idx]]
+  x[, topic_max_int := topic_ints[max_idx]]
   x[, topic_max_value := topic_mat[cbind(seq_len(nrow(topic_mat)), max_idx)]]
   x[]
 }
@@ -1998,7 +2105,7 @@ print.nlp_topic_fit <- function(x, ...) {
   meta <- data.table::as.data.table(meta)
   meta <- meta[!duplicated(doc_id)]
   extra_cols <- setdiff(names(meta), "doc_id")
-  protected <- c("doc_id", .find_topic_columns(dtw, id_col = "doc_id"), "topic_max_id", "topic_max_value")
+  protected <- c("doc_id", .find_topic_columns(dtw, id_col = "doc_id"), "topic_max_id", "topic_max_int", "topic_max_value")
   conflicts <- intersect(extra_cols, names(dtw))
   protected_conflicts <- intersect(conflicts, protected)
   if (length(protected_conflicts)) {

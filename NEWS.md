@@ -1,6 +1,6 @@
 # NLPstudio News
 
-## NLPstudio 0.7.0  (2026-04-23)
+## NLPstudio 0.7.0  (2026-04-24)
 
 ### NEW FEATURES
 
@@ -20,6 +20,21 @@
 4. Added `plot_topic_embeddings()`, an ETM-specific visualization that uses the
    backend UMAP summary path to display topic centers and their top associated
    words in two dimensions.
+
+5. Post-fit document-level topic-model helpers now omit docvars by default.
+   Use `docvars = TRUE` in `get_dtw()`, `get_representative_candidates()`, or
+   `predict_topic_model()` when enriched outputs should include available
+   document variables. Existing non-topic metadata columns in standardized DTW
+   table inputs are also retained only when `docvars = TRUE`.
+   `get_representative_candidates()` also omits columns matching stored docvar
+   names when `docvars = FALSE`, even if those names arrive through `doc_data`.
+
+6. Document-level topic-model outputs now use a stable column order:
+   `doc_id`, document metadata, function output columns, and optional `text`
+   as the final column.
+
+7. Document-level topic-model outputs now include `topic_max_int`, the integer
+   topic number corresponding to `topic_max_id`.
 
 ## NLPstudio 0.6.1  (2026-04-23)
 
