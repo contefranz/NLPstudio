@@ -6,7 +6,7 @@
       right = "https://github.com/contefranz/NLPstudio"
     ), "\n",
     "Core imports: cli, data.table, ggplot2, Matrix, methods, quanteda,\n",
-    "              quanteda.textstats, stringr, text2vec\n",
+    "              quanteda.textstats, text2vec\n",
     "Optional backends: topicmodels, seededlda, topicmodels.etm, torch,\n",
     "                   spacyr, tidytext, RcppSimdJson, uwot\n",
     "Use library(<pkg>) to attach any of these to your session.\n",

@@ -19,7 +19,7 @@ if (getRversion() >= "2.15.1") {
 #' @details
 #' More details discussing the parallel strategy are given in [tokenize_corpus()].
 #'
-#' @return A [quanteda::tokens] object with singularized tokens.
+#' @returns A [quanteda::tokens] object with singularized tokens.
 #'
 #' @note Requires the **pluralize** package. On Linux/macOS, `"FORK"` may be
 #' faster but can be unstable with quanteda’s C++/OpenMP internals. Use `"PSOCK"`
@@ -58,7 +58,7 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
   
   if (remove_numbers) {
     cli::cli_alert_info("Removing tokens containing any number")
-    vocabulary <- vocabulary[!stringr::str_detect(vocabulary, "\\d")]
+    vocabulary <- vocabulary[!grepl("\\d", vocabulary)]
   }
   
   if (min_char > 1) {

@@ -28,7 +28,7 @@
 #'   Defaults to the caller's environment.
 #' @param ... Additional arguments passed to `FUN`.
 #'
-#' @return A list of results, one per chunk.
+#' @returns A list of results, one per chunk.
 #' @keywords internal
 #' @noRd
 .run_parallel <- function(chunks, FUN, ncores, socket,

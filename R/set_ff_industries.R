@@ -44,7 +44,7 @@ if ( getRversion() >= "2.15.1" ) {
 #' - If `fill_category = FALSE` (default), the FF variables will be `NA`.
 #' - If `fill_category = TRUE`, a fallback `"Unclassified"` category is created.
 #' 
-#' @return A [corpus][quanteda::corpus] object with additional `docvars`:
+#' @returns A [corpus][quanteda::corpus] object with additional `docvars`:
 #' - `ff_ind`: Numeric industry identifier.
 #' - `ff_ind_short_desc`: Short description.
 #' - `ff_ind_desc`: Full description.

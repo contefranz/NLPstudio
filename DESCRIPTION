@@ -25,10 +25,9 @@ Imports:
     data.table (>= 1.15.4),
     ggplot2 (>= 3.5.0),
     Matrix (>= 1.7),
-    methods (>= 4.3),
+    methods,
     quanteda (>= 4.0.1),
     quanteda.textstats (>= 0.97),
-    stringr (>= 1.5.1),
     text2vec (>= 0.6.4)
 Suggests:
     lifecycle (>= 1.0.4),
@@ -38,8 +37,8 @@ Suggests:
     testthat (>= 3.0.0),
     tidytext (>= 0.4.2),
     topicmodels (>= 0.2),
-    topicmodels.etm,
-    torch,
-    uwot
+    topicmodels.etm (>= 0.1.0),
+    torch (>= 0.16.3),
+    uwot (>= 0.2.4)
 Config/testthat/edition: 3
 LazyData: true

@@ -36,6 +36,14 @@
 7. Document-level topic-model outputs now include `topic_max_int`, the integer
    topic number corresponding to `topic_max_id`.
 
+### CHANGES
+
+1. `stringr` has been removed from `Imports`. The three internal call sites in
+   `define_corpus()` and `singularize_tokens()` have been rewritten in base R
+   (`sub()`, `paste()`, `grepl()`), trimming a transitive dependency chain
+   without changing behaviour. The startup message has been updated
+   accordingly.
+
 ## NLPstudio 0.6.1  (2026-04-23)
 
 ### CHANGES

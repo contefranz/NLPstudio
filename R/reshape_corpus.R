@@ -23,7 +23,7 @@
 #' `OMP_NUM_THREADS=1` and/or `quanteda_options(threads = 1)`) to reduce conflicts. 
 #' On Windows, setting `socket = "FORK"` will result in an error.
 #'
-#' @return A reshaped [quanteda::corpus()] with the same document variables
+#' @returns A reshaped [quanteda::corpus()] with the same document variables
 #' and reshaped text units as defined by `to`.
 #'
 #' @examples
