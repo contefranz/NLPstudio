@@ -1,5 +1,24 @@
 # NLPstudio News
 
+## NLPstudio 0.8.0  (2026-04-26)
+
+### NEW FEATURES
+
+1. Added `evaluate_topic_model()`, a unified quality-evaluation interface for
+   any `nlp_topic_fit` object regardless of backend engine. Metrics covering
+   intrinsic corpus statistics, topic structure, and held-out predictive
+   performance are computed through a single call and returned in a
+   standardized long-format `data.table` (`metric`, `scope`, `topic_id`,
+   `value`, `supported`). When the data required for a metric is absent the
+   result is marked `supported = FALSE` rather than silently producing invalid
+   values.
+
+2. Added `select_k_topics()`, a k-grid search helper that fits and evaluates a
+   topic model for each value in `k_grid`, with an optional document-level
+   holdout split and PSOCK parallel execution. Returns an `nlp_k_selection`
+   object with `print` and `plot` S3 methods (faceted line chart, one panel per
+   metric).
+
 ## NLPstudio 0.7.0  (2026-04-24)
 
 ### NEW FEATURES
