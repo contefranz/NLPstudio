@@ -27,7 +27,7 @@ if (getRversion() >= "2.15.1") {
 #'   neither `"coherence_npmi"` nor `"coherence_umass"` is in `metrics`, the
 #'   holdout split is skipped and the full `x` is used for fitting.
 #' @param ncores Number of parallel workers. Defaults to `1L` (sequential).
-#'   Each k is fit independently, so parallelisation scales linearly with
+#'   Each k is fit independently, so parallelization scales linearly with
 #'   `length(k_grid)`. Uses `"PSOCK"` sockets; `"FORK"` is not used to
 #'   preserve quanteda/C++ stability.
 #' @param seed Integer vector of length `length(k_grid)` used to seed each k's
@@ -120,7 +120,7 @@ select_k_topics <- function(
   method      = NULL,
   ...
 ) {
-  # ---- Input validation ----
+  # Input validation
   if (!is.numeric(k_grid) || length(k_grid) == 0L || any(k_grid < 1L)) {
     stop("'k_grid' must be a non-empty vector of positive integers.", call. = FALSE)
   }
@@ -168,7 +168,7 @@ select_k_topics <- function(
     ), call. = FALSE)
   }
 
-  # ---- Holdout split ----
+  # Holdout split
   if (needs_split) {
     split_seed <- if (!is.null(seed)) seed[1L] else NULL
     split      <- .k_select_split(x, holdout, split_seed)
@@ -179,7 +179,7 @@ select_k_topics <- function(
     x_holdout <- NULL
   }
 
-  # ---- Per-k worker function ----
+  # Per-k worker function
   worker <- function(k_seed_pair) {
     k_val  <- k_seed_pair[[1L]]
     k_seed <- k_seed_pair[[2L]]
@@ -209,7 +209,7 @@ select_k_topics <- function(
     list(k_grid[i], if (!is.null(seed)) seed[i] else NULL)
   })
 
-  # ---- Run (parallel or sequential) ----
+  # Run (parallel or sequential)
   ncores_int  <- as.integer(ncores)
   export_vars <- c("x_train", "x_holdout", "engine", "model", "method",
                    "control", "metrics", "top_n", "epsilon",
@@ -239,7 +239,7 @@ select_k_topics <- function(
     }
   }
 
-  # ---- Assemble output ----
+  # Assemble output
   eval_list <- lapply(raw, `[[`, "eval")
   out <- data.table::rbindlist(eval_list)
   data.table::setcolorder(out, c("k", "metric", "scope", "topic_id",

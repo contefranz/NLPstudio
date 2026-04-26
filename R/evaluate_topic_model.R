@@ -197,17 +197,17 @@ evaluate_topic_model <- function(
     }
   }
 
-  # ---- Diversity ----
+  # Diversity
   if ("diversity" %in% metrics) {
     results[["diversity"]] <- .metric_diversity(fit, top_n)
   }
 
-  # ---- Exclusivity ----
+  # Exclusivity
   if ("exclusivity" %in% metrics) {
     results[["exclusivity"]] <- .metric_exclusivity(fit, top_n)
   }
 
-  # ---- Held-out NLL + Perplexity (computed together) ----
+  # Held-out NLL + Perplexity (computed together)
   pnll_metrics <- intersect(metrics, c("held_out_nll", "perplexity"))
   if (length(pnll_metrics)) {
     if (is.null(newdata)) {
@@ -316,12 +316,12 @@ evaluate_topic_model <- function(
   k   <- nrow(tww)
   V   <- ncol(tww)
 
-  # Column sums: Σ_j phi[j, w]
+  # Column sums: \sum_j phi[j,w]
   col_sums <- colSums(tww)
   # Guard against all-zero columns (shouldn't happen with fitted models)
   col_sums <- pmax(col_sums, .Machine$double.eps)
 
-  # Exclusivity matrix: phi[t, w] / Σ_j phi[j, w]
+  # Exclusivity matrix: phi[t, w] / \sum_j phi[j,w]
   excl_mat <- sweep(tww, 2L, col_sums, "/")
 
   top_n_eff <- min(top_n, V)

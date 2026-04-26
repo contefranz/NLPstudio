@@ -49,7 +49,7 @@ neither \code{"coherence_npmi"} nor \code{"coherence_umass"} is in \code{metrics
 holdout split is skipped and the full \code{x} is used for fitting.}
 
 \item{ncores}{Number of parallel workers. Defaults to \code{1L} (sequential).
-Each k is fit independently, so parallelisation scales linearly with
+Each k is fit independently, so parallelization scales linearly with
 \code{length(k_grid)}. Uses \code{"PSOCK"} sockets; \code{"FORK"} is not used to
 preserve quanteda/C++ stability.}
 
