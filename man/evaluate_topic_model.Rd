@@ -10,9 +10,9 @@ evaluate_topic_model(
   newdata = NULL,
   metrics = c("coherence_npmi", "coherence_umass", "diversity", "exclusivity",
     "held_out_nll", "held_out_perplexity", "train_nll", "train_perplexity"),
+  level = c("aggregate", "topic", "all"),
   top_n = 10L,
-  epsilon = 1e-12,
-  level = c("aggregate", "topic", "all")
+  epsilon = 1e-12
 )
 }
 \arguments{
@@ -50,14 +50,14 @@ no extra data required.}
 \code{exp(train_nll)}. Requires \code{training}.}
 }}
 
+\item{level}{Reporting level. One of \code{"aggregate"} (default), \code{"topic"}, or
+\code{"all"}. \code{"aggregate"} returns only corpus-level rows (\code{scope == "overall"}), \code{"topic"} returns only topic-level rows (\code{scope == "per_topic"}), and \code{"all"} returns both.}
+
 \item{top_n}{Integer. Number of top terms per topic used by coherence,
 diversity, and exclusivity. Defaults to \code{10L}.}
 
 \item{epsilon}{Small positive constant for numerical stability in logarithm
 computations. Defaults to \code{1e-12}.}
-
-\item{level}{Reporting level. One of \code{"aggregate"} (default), \code{"topic"}, or
-\code{"all"}. \code{"aggregate"} returns only corpus-level rows (\code{scope == "overall"}), \code{"topic"} returns only topic-level rows (\code{scope == "per_topic"}), and \code{"all"} returns both.}
 }
 \value{
 A \link[data.table:data.table]{data.table} with columns:

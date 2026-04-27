@@ -39,14 +39,14 @@ if (getRversion() >= "2.15.1") {
 #'     \item{`"train_perplexity"`}{Training perplexity. Equal to
 #'       `exp(train_nll)`. Requires `training`.}
 #'   }
-#' @param top_n Integer. Number of top terms per topic used by coherence,
-#'   diversity, and exclusivity. Defaults to `10L`.
-#' @param epsilon Small positive constant for numerical stability in logarithm
-#'   computations. Defaults to `1e-12`.
 #' @param level Reporting level. One of `"aggregate"` (default), `"topic"`, or
 #'   `"all"`. `"aggregate"` returns only corpus-level rows (`scope ==
 #'   "overall"`), `"topic"` returns only topic-level rows (`scope ==
 #'   "per_topic"`), and `"all"` returns both.
+#' @param top_n Integer. Number of top terms per topic used by coherence,
+#'   diversity, and exclusivity. Defaults to `10L`.
+#' @param epsilon Small positive constant for numerical stability in logarithm
+#'   computations. Defaults to `1e-12`.
 #'
 #' @returns A [data.table][data.table::data.table] with columns:
 #'   \describe{
@@ -142,9 +142,9 @@ evaluate_topic_model <- function(
                "diversity", "exclusivity",
                "held_out_nll", "held_out_perplexity",
                "train_nll", "train_perplexity"),
+  level   = c("aggregate", "topic", "all"),
   top_n   = 10L,
-  epsilon = 1e-12,
-  level   = c("aggregate", "topic", "all")
+  epsilon = 1e-12
 ) {
   if (!inherits(fit, "nlp_topic_fit")) {
     stop("'fit' must be an nlp_topic_fit object returned by fit_topic_model().",

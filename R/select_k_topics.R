@@ -18,6 +18,8 @@ if (getRversion() >= "2.15.1") {
 #'   `5:15`.
 #' @param metrics Character vector of metrics to compute for each k. Defaults
 #'   to all eight metrics supported by [evaluate_topic_model()].
+#' @param level Reporting level forwarded to [evaluate_topic_model()]. One of
+#'   `"aggregate"` (default), `"topic"`, or `"all"`.
 #' @param control Named list of backend controls forwarded to
 #'   [fit_topic_model()] for every k. Defaults to `list()`.
 #' @param holdout Fraction of documents held out for `held_out_nll` and
@@ -46,8 +48,6 @@ if (getRversion() >= "2.15.1") {
 #'   `10L`.
 #' @param epsilon Numeric. Forwarded to [evaluate_topic_model()]. Defaults to
 #'   `1e-12`.
-#' @param level Reporting level forwarded to [evaluate_topic_model()]. One of
-#'   `"aggregate"` (default), `"topic"`, or `"all"`.
 #' @param method Fitting method forwarded to [fit_topic_model()]. Defaults to
 #'   `NULL`.
 #' @param ... Additional arguments forwarded to [fit_topic_model()].
@@ -120,6 +120,7 @@ select_k_topics <- function(
                   "diversity", "exclusivity",
                   "held_out_nll", "held_out_perplexity",
                   "train_nll", "train_perplexity"),
+  level       = c("aggregate", "topic", "all"),
   control     = list(),
   holdout     = 0.2,
   ncores      = 1L,
@@ -127,7 +128,6 @@ select_k_topics <- function(
   return_fits = FALSE,
   top_n       = 10L,
   epsilon     = 1e-12,
-  level       = c("aggregate", "topic", "all"),
   method      = NULL,
   ...
 ) {
