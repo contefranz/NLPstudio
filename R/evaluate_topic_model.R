@@ -11,13 +11,14 @@ if (getRversion() >= "2.15.1") {
 #'
 #' @param fit An object of class `nlp_topic_fit` returned by [fit_topic_model()].
 #' @param training The document-feature matrix used to train `fit`. Required for
-#'   coherence metrics (`"coherence_npmi"`, `"coherence_umass"`). Accepted
-#'   classes are [dgCMatrix-class][Matrix::dgCMatrix-class],
-#'   [dfm][quanteda::dfm], and `DocumentTermMatrix`. Defaults to `NULL`.
+#'   coherence metrics (`"coherence_npmi"`, `"coherence_umass"`) and training
+#'   likelihood metrics (`"train_nll"`, `"train_perplexity"`). Accepted classes
+#'   are [dgCMatrix-class][Matrix::dgCMatrix-class], [dfm][quanteda::dfm], and
+#'   `DocumentTermMatrix`. Defaults to `NULL`.
 #' @param newdata A held-out document-feature matrix. Required for predictive
-#'   metrics (`"held_out_nll"`, `"perplexity"`). Accepted classes are the same
-#'   as `training`. Defaults to `NULL`.
-#' @param metrics Character vector of metrics to compute. Defaults to all six
+#'   metrics (`"held_out_nll"`, `"held_out_perplexity"`). Accepted classes are
+#'   the same as `training`. Defaults to `NULL`.
+#' @param metrics Character vector of metrics to compute. Defaults to all eight
 #'   supported metrics (alphabetical):
 #'   \describe{
 #'     \item{`"coherence_npmi"`}{Normalized Pointwise Mutual Information
@@ -31,8 +32,12 @@ if (getRversion() >= "2.15.1") {
 #'       no extra data required.}
 #'     \item{`"held_out_nll"`}{Mean negative log-likelihood per token on
 #'       `newdata`. Requires `newdata`.}
-#'     \item{`"perplexity"`}{Held-out perplexity. Equal to
+#'     \item{`"held_out_perplexity"`}{Held-out perplexity. Equal to
 #'       `exp(held_out_nll)`. Requires `newdata`.}
+#'     \item{`"train_nll"`}{Mean negative log-likelihood per token on
+#'       `training`. Requires `training`.}
+#'     \item{`"train_perplexity"`}{Training perplexity. Equal to
+#'       `exp(train_nll)`. Requires `training`.}
 #'   }
 #' @param top_n Integer. Number of top terms per topic used by coherence,
 #'   diversity, and exclusivity. Defaults to `10L`.
@@ -70,13 +75,15 @@ if (getRversion() >= "2.15.1") {
 #' `t`, of `phi[t, w] / sum_j phi[j, w]`. High exclusivity means those terms
 #' are concentrated in that topic rather than spread across topics.
 #'
-#' **Perplexity** and **held-out NLL** align `newdata` to the fitted vocabulary,
-#' obtain document-topic weights, then combine those weights with `fit$tww` to
-#' reconstruct per-token log-likelihoods. Documents in `newdata` whose terms
-#' are all outside the fitted vocabulary are dropped with a warning (they carry
-#' no information under the fitted model). Tokens outside the fitted vocabulary
-#' are excluded from the token count, matching the convention used by
-#' `topicmodels::perplexity()`.
+#' **Training and held-out likelihood metrics** align the supplied corpus to the
+#' fitted vocabulary, obtain document-topic weights, then combine those weights
+#' with `fit$tww` to reconstruct per-token log-likelihoods. Training metrics use
+#' cached fitted document-topic weights when available; held-out metrics infer
+#' document-topic weights for `newdata` with the fitted topic-word weights held
+#' fixed. Documents whose terms are all outside the fitted vocabulary are
+#' dropped with a warning (they carry no information under the fitted model).
+#' Tokens outside the fitted vocabulary are excluded from the token count,
+#' matching the convention used by `topicmodels::perplexity()`.
 #'
 #' @references
 #' Aletras, N., & Stevenson, M. (2013). Evaluating topic coherence using
@@ -112,9 +119,9 @@ if (getRversion() >= "2.15.1") {
 #' # Engine-agnostic metrics only (no extra data needed)
 #' evaluate_topic_model(fit, metrics = c("diversity", "exclusivity"))
 #'
-#' # Coherence with training data
+#' # Coherence and training likelihood with training data
 #' evaluate_topic_model(fit, training = dtm,
-#'                      metrics = c("coherence_npmi", "coherence_umass"))
+#'                      metrics = c("coherence_npmi", "train_perplexity"))
 #'
 #' @export
 evaluate_topic_model <- function(
@@ -123,7 +130,8 @@ evaluate_topic_model <- function(
   newdata  = NULL,
   metrics  = c("coherence_npmi", "coherence_umass",
                "diversity", "exclusivity",
-               "held_out_nll", "perplexity"),
+               "held_out_nll", "held_out_perplexity",
+               "train_nll", "train_perplexity"),
   top_n   = 10L,
   epsilon = 1e-12
 ) {
@@ -146,8 +154,11 @@ evaluate_topic_model <- function(
   top_n <- as.integer(top_n)
 
   # Warn early when required data is absent for requested metrics
-  needs_training <- intersect(metrics, c("coherence_npmi", "coherence_umass"))
-  needs_newdata  <- intersect(metrics, c("held_out_nll", "perplexity"))
+  needs_training <- intersect(
+    metrics,
+    c("coherence_npmi", "coherence_umass", "train_nll", "train_perplexity")
+  )
+  needs_newdata  <- intersect(metrics, c("held_out_nll", "held_out_perplexity"))
 
   if (length(needs_training) && is.null(training)) {
     warning(sprintf(
@@ -199,17 +210,47 @@ evaluate_topic_model <- function(
     results[["exclusivity"]] <- .metric_exclusivity(fit, top_n)
   }
 
-  # Held-out NLL + Perplexity (computed together)
-  pnll_metrics <- intersect(metrics, c("held_out_nll", "perplexity"))
-  if (length(pnll_metrics)) {
-    if (is.null(newdata)) {
-      for (m in pnll_metrics) {
+  # Training NLL + Perplexity (computed together)
+  train_likelihood_metrics <- intersect(metrics, c("train_nll", "train_perplexity"))
+  if (length(train_likelihood_metrics)) {
+    if (is.null(training)) {
+      for (m in train_likelihood_metrics) {
         results[[m]] <- .eval_unsupported_overall(m)
       }
     } else {
-      pnll <- .metric_perplexity_nll(fit, newdata, epsilon, pnll_metrics)
-      for (m in pnll_metrics) {
-        results[[m]] <- pnll[[m]]
+      train_scores <- .metric_likelihood_nll(
+        fit = fit,
+        data = training,
+        epsilon = epsilon,
+        which_metrics = train_likelihood_metrics,
+        sample = "training"
+      )
+      for (m in train_likelihood_metrics) {
+        results[[m]] <- train_scores[[m]]
+      }
+    }
+  }
+
+  # Held-out NLL + Perplexity (computed together)
+  heldout_likelihood_metrics <- intersect(
+    metrics,
+    c("held_out_nll", "held_out_perplexity")
+  )
+  if (length(heldout_likelihood_metrics)) {
+    if (is.null(newdata)) {
+      for (m in heldout_likelihood_metrics) {
+        results[[m]] <- .eval_unsupported_overall(m)
+      }
+    } else {
+      heldout_scores <- .metric_likelihood_nll(
+        fit = fit,
+        data = newdata,
+        epsilon = epsilon,
+        which_metrics = heldout_likelihood_metrics,
+        sample = "heldout"
+      )
+      for (m in heldout_likelihood_metrics) {
+        results[[m]] <- heldout_scores[[m]]
       }
     }
   }
@@ -224,7 +265,8 @@ evaluate_topic_model <- function(
 .topic_eval_metrics <- function() {
   c("coherence_npmi", "coherence_umass",
     "diversity", "exclusivity",
-    "held_out_nll", "perplexity")
+    "held_out_nll", "held_out_perplexity",
+    "train_nll", "train_perplexity")
 }
 
 #' @keywords internal
@@ -235,6 +277,14 @@ evaluate_topic_model <- function(
       anyNA(metrics) || any(!nzchar(metrics))) {
     stop("'metrics' must be a non-empty character vector of valid metric names.",
          call. = FALSE)
+  }
+
+  if ("perplexity" %in% metrics) {
+    warning(
+      "'perplexity' is deprecated; use 'held_out_perplexity' instead.",
+      call. = FALSE
+    )
+    metrics[metrics == "perplexity"] <- "held_out_perplexity"
   }
 
   metrics <- unique(metrics)
@@ -358,31 +408,44 @@ evaluate_topic_model <- function(
 }
 
 #' @keywords internal
-.metric_perplexity_nll <- function(fit, newdata, epsilon, which_metrics) {
+.metric_likelihood_nll <- function(fit, data, epsilon, which_metrics,
+                                   sample = c("training", "heldout")) {
+  sample <- match.arg(sample)
+
   # phi matrix (K x V)
   phi_mat <- .eval_tww_matrix(fit)  # K x V
   vocab   <- colnames(phi_mat)
 
   aligned <- .align_topic_input_to_vocab(
-    newdata,
+    data,
     vocab = vocab,
     vocab_label = "fitted vocabulary",
-    context = "prediction vocabulary alignment"
+    context = if (identical(sample, "training")) {
+      "training vocabulary alignment"
+    } else {
+      "prediction vocabulary alignment"
+    }
   )
   counts_aligned <- aligned$sparse
 
-  theta_mat <- .predict_topic_matrix(
-    fit = fit,
-    newdata_aligned = aligned,
-    control = list()
-  )
+  theta_mat <- if (identical(sample, "training")) {
+    .training_topic_matrix(fit, aligned)
+  } else {
+    .predict_topic_matrix(
+      fit = fit,
+      newdata_aligned = aligned,
+      control = list()
+    )
+  }
   theta_mat <- theta_mat[, rownames(phi_mat), drop = FALSE]
 
   # Compute log-likelihood efficiently using only non-zero token positions
   # Converts to triplet form: (i=doc_row, j=term_col, x=count)
   coo <- Matrix::summary(methods::as(counts_aligned, "TsparseMatrix"))
   if (nrow(coo) == 0L) {
-    stop("'newdata' has no tokens within the fitted vocabulary.", call. = FALSE)
+    arg_name <- if (identical(sample, "training")) "training" else "newdata"
+    stop(sprintf("'%s' has no tokens within the fitted vocabulary.", arg_name),
+         call. = FALSE)
   }
 
   # For each non-zero (d, w): word_prob = sum_t theta[d, t] * phi[t, w]
@@ -399,18 +462,25 @@ evaluate_topic_model <- function(
   nll_per_token <- nll_total / total_tokens
 
   out <- list()
-  if ("held_out_nll" %in% which_metrics) {
-    out[["held_out_nll"]] <- data.table::data.table(
-      metric    = "held_out_nll",
+  nll_metric <- if (identical(sample, "training")) "train_nll" else "held_out_nll"
+  perplexity_metric <- if (identical(sample, "training")) {
+    "train_perplexity"
+  } else {
+    "held_out_perplexity"
+  }
+
+  if (nll_metric %in% which_metrics) {
+    out[[nll_metric]] <- data.table::data.table(
+      metric    = nll_metric,
       scope     = "overall",
       topic_id  = NA_character_,
       value     = nll_per_token,
       supported = TRUE
     )
   }
-  if ("perplexity" %in% which_metrics) {
-    out[["perplexity"]] <- data.table::data.table(
-      metric    = "perplexity",
+  if (perplexity_metric %in% which_metrics) {
+    out[[perplexity_metric]] <- data.table::data.table(
+      metric    = perplexity_metric,
       scope     = "overall",
       topic_id  = NA_character_,
       value     = exp(nll_per_token),
@@ -418,4 +488,28 @@ evaluate_topic_model <- function(
     )
   }
   out
+}
+
+#' @keywords internal
+.training_topic_matrix <- function(fit, training_aligned) {
+  if (!is.null(fit$dtw)) {
+    theta_mat <- fit$dtw
+    theta_ids <- rownames(theta_mat)
+    if (!is.null(theta_ids)) {
+      idx <- match(training_aligned$doc_ids, theta_ids)
+      if (!anyNA(idx)) {
+        return(theta_mat[idx, , drop = FALSE])
+      }
+    }
+    if (nrow(theta_mat) == nrow(training_aligned$sparse)) {
+      rownames(theta_mat) <- training_aligned$doc_ids
+      return(theta_mat)
+    }
+  }
+
+  .predict_topic_matrix(
+    fit = fit,
+    newdata_aligned = training_aligned,
+    control = list()
+  )
 }

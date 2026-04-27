@@ -9,7 +9,7 @@ evaluate_topic_model(
   training = NULL,
   newdata = NULL,
   metrics = c("coherence_npmi", "coherence_umass", "diversity", "exclusivity",
-    "held_out_nll", "perplexity"),
+    "held_out_nll", "held_out_perplexity", "train_nll", "train_perplexity"),
   top_n = 10L,
   epsilon = 1e-12
 )
@@ -18,15 +18,16 @@ evaluate_topic_model(
 \item{fit}{An object of class \code{nlp_topic_fit} returned by \code{\link[=fit_topic_model]{fit_topic_model()}}.}
 
 \item{training}{The document-feature matrix used to train \code{fit}. Required for
-coherence metrics (\code{"coherence_npmi"}, \code{"coherence_umass"}). Accepted
-classes are \link[Matrix:dgCMatrix-class]{dgCMatrix-class},
-\link[quanteda:dfm]{dfm}, and \code{DocumentTermMatrix}. Defaults to \code{NULL}.}
+coherence metrics (\code{"coherence_npmi"}, \code{"coherence_umass"}) and training
+likelihood metrics (\code{"train_nll"}, \code{"train_perplexity"}). Accepted classes
+are \link[Matrix:dgCMatrix-class]{dgCMatrix-class}, \link[quanteda:dfm]{dfm}, and
+\code{DocumentTermMatrix}. Defaults to \code{NULL}.}
 
 \item{newdata}{A held-out document-feature matrix. Required for predictive
-metrics (\code{"held_out_nll"}, \code{"perplexity"}). Accepted classes are the same
-as \code{training}. Defaults to \code{NULL}.}
+metrics (\code{"held_out_nll"}, \code{"held_out_perplexity"}). Accepted classes are
+the same as \code{training}. Defaults to \code{NULL}.}
 
-\item{metrics}{Character vector of metrics to compute. Defaults to all six
+\item{metrics}{Character vector of metrics to compute. Defaults to all eight
 supported metrics (alphabetical):
 \describe{
 \item{\code{"coherence_npmi"}}{Normalized Pointwise Mutual Information
@@ -40,8 +41,12 @@ each top-N term's probability belonging to that topic. Engine-agnostic;
 no extra data required.}
 \item{\code{"held_out_nll"}}{Mean negative log-likelihood per token on
 \code{newdata}. Requires \code{newdata}.}
-\item{\code{"perplexity"}}{Held-out perplexity. Equal to
+\item{\code{"held_out_perplexity"}}{Held-out perplexity. Equal to
 \code{exp(held_out_nll)}. Requires \code{newdata}.}
+\item{\code{"train_nll"}}{Mean negative log-likelihood per token on
+\code{training}. Requires \code{training}.}
+\item{\code{"train_perplexity"}}{Training perplexity. Equal to
+\code{exp(train_nll)}. Requires \code{training}.}
 }}
 
 \item{top_n}{Integer. Number of top terms per topic used by coherence,
@@ -88,13 +93,15 @@ indicates topics that share high-probability terms.
 \code{t}, of \verb{phi[t, w] / sum_j phi[j, w]}. High exclusivity means those terms
 are concentrated in that topic rather than spread across topics.
 
-\strong{Perplexity} and \strong{held-out NLL} align \code{newdata} to the fitted vocabulary,
-obtain document-topic weights, then combine those weights with \code{fit$tww} to
-reconstruct per-token log-likelihoods. Documents in \code{newdata} whose terms
-are all outside the fitted vocabulary are dropped with a warning (they carry
-no information under the fitted model). Tokens outside the fitted vocabulary
-are excluded from the token count, matching the convention used by
-\code{topicmodels::perplexity()}.
+\strong{Training and held-out likelihood metrics} align the supplied corpus to the
+fitted vocabulary, obtain document-topic weights, then combine those weights
+with \code{fit$tww} to reconstruct per-token log-likelihoods. Training metrics use
+cached fitted document-topic weights when available; held-out metrics infer
+document-topic weights for \code{newdata} with the fitted topic-word weights held
+fixed. Documents whose terms are all outside the fitted vocabulary are
+dropped with a warning (they carry no information under the fitted model).
+Tokens outside the fitted vocabulary are excluded from the token count,
+matching the convention used by \code{topicmodels::perplexity()}.
 }
 \examples{
 \dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
@@ -117,9 +124,9 @@ fit <- fit_topic_model(
 # Engine-agnostic metrics only (no extra data needed)
 evaluate_topic_model(fit, metrics = c("diversity", "exclusivity"))
 
-# Coherence with training data
+# Coherence and training likelihood with training data
 evaluate_topic_model(fit, training = dtm,
-                     metrics = c("coherence_npmi", "coherence_umass"))
+                     metrics = c("coherence_npmi", "train_perplexity"))
 \dontshow{\}) # examplesIf}
 }
 \references{

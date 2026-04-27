@@ -17,18 +17,20 @@ if (getRversion() >= "2.15.1") {
 #' @param k_grid Integer vector of topic counts to evaluate. Defaults to
 #'   `5:15`.
 #' @param metrics Character vector of metrics to compute for each k. Defaults
-#'   to all six metrics supported by [evaluate_topic_model()].
+#'   to all eight metrics supported by [evaluate_topic_model()].
 #' @param control Named list of backend controls forwarded to
 #'   [fit_topic_model()] for every k. Defaults to `list()`.
 #' @param holdout Fraction of documents held out for `held_out_nll` and
-#'   `perplexity` metrics. Must be in `[0, 1)`. Defaults to `0.2`. When
-#'   `holdout > 0`, the remaining fraction is used as `training` for coherence
-#'   metrics. When `holdout = 0`, coherence is computed on the full fitting
-#'   input and predictive metrics are marked unsupported because no held-out
-#'   data is available.
-#'   If neither `"held_out_nll"` nor `"perplexity"` is in `metrics` AND
-#'   neither `"coherence_npmi"` nor `"coherence_umass"` is in `metrics`, the
-#'   holdout split is skipped and the full `x` is used for fitting.
+#'   `held_out_perplexity` metrics. Must be in `[0, 1)`. Defaults to `0.2`.
+#'   When `holdout > 0`, the remaining fraction is used as `training` for
+#'   coherence and training likelihood metrics. When `holdout = 0`, coherence
+#'   and training likelihood metrics are computed on the full fitting input and
+#'   held-out metrics are marked unsupported because no held-out data is
+#'   available.
+#'   If none of `"held_out_nll"`, `"held_out_perplexity"`, `"train_nll"`,
+#'   `"train_perplexity"`, `"coherence_npmi"`, or `"coherence_umass"` is in
+#'   `metrics`, the holdout split is skipped and the full `x` is used for
+#'   fitting.
 #' @param ncores Number of parallel workers. Defaults to `1L` (sequential).
 #'   Each k is fit independently, so parallelization scales linearly with
 #'   `length(k_grid)`. Uses `"PSOCK"` sockets; `"FORK"` is not used to
@@ -67,9 +69,10 @@ if (getRversion() >= "2.15.1") {
 #' shard (`1 - holdout` fraction) and a held-out shard (`holdout` fraction).
 #' The split is random but reproducible when `seed` is supplied. The training
 #' shard is passed to [fit_topic_model()] and to [evaluate_topic_model()] for
-#' coherence; the held-out shard is passed to [evaluate_topic_model()] for
-#' predictive metrics. With `holdout = 0`, the full `x` is used for fitting and
-#' coherence, while predictive metrics are reported as unsupported.
+#' coherence and training likelihood metrics; the held-out shard is passed to
+#' [evaluate_topic_model()] for held-out metrics. With `holdout = 0`, the full
+#' `x` is used for fitting, coherence, and training likelihood metrics, while
+#' held-out metrics are reported as unsupported.
 #'
 #' A warning is issued when the number of documents is fewer than 50, because
 #' the holdout shard may be too small for stable predictive metrics.
@@ -113,7 +116,8 @@ select_k_topics <- function(
   k_grid      = 5:15,
   metrics     = c("coherence_npmi", "coherence_umass",
                   "diversity", "exclusivity",
-                  "held_out_nll", "perplexity"),
+                  "held_out_nll", "held_out_perplexity",
+                  "train_nll", "train_perplexity"),
   control     = list(),
   holdout     = 0.2,
   ncores      = 1L,
@@ -179,8 +183,10 @@ select_k_topics <- function(
   }
 
   needs_coherence <- any(c("coherence_npmi", "coherence_umass") %in% metrics)
-  needs_predictive <- any(c("held_out_nll", "perplexity") %in% metrics)
-  needs_split <- holdout > 0 && (needs_predictive || needs_coherence)
+  needs_train_likelihood <- any(c("train_nll", "train_perplexity") %in% metrics)
+  needs_heldout <- any(c("held_out_nll", "held_out_perplexity") %in% metrics)
+  needs_training_eval <- needs_coherence || needs_train_likelihood
+  needs_split <- holdout > 0 && (needs_heldout || needs_training_eval)
 
   n_docs <- nrow(.as_topic_dgCMatrix(x))
   if (needs_split && n_docs < 50L) {
@@ -215,7 +221,7 @@ select_k_topics <- function(
 
     eval_result <- evaluate_topic_model(
       fit,
-      training = if (needs_coherence) x_train else NULL,
+      training = if (needs_training_eval) x_train else NULL,
       newdata  = x_holdout,
       metrics  = metrics,
       top_n    = top_n,
@@ -235,7 +241,7 @@ select_k_topics <- function(
   ncores_int  <- as.integer(ncores)
   export_vars <- c("x_train", "x_holdout", "engine", "model", "method",
                    "control", "metrics", "top_n", "epsilon",
-                   "needs_coherence", "return_fits")
+                   "needs_training_eval", "return_fits")
 
   if (ncores_int <= 1L) {
     raw <- lapply(k_seed_pairs, worker)
@@ -327,7 +333,8 @@ print.nlp_k_selection <- function(x, ...) {
     # For coherence: higher is better (closer to 0)
     # For nll / perplexity: lower is better
     # For diversity / exclusivity: higher is better
-    if (m %in% c("held_out_nll", "perplexity")) {
+    if (m %in% c("held_out_nll", "held_out_perplexity",
+                 "train_nll", "train_perplexity")) {
       best_idx <- which.min(sub$value)
     } else {
       best_idx <- which.max(sub$value)
@@ -335,7 +342,8 @@ print.nlp_k_selection <- function(x, ...) {
     best_k   <- sub$k[best_idx]
     best_val <- sub$value[best_idx]
     # Flag ties
-    if (m %in% c("held_out_nll", "perplexity")) {
+    if (m %in% c("held_out_nll", "held_out_perplexity",
+                 "train_nll", "train_perplexity")) {
       ties <- sum(sub$value == best_val) > 1L
     } else {
       ties <- sum(sub$value == best_val) > 1L

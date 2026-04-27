@@ -10,7 +10,7 @@ select_k_topics(
   model,
   k_grid = 5:15,
   metrics = c("coherence_npmi", "coherence_umass", "diversity", "exclusivity",
-    "held_out_nll", "perplexity"),
+    "held_out_nll", "held_out_perplexity", "train_nll", "train_perplexity"),
   control = list(),
   holdout = 0.2,
   ncores = 1L,
@@ -36,20 +36,22 @@ document-feature matrix first with e.g. \code{\link[quanteda:dfm]{quanteda::dfm(
 \code{5:15}.}
 
 \item{metrics}{Character vector of metrics to compute for each k. Defaults
-to all six metrics supported by \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}.}
+to all eight metrics supported by \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}.}
 
 \item{control}{Named list of backend controls forwarded to
 \code{\link[=fit_topic_model]{fit_topic_model()}} for every k. Defaults to \code{list()}.}
 
 \item{holdout}{Fraction of documents held out for \code{held_out_nll} and
-\code{perplexity} metrics. Must be in \verb{[0, 1)}. Defaults to \code{0.2}. When
-\code{holdout > 0}, the remaining fraction is used as \code{training} for coherence
-metrics. When \code{holdout = 0}, coherence is computed on the full fitting
-input and predictive metrics are marked unsupported because no held-out
-data is available.
-If neither \code{"held_out_nll"} nor \code{"perplexity"} is in \code{metrics} AND
-neither \code{"coherence_npmi"} nor \code{"coherence_umass"} is in \code{metrics}, the
-holdout split is skipped and the full \code{x} is used for fitting.}
+\code{held_out_perplexity} metrics. Must be in \verb{[0, 1)}. Defaults to \code{0.2}.
+When \code{holdout > 0}, the remaining fraction is used as \code{training} for
+coherence and training likelihood metrics. When \code{holdout = 0}, coherence
+and training likelihood metrics are computed on the full fitting input and
+held-out metrics are marked unsupported because no held-out data is
+available.
+If none of \code{"held_out_nll"}, \code{"held_out_perplexity"}, \code{"train_nll"},
+\code{"train_perplexity"}, \code{"coherence_npmi"}, or \code{"coherence_umass"} is in
+\code{metrics}, the holdout split is skipped and the full \code{x} is used for
+fitting.}
 
 \item{ncores}{Number of parallel workers. Defaults to \code{1L} (sequential).
 Each k is fit independently, so parallelization scales linearly with
@@ -101,9 +103,10 @@ metrics are requested, \code{x} is split at the document level into a training
 shard (\code{1 - holdout} fraction) and a held-out shard (\code{holdout} fraction).
 The split is random but reproducible when \code{seed} is supplied. The training
 shard is passed to \code{\link[=fit_topic_model]{fit_topic_model()}} and to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}} for
-coherence; the held-out shard is passed to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}} for
-predictive metrics. With \code{holdout = 0}, the full \code{x} is used for fitting and
-coherence, while predictive metrics are reported as unsupported.
+coherence and training likelihood metrics; the held-out shard is passed to
+\code{\link[=evaluate_topic_model]{evaluate_topic_model()}} for held-out metrics. With \code{holdout = 0}, the full
+\code{x} is used for fitting, coherence, and training likelihood metrics, while
+held-out metrics are reported as unsupported.
 
 A warning is issued when the number of documents is fewer than 50, because
 the holdout shard may be too small for stable predictive metrics.

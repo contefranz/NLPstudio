@@ -200,7 +200,7 @@ test_that("coherence and predictive metrics work with holdout > 0", {
   result <- suppressWarnings(select_k_topics(
     dtm, engine = "text2vec", model = "lda",
     k_grid  = 2:3,
-    metrics = c("coherence_umass", "held_out_nll", "perplexity"),
+    metrics = c("coherence_umass", "held_out_nll", "held_out_perplexity"),
     holdout = 0.3,
     seed    = 42L,
     control = fast_control()
@@ -209,11 +209,43 @@ test_that("coherence and predictive metrics work with holdout > 0", {
   expect_true(all(is.finite(result$value)))
 })
 
-test_that("all six metrics can be requested simultaneously", {
+test_that("training likelihood metrics work with holdout = 0", {
+  skip_if_not_installed("text2vec")
+  dtm <- make_sel_dtm()
+  result <- suppressWarnings(select_k_topics(
+    dtm, engine = "text2vec", model = "lda",
+    k_grid  = 2L,
+    metrics = c("train_nll", "train_perplexity"),
+    holdout = 0,
+    seed    = 1L,
+    control = fast_control()
+  ))
+  expect_true(all(result$supported))
+  expect_true(all(is.finite(result$value)))
+  expect_setequal(unique(result$metric), c("train_nll", "train_perplexity"))
+})
+
+test_that("held-out metrics are unsupported with holdout = 0", {
+  skip_if_not_installed("text2vec")
+  dtm <- make_sel_dtm()
+  result <- suppressWarnings(select_k_topics(
+    dtm, engine = "text2vec", model = "lda",
+    k_grid  = 2L,
+    metrics = c("held_out_nll", "held_out_perplexity"),
+    holdout = 0,
+    seed    = 1L,
+    control = fast_control()
+  ))
+  expect_true(all(!result$supported))
+  expect_true(all(is.na(result$value)))
+})
+
+test_that("all eight metrics can be requested simultaneously", {
   skip_if_not_installed("text2vec")
   dtm <- make_sel_dtm()
   all_metrics <- c("coherence_npmi", "coherence_umass", "diversity",
-                   "exclusivity", "held_out_nll", "perplexity")
+                   "exclusivity", "held_out_nll", "held_out_perplexity",
+                   "train_nll", "train_perplexity")
   result <- suppressWarnings(select_k_topics(
     dtm, engine = "text2vec", model = "lda",
     k_grid  = 2:3,

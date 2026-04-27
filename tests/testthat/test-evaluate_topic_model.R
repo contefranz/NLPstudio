@@ -261,15 +261,18 @@ test_that("coherence is unsupported (with warning) when training is NULL", {
   expect_true(all(is.na(result$value)))
 })
 
-# ---- Perplexity and held-out NLL --------------------------------------------
+# ---- Likelihood metrics -----------------------------------------------------
 
-test_that("perplexity and held_out_nll return overall scalars with newdata", {
+test_that("train_perplexity and train_nll return overall scalars with training", {
   skip_if_not_installed("text2vec")
-  fit     <- make_eval_fit()
-  newdata <- make_eval_newdata()
-  result  <- evaluate_topic_model(fit, newdata = newdata,
-                                   metrics = c("perplexity", "held_out_nll"))
-  for (m in c("perplexity", "held_out_nll")) {
+  fit <- make_eval_fit()
+  dtm <- make_eval_dtm()
+  result <- evaluate_topic_model(
+    fit,
+    training = dtm,
+    metrics = c("train_perplexity", "train_nll")
+  )
+  for (m in c("train_perplexity", "train_nll")) {
     sub <- result[result$metric == m, ]
     expect_equal(nrow(sub), 1L)
     expect_equal(sub$scope, "overall")
@@ -279,14 +282,55 @@ test_that("perplexity and held_out_nll return overall scalars with newdata", {
   }
 })
 
-test_that("perplexity equals exp(held_out_nll)", {
+test_that("train_perplexity equals exp(train_nll)", {
+  skip_if_not_installed("text2vec")
+  fit <- make_eval_fit()
+  dtm <- make_eval_dtm()
+  result <- evaluate_topic_model(
+    fit,
+    training = dtm,
+    metrics = c("train_perplexity", "train_nll")
+  )
+  nll  <- result[result$metric == "train_nll", ]$value
+  perp <- result[result$metric == "train_perplexity", ]$value
+  expect_equal(perp, exp(nll), tolerance = 1e-9)
+})
+
+test_that("train_nll is unsupported (with warning) when training is NULL", {
+  skip_if_not_installed("text2vec")
+  fit <- make_eval_fit()
+  expect_warning(
+    result <- evaluate_topic_model(fit, metrics = "train_nll"),
+    "require 'training'"
+  )
+  expect_false(result$supported)
+  expect_true(is.na(result$value))
+})
+
+test_that("held_out_perplexity and held_out_nll return overall scalars with newdata", {
   skip_if_not_installed("text2vec")
   fit     <- make_eval_fit()
   newdata <- make_eval_newdata()
   result  <- evaluate_topic_model(fit, newdata = newdata,
-                                   metrics = c("perplexity", "held_out_nll"))
+                                   metrics = c("held_out_perplexity", "held_out_nll"))
+  for (m in c("held_out_perplexity", "held_out_nll")) {
+    sub <- result[result$metric == m, ]
+    expect_equal(nrow(sub), 1L)
+    expect_equal(sub$scope, "overall")
+    expect_true(is.na(sub$topic_id))
+    expect_true(sub$supported)
+    expect_true(is.finite(sub$value) && sub$value > 0)
+  }
+})
+
+test_that("held_out_perplexity equals exp(held_out_nll)", {
+  skip_if_not_installed("text2vec")
+  fit     <- make_eval_fit()
+  newdata <- make_eval_newdata()
+  result  <- evaluate_topic_model(fit, newdata = newdata,
+                                   metrics = c("held_out_perplexity", "held_out_nll"))
   nll  <- result[result$metric == "held_out_nll", ]$value
-  perp <- result[result$metric == "perplexity",   ]$value
+  perp <- result[result$metric == "held_out_perplexity", ]$value
   expect_equal(perp, exp(nll), tolerance = 1e-9)
 })
 
@@ -299,13 +343,13 @@ test_that("held-out metrics work with unrownamed newdata", {
   result <- evaluate_topic_model(
     fit,
     newdata = newdata,
-    metrics = c("perplexity", "held_out_nll")
+    metrics = c("held_out_perplexity", "held_out_nll")
   )
 
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
   expect_equal(
-    result[metric == "perplexity", ]$value,
+    result[metric == "held_out_perplexity", ]$value,
     exp(result[metric == "held_out_nll", ]$value),
     tolerance = 1e-9
   )
@@ -322,6 +366,19 @@ test_that("held_out_nll is unsupported (with warning) when newdata is NULL", {
   expect_true(is.na(result$value))
 })
 
+test_that("perplexity is a deprecated alias for held_out_perplexity", {
+  skip_if_not_installed("text2vec")
+  fit     <- make_eval_fit()
+  newdata <- make_eval_newdata()
+  expect_warning(
+    result <- evaluate_topic_model(fit, newdata = newdata, metrics = "perplexity"),
+    "deprecated"
+  )
+  expect_equal(result$metric, "held_out_perplexity")
+  expect_true(result$supported)
+  expect_true(is.finite(result$value))
+})
+
 # ---- Mixed: all metrics together -------------------------------------------
 
 test_that("all metrics can be computed together and return correct row count", {
@@ -335,10 +392,12 @@ test_that("all metrics can be computed together and return correct row count", {
   # coherence_umass: 2 per_topic + 1 overall = 3
   # diversity:       1 overall               = 1
   # exclusivity:     2 per_topic + 1 overall = 3
-  # held_out_nll:    1 overall               = 1
-  # perplexity:      1 overall               = 1
-  # total = 12
-  expect_equal(nrow(result), 12L)
+  # held_out_nll:           1 overall        = 1
+  # held_out_perplexity:    1 overall        = 1
+  # train_nll:              1 overall        = 1
+  # train_perplexity:       1 overall        = 1
+  # total = 14
+  expect_equal(nrow(result), 14L)
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
 })
@@ -356,7 +415,8 @@ test_that("evaluate_topic_model works with topicmodels engine", {
   result  <- evaluate_topic_model(fit, training = dtm, newdata = newdata,
                                    metrics = c("diversity", "exclusivity",
                                                "coherence_umass",
-                                               "perplexity", "held_out_nll"),
+                                               "held_out_perplexity",
+                                               "held_out_nll", "train_nll"),
                                    top_n = 3L)
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))

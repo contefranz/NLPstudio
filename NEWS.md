@@ -13,7 +13,12 @@
    result is marked `supported = FALSE` rather than silently producing invalid
    values.
 
-2. Added `select_k_topics()`, a k-grid search helper that fits and evaluates a
+2. `evaluate_topic_model()` now distinguishes training likelihood metrics
+   (`train_nll`, `train_perplexity`) from held-out likelihood metrics
+   (`held_out_nll`, `held_out_perplexity`). The old ambiguous `perplexity`
+   metric name is retained as a deprecated alias for `held_out_perplexity`.
+
+3. Added `select_k_topics()`, a k-grid search helper that fits and evaluates a
    topic model for each value in `k_grid`, with an optional document-level
    holdout split and PSOCK parallel execution. Returns an `nlp_k_selection`
    object with `print` and `plot` S3 methods (faceted line chart, one panel per
