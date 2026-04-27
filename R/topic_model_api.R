@@ -8,7 +8,7 @@ if (getRversion() >= "2.15.1") {
   )
 }
 
-#' Fit a Topic Model Across Supported Backends
+#' Fit a Topic Model Via a Unified API
 #'
 #' Fit a topic model with a unified API across **text2vec**, **topicmodels**,
 #' **seededlda**, and **topicmodels.etm**. The fitted object stores both the

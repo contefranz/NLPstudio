@@ -2,7 +2,7 @@
 % Please edit documentation in R/topic_model_api.R
 \name{fit_topic_model}
 \alias{fit_topic_model}
-\title{Fit a Topic Model Across Supported Backends}
+\title{Fit a Topic Model Via a Unified API}
 \usage{
 fit_topic_model(
   x,
