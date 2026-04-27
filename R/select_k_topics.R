@@ -46,6 +46,8 @@ if (getRversion() >= "2.15.1") {
 #'   `10L`.
 #' @param epsilon Numeric. Forwarded to [evaluate_topic_model()]. Defaults to
 #'   `1e-12`.
+#' @param level Reporting level forwarded to [evaluate_topic_model()]. One of
+#'   `"aggregate"` (default), `"topic"`, or `"all"`.
 #' @param method Fitting method forwarded to [fit_topic_model()]. Defaults to
 #'   `NULL`.
 #' @param ... Additional arguments forwarded to [fit_topic_model()].
@@ -125,6 +127,7 @@ select_k_topics <- function(
   return_fits = FALSE,
   top_n       = 10L,
   epsilon     = 1e-12,
+  level       = c("aggregate", "topic", "all"),
   method      = NULL,
   ...
 ) {
@@ -155,6 +158,7 @@ select_k_topics <- function(
     stop("'holdout' must be a single number in [0, 1).", call. = FALSE)
   }
   metrics <- .validate_topic_eval_metrics(metrics)
+  level <- match.arg(level)
   if (!is.numeric(top_n) || length(top_n) != 1L || is.na(top_n) ||
       !is.finite(top_n) || top_n < 1L ||
       top_n != as.integer(top_n)) {
@@ -225,7 +229,8 @@ select_k_topics <- function(
       newdata  = x_holdout,
       metrics  = metrics,
       top_n    = top_n,
-      epsilon  = epsilon
+      epsilon  = epsilon,
+      level    = level
     )
     eval_result[, k := k_val]
 
@@ -240,7 +245,7 @@ select_k_topics <- function(
   # Run (parallel or sequential)
   ncores_int  <- as.integer(ncores)
   export_vars <- c("x_train", "x_holdout", "engine", "model", "method",
-                   "control", "metrics", "top_n", "epsilon",
+                   "control", "metrics", "top_n", "epsilon", "level",
                    "needs_training_eval", "return_fits")
 
   if (ncores_int <= 1L) {

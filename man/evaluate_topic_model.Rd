@@ -11,7 +11,8 @@ evaluate_topic_model(
   metrics = c("coherence_npmi", "coherence_umass", "diversity", "exclusivity",
     "held_out_nll", "held_out_perplexity", "train_nll", "train_perplexity"),
   top_n = 10L,
-  epsilon = 1e-12
+  epsilon = 1e-12,
+  level = c("aggregate", "topic", "all")
 )
 }
 \arguments{
@@ -54,6 +55,9 @@ diversity, and exclusivity. Defaults to \code{10L}.}
 
 \item{epsilon}{Small positive constant for numerical stability in logarithm
 computations. Defaults to \code{1e-12}.}
+
+\item{level}{Reporting level. One of \code{"aggregate"} (default), \code{"topic"}, or
+\code{"all"}. \code{"aggregate"} returns only corpus-level rows (\code{scope == "overall"}), \code{"topic"} returns only topic-level rows (\code{scope == "per_topic"}), and \code{"all"} returns both.}
 }
 \value{
 A \link[data.table:data.table]{data.table} with columns:
@@ -102,6 +106,10 @@ fixed. Documents whose terms are all outside the fitted vocabulary are
 dropped with a warning (they carry no information under the fitted model).
 Tokens outside the fitted vocabulary are excluded from the token count,
 matching the convention used by \code{topicmodels::perplexity()}.
+
+\code{level} controls only which rows are returned. Metrics are computed in the
+same way regardless of level. Metrics that are naturally corpus-level only
+have no topic-level rows and are omitted when \code{level = "topic"}.
 }
 \examples{
 \dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}
@@ -124,9 +132,11 @@ fit <- fit_topic_model(
 # Engine-agnostic metrics only (no extra data needed)
 evaluate_topic_model(fit, metrics = c("diversity", "exclusivity"))
 
-# Coherence and training likelihood with training data
+# Coherence and training likelihood with training data.
+# Use level = "all" to include topic-level rows.
 evaluate_topic_model(fit, training = dtm,
-                     metrics = c("coherence_npmi", "train_perplexity"))
+                     metrics = c("coherence_npmi", "train_perplexity"),
+                     level = "all")
 \dontshow{\}) # examplesIf}
 }
 \references{

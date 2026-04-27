@@ -18,7 +18,12 @@
    (`held_out_nll`, `held_out_perplexity`). The old ambiguous `perplexity`
    metric name is retained as a deprecated alias for `held_out_perplexity`.
 
-3. Added `select_k_topics()`, a k-grid search helper that fits and evaluates a
+3. `evaluate_topic_model()` and `select_k_topics()` gain a `level` argument.
+   The default `level = "aggregate"` returns only overall rows, while
+   `level = "topic"` returns topic-level diagnostics and `level = "all"`
+   returns both.
+
+4. Added `select_k_topics()`, a k-grid search helper that fits and evaluates a
    topic model for each value in `k_grid`, with an optional document-level
    holdout split and PSOCK parallel execution. Returns an `nlp_k_selection`
    object with `print` and `plot` S3 methods (faceted line chart, one panel per

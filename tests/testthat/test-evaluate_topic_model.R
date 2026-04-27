@@ -74,6 +74,13 @@ test_that("evaluate_topic_model rejects unknown metric names", {
   expect_error(evaluate_topic_model(fit, metrics = NA_character_), "metrics")
 })
 
+test_that("evaluate_topic_model rejects invalid level", {
+  skip_if_not_installed("text2vec")
+  fit <- make_eval_fit()
+  expect_error(evaluate_topic_model(fit, metrics = "diversity", level = "document"),
+               "should be one of")
+})
+
 # ---- Output schema ----------------------------------------------------------
 
 test_that("evaluate_topic_model returns correct column schema", {
@@ -98,8 +105,58 @@ test_that("evaluate_topic_model rows are ordered by metric then scope then topic
   fit    <- make_eval_fit()
   dtm    <- make_eval_dtm()
   result <- evaluate_topic_model(fit, training = dtm,
-                                  metrics = c("coherence_npmi", "exclusivity"))
+                                  metrics = c("coherence_npmi", "exclusivity"),
+                                  level = "all")
   expect_equal(result$metric, sort(result$metric))
+})
+
+test_that("evaluate_topic_model defaults to aggregate rows", {
+  skip_if_not_installed("text2vec")
+  fit    <- make_eval_fit()
+  dtm    <- make_eval_dtm()
+  result <- evaluate_topic_model(
+    fit,
+    training = dtm,
+    metrics = c("coherence_umass", "diversity", "exclusivity")
+  )
+  expect_true(all(result$scope == "overall"))
+  expect_setequal(unique(result$metric),
+                  c("coherence_umass", "diversity", "exclusivity"))
+})
+
+test_that("evaluate_topic_model level controls aggregate and topic rows", {
+  skip_if_not_installed("text2vec")
+  fit <- make_eval_fit()
+  dtm <- make_eval_dtm()
+
+  aggregate <- evaluate_topic_model(
+    fit,
+    training = dtm,
+    metrics = c("coherence_umass", "diversity", "exclusivity"),
+    level = "aggregate"
+  )
+  expect_true(all(aggregate$scope == "overall"))
+
+  all_rows <- evaluate_topic_model(
+    fit,
+    training = dtm,
+    metrics = c("coherence_umass", "diversity", "exclusivity"),
+    level = "all"
+  )
+  expect_true("overall" %in% all_rows$scope)
+  expect_true("per_topic" %in% all_rows$scope)
+
+  expect_warning(
+    topic <- evaluate_topic_model(
+      fit,
+      training = dtm,
+      metrics = c("coherence_umass", "diversity", "exclusivity"),
+      level = "topic"
+    ),
+    "do not have topic-level rows"
+  )
+  expect_true(all(topic$scope == "per_topic"))
+  expect_setequal(unique(topic$metric), c("coherence_umass", "exclusivity"))
 })
 
 # ---- Diversity metric -------------------------------------------------------
@@ -158,7 +215,7 @@ test_that("diversity denominator uses available top-term slots", {
 test_that("exclusivity returns per_topic and overall rows", {
   skip_if_not_installed("text2vec")
   fit    <- make_eval_fit()
-  result <- evaluate_topic_model(fit, metrics = "exclusivity")
+  result <- evaluate_topic_model(fit, metrics = "exclusivity", level = "all")
   expect_true("per_topic" %in% result$scope)
   expect_true("overall"   %in% result$scope)
   per_topic_rows <- result[result$scope == "per_topic", ]
@@ -202,7 +259,8 @@ test_that("coherence returns per_topic and overall rows with training", {
   dtm    <- make_eval_dtm()
   result <- evaluate_topic_model(fit, training = dtm,
                                   metrics = c("coherence_npmi", "coherence_umass"),
-                                  top_n   = 3L)
+                                  top_n   = 3L,
+                                  level   = "all")
   for (m in c("coherence_npmi", "coherence_umass")) {
     sub <- result[result$metric == m, ]
     expect_true("per_topic" %in% sub$scope)
@@ -217,7 +275,8 @@ test_that("coherence overall equals mean of per-topic values", {
   fit    <- make_eval_fit()
   dtm    <- make_eval_dtm()
   for (m in c("coherence_npmi", "coherence_umass")) {
-    result   <- evaluate_topic_model(fit, training = dtm, metrics = m, top_n = 3L)
+    result   <- evaluate_topic_model(fit, training = dtm, metrics = m, top_n = 3L,
+                                     level = "all")
     per_vals <- result[result$scope == "per_topic", ]$value
     overall  <- result[result$scope == "overall",   ]$value
     expect_equal(overall, mean(per_vals, na.rm = TRUE), tolerance = 1e-9)
@@ -243,7 +302,7 @@ test_that("coherence UMass matches hand-computed value on symmetric corpus", {
 
   result <- evaluate_topic_model(fit, training = dtm,
                                   metrics = "coherence_umass", top_n = 3L,
-                                  epsilon = 1e-12)
+                                  epsilon = 1e-12, level = "all")
   expected_umass <- log(2 / 3)
   per_vals <- result[result$scope == "per_topic", ]$value
   expect_equal(per_vals[1], expected_umass, tolerance = 1e-9)
@@ -388,16 +447,22 @@ test_that("all metrics can be computed together and return correct row count", {
   newdata <- make_eval_newdata()
   result  <- evaluate_topic_model(fit, training = dtm, newdata = newdata,
                                    top_n = 3L)
-  # coherence_npmi:  2 per_topic + 1 overall = 3
-  # coherence_umass: 2 per_topic + 1 overall = 3
-  # diversity:       1 overall               = 1
-  # exclusivity:     2 per_topic + 1 overall = 3
-  # held_out_nll:           1 overall        = 1
-  # held_out_perplexity:    1 overall        = 1
-  # train_nll:              1 overall        = 1
-  # train_perplexity:       1 overall        = 1
-  # total = 14
+  expect_equal(nrow(result), 8L)
+  expect_true(all(result$scope == "overall"))
+  expect_true(all(result$supported))
+  expect_true(all(is.finite(result$value)))
+})
+
+test_that("all metrics can return all aggregate and topic rows", {
+  skip_if_not_installed("text2vec")
+  fit     <- make_eval_fit()
+  dtm     <- make_eval_dtm()
+  newdata <- make_eval_newdata()
+  result  <- evaluate_topic_model(fit, training = dtm, newdata = newdata,
+                                   top_n = 3L, level = "all")
   expect_equal(nrow(result), 14L)
+  expect_true("overall" %in% result$scope)
+  expect_true("per_topic" %in% result$scope)
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
 })

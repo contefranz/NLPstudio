@@ -18,6 +18,7 @@ select_k_topics(
   return_fits = FALSE,
   top_n = 10L,
   epsilon = 1e-12,
+  level = c("aggregate", "topic", "all"),
   method = NULL,
   ...
 )
@@ -72,6 +73,9 @@ attribute of the result? Defaults to \code{FALSE}. Fits can be large; set
 
 \item{epsilon}{Numeric. Forwarded to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}. Defaults to
 \code{1e-12}.}
+
+\item{level}{Reporting level forwarded to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}. One of
+\code{"aggregate"} (default), \code{"topic"}, or \code{"all"}.}
 
 \item{method}{Fitting method forwarded to \code{\link[=fit_topic_model]{fit_topic_model()}}. Defaults to
 \code{NULL}.}

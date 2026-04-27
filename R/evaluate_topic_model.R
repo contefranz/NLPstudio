@@ -43,6 +43,10 @@ if (getRversion() >= "2.15.1") {
 #'   diversity, and exclusivity. Defaults to `10L`.
 #' @param epsilon Small positive constant for numerical stability in logarithm
 #'   computations. Defaults to `1e-12`.
+#' @param level Reporting level. One of `"aggregate"` (default), `"topic"`, or
+#'   `"all"`. `"aggregate"` returns only corpus-level rows (`scope ==
+#'   "overall"`), `"topic"` returns only topic-level rows (`scope ==
+#'   "per_topic"`), and `"all"` returns both.
 #'
 #' @returns A [data.table][data.table::data.table] with columns:
 #'   \describe{
@@ -85,6 +89,10 @@ if (getRversion() >= "2.15.1") {
 #' Tokens outside the fitted vocabulary are excluded from the token count,
 #' matching the convention used by `topicmodels::perplexity()`.
 #'
+#' `level` controls only which rows are returned. Metrics are computed in the
+#' same way regardless of level. Metrics that are naturally corpus-level only
+#' have no topic-level rows and are omitted when `level = "topic"`.
+#'
 #' @references
 #' Aletras, N., & Stevenson, M. (2013). Evaluating topic coherence using
 #' distributional semantics. *EACL*, 13-22.
@@ -119,9 +127,11 @@ if (getRversion() >= "2.15.1") {
 #' # Engine-agnostic metrics only (no extra data needed)
 #' evaluate_topic_model(fit, metrics = c("diversity", "exclusivity"))
 #'
-#' # Coherence and training likelihood with training data
+#' # Coherence and training likelihood with training data.
+#' # Use level = "all" to include topic-level rows.
 #' evaluate_topic_model(fit, training = dtm,
-#'                      metrics = c("coherence_npmi", "train_perplexity"))
+#'                      metrics = c("coherence_npmi", "train_perplexity"),
+#'                      level = "all")
 #'
 #' @export
 evaluate_topic_model <- function(
@@ -133,7 +143,8 @@ evaluate_topic_model <- function(
                "held_out_nll", "held_out_perplexity",
                "train_nll", "train_perplexity"),
   top_n   = 10L,
-  epsilon = 1e-12
+  epsilon = 1e-12,
+  level   = c("aggregate", "topic", "all")
 ) {
   if (!inherits(fit, "nlp_topic_fit")) {
     stop("'fit' must be an nlp_topic_fit object returned by fit_topic_model().",
@@ -150,6 +161,7 @@ evaluate_topic_model <- function(
   }
 
   metrics <- .validate_topic_eval_metrics(metrics)
+  level <- match.arg(level)
 
   top_n <- as.integer(top_n)
 
@@ -257,6 +269,7 @@ evaluate_topic_model <- function(
 
   out <- data.table::rbindlist(results[metrics])
   data.table::setorder(out, metric, scope, topic_id)
+  out <- .filter_eval_level(out, level)
   out[]
 }
 
@@ -366,6 +379,36 @@ evaluate_topic_model <- function(
     value     = NA_real_,
     supported = FALSE
   )
+}
+
+#' @keywords internal
+.filter_eval_level <- function(out, level) {
+  level <- match.arg(level, c("aggregate", "topic", "all"))
+  if (identical(level, "all")) {
+    return(out[])
+  }
+
+  keep_scope <- switch(
+    level,
+    aggregate = "overall",
+    topic = "per_topic"
+  )
+  filtered <- out[scope == keep_scope, ]
+
+  if (identical(level, "topic")) {
+    omitted <- setdiff(unique(out$metric), unique(filtered$metric))
+    if (length(omitted)) {
+      warning(
+        sprintf(
+          "Metrics %s do not have topic-level rows and were omitted.",
+          paste(omitted, collapse = ", ")
+        ),
+        call. = FALSE
+      )
+    }
+  }
+
+  filtered[]
 }
 
 #' @keywords internal

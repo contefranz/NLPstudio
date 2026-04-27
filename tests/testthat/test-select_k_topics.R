@@ -125,6 +125,12 @@ test_that("select_k_topics rejects invalid metrics, seed, top_n, and epsilon", {
                     holdout = 0),
     "epsilon"
   )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = "diversity", level = "document",
+                    holdout = 0),
+    "should be one of"
+  )
 })
 
 # ---- Output schema ----------------------------------------------------------
@@ -176,6 +182,25 @@ test_that("engine-agnostic metrics work with holdout = 0", {
   ))
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
+})
+
+test_that("select_k_topics forwards level to evaluate_topic_model", {
+  skip_if_not_installed("text2vec")
+  dtm <- make_sel_dtm()
+  expect_warning(
+    result <- select_k_topics(
+      dtm, engine = "text2vec", model = "lda",
+      k_grid  = 2L,
+      metrics = c("coherence_umass", "diversity", "exclusivity"),
+      holdout = 0,
+      level   = "topic",
+      seed    = 1L,
+      control = fast_control()
+    ),
+    "do not have topic-level rows"
+  )
+  expect_true(all(result$scope == "per_topic"))
+  expect_setequal(unique(result$metric), c("coherence_umass", "exclusivity"))
 })
 
 test_that("coherence metrics work with holdout = 0", {
