@@ -78,22 +78,23 @@ from \code{training}, so results are directly comparable across all supported
 engines. Terms in \code{fit$vocab} that are absent from \code{training} contribute
 zero to all co-occurrence counts.
 
-\strong{Diversity} is the proportion of unique terms among all top-\code{top_n} terms
-across topics: \code{length(unique_top_terms) / (k * top_n)}. A value of 1
-means no term appears in more than one topic's top list; a low value
+\strong{Diversity} is the proportion of unique terms among all available
+top-\code{top_n} terms across topics:
+\code{length(unique_top_terms) / (k * min(top_n, vocabulary_size))}. A value of
+1 means no term appears in more than one topic's top list; a low value
 indicates topics that share high-probability terms.
 
 \strong{Exclusivity} (per topic \code{t}) is the mean, over the top-\code{top_n} terms of
 \code{t}, of \verb{phi[t, w] / sum_j phi[j, w]}. High exclusivity means those terms
 are concentrated in that topic rather than spread across topics.
 
-\strong{Perplexity} and \strong{held-out NLL} are computed using \code{\link[=predict_topic_model]{predict_topic_model()}}
-to obtain document-topic weights on \code{newdata}, then combining those weights
-with \code{fit$tww} to reconstruct per-token log-likelihoods. Documents in
-\code{newdata} whose terms are all outside the fitted vocabulary are silently
-dropped (they carry no information under the fitted model). Tokens outside
-the fitted vocabulary are excluded from the token count, matching the
-convention used by \code{topicmodels::perplexity()}.
+\strong{Perplexity} and \strong{held-out NLL} align \code{newdata} to the fitted vocabulary,
+obtain document-topic weights, then combine those weights with \code{fit$tww} to
+reconstruct per-token log-likelihoods. Documents in \code{newdata} whose terms
+are all outside the fitted vocabulary are dropped with a warning (they carry
+no information under the fitted model). Tokens outside the fitted vocabulary
+are excluded from the token count, matching the convention used by
+\code{topicmodels::perplexity()}.
 }
 \examples{
 \dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}

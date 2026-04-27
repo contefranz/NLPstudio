@@ -52,6 +52,8 @@ test_that("evaluate_topic_model rejects invalid top_n", {
   fit <- make_eval_fit()
   expect_error(evaluate_topic_model(fit, top_n = 0), "top_n")
   expect_error(evaluate_topic_model(fit, top_n = 1.5), "top_n")
+  expect_error(evaluate_topic_model(fit, top_n = NA_integer_), "top_n")
+  expect_error(evaluate_topic_model(fit, top_n = Inf), "top_n")
   expect_error(evaluate_topic_model(fit, top_n = "two"), "top_n")
 })
 
@@ -60,12 +62,16 @@ test_that("evaluate_topic_model rejects invalid epsilon", {
   fit <- make_eval_fit()
   expect_error(evaluate_topic_model(fit, epsilon = 0), "epsilon")
   expect_error(evaluate_topic_model(fit, epsilon = -1), "epsilon")
+  expect_error(evaluate_topic_model(fit, epsilon = NA_real_), "epsilon")
+  expect_error(evaluate_topic_model(fit, epsilon = Inf), "epsilon")
 })
 
 test_that("evaluate_topic_model rejects unknown metric names", {
   skip_if_not_installed("text2vec")
   fit <- make_eval_fit()
   expect_error(evaluate_topic_model(fit, metrics = c("diversity", "foo")), "foo")
+  expect_error(evaluate_topic_model(fit, metrics = character(0L)), "metrics")
+  expect_error(evaluate_topic_model(fit, metrics = NA_character_), "metrics")
 })
 
 # ---- Output schema ----------------------------------------------------------
@@ -128,6 +134,22 @@ test_that("diversity equals 1 when all topics have non-overlapping top terms", {
   fit$tww[2, ] <- c(0.005, 0.005, 0.9, 0.09)
 
   result <- evaluate_topic_model(fit, metrics = "diversity", top_n = 2L)
+  expect_equal(result$value, 1)
+})
+
+test_that("diversity denominator uses available top-term slots", {
+  tww <- matrix(
+    c(0.5, 0.3, 0.2),
+    nrow = 1L,
+    dimnames = list("Topic001", c("a", "b", "c"))
+  )
+  fit <- structure(
+    list(tww = tww, dtw = NULL, vocab = colnames(tww),
+         engine = "test", model = "test", model_object = NULL),
+    class = c("nlp_topic_fit", "list")
+  )
+
+  result <- evaluate_topic_model(fit, metrics = "diversity", top_n = 10L)
   expect_equal(result$value, 1)
 })
 
@@ -266,6 +288,27 @@ test_that("perplexity equals exp(held_out_nll)", {
   nll  <- result[result$metric == "held_out_nll", ]$value
   perp <- result[result$metric == "perplexity",   ]$value
   expect_equal(perp, exp(nll), tolerance = 1e-9)
+})
+
+test_that("held-out metrics work with unrownamed newdata", {
+  skip_if_not_installed("text2vec")
+  fit     <- make_eval_fit()
+  newdata <- make_eval_newdata()
+  rownames(newdata) <- NULL
+
+  result <- evaluate_topic_model(
+    fit,
+    newdata = newdata,
+    metrics = c("perplexity", "held_out_nll")
+  )
+
+  expect_true(all(result$supported))
+  expect_true(all(is.finite(result$value)))
+  expect_equal(
+    result[metric == "perplexity", ]$value,
+    exp(result[metric == "held_out_nll", ]$value),
+    tolerance = 1e-9
+  )
 })
 
 test_that("held_out_nll is unsupported (with warning) when newdata is NULL", {

@@ -21,8 +21,11 @@ if (getRversion() >= "2.15.1") {
 #' @param control Named list of backend controls forwarded to
 #'   [fit_topic_model()] for every k. Defaults to `list()`.
 #' @param holdout Fraction of documents held out for `held_out_nll` and
-#'   `perplexity` metrics. Must be in `(0, 1)`. Defaults to `0.2`. The
-#'   remaining fraction is used as `training` for coherence metrics.
+#'   `perplexity` metrics. Must be in `[0, 1)`. Defaults to `0.2`. When
+#'   `holdout > 0`, the remaining fraction is used as `training` for coherence
+#'   metrics. When `holdout = 0`, coherence is computed on the full fitting
+#'   input and predictive metrics are marked unsupported because no held-out
+#'   data is available.
 #'   If neither `"held_out_nll"` nor `"perplexity"` is in `metrics` AND
 #'   neither `"coherence_npmi"` nor `"coherence_umass"` is in `metrics`, the
 #'   holdout split is skipped and the full `x` is used for fitting.
@@ -63,9 +66,10 @@ if (getRversion() >= "2.15.1") {
 #' metrics are requested, `x` is split at the document level into a training
 #' shard (`1 - holdout` fraction) and a held-out shard (`holdout` fraction).
 #' The split is random but reproducible when `seed` is supplied. The training
-#' shard is passed to [fit_topic_model()]; both shards are passed to
-#' [evaluate_topic_model()] so that all six metrics can be computed without
-#' additional user input.
+#' shard is passed to [fit_topic_model()] and to [evaluate_topic_model()] for
+#' coherence; the held-out shard is passed to [evaluate_topic_model()] for
+#' predictive metrics. With `holdout = 0`, the full `x` is used for fitting and
+#' coherence, while predictive metrics are reported as unsupported.
 #'
 #' A warning is issued when the number of documents is fewer than 50, because
 #' the holdout shard may be too small for stable predictive metrics.
@@ -121,7 +125,9 @@ select_k_topics <- function(
   ...
 ) {
   # Input validation
-  if (!is.numeric(k_grid) || length(k_grid) == 0L || any(k_grid < 1L)) {
+  if (!is.numeric(k_grid) || length(k_grid) == 0L || anyNA(k_grid) ||
+      any(!is.finite(k_grid)) || any(k_grid < 1L) ||
+      any(k_grid != as.integer(k_grid))) {
     stop("'k_grid' must be a non-empty vector of positive integers.", call. = FALSE)
   }
   k_grid <- as.integer(k_grid)
@@ -139,13 +145,29 @@ select_k_topics <- function(
     ), call. = FALSE)
   }
 
-  if (!is.numeric(holdout) || length(holdout) != 1L ||
+  if (!is.numeric(holdout) || length(holdout) != 1L || is.na(holdout) ||
+      !is.finite(holdout) ||
       holdout < 0 || holdout >= 1) {
     stop("'holdout' must be a single number in [0, 1).", call. = FALSE)
+  }
+  metrics <- .validate_topic_eval_metrics(metrics)
+  if (!is.numeric(top_n) || length(top_n) != 1L || is.na(top_n) ||
+      !is.finite(top_n) || top_n < 1L ||
+      top_n != as.integer(top_n)) {
+    stop("'top_n' must be a single positive integer.", call. = FALSE)
+  }
+  if (!is.numeric(epsilon) || length(epsilon) != 1L || is.na(epsilon) ||
+      !is.finite(epsilon) || epsilon <= 0) {
+    stop("'epsilon' must be a single positive number.", call. = FALSE)
   }
   .validate_parallel_args(ncores, nchunks = length(k_grid))
 
   if (!is.null(seed)) {
+    if (!is.numeric(seed) || length(seed) == 0L || anyNA(seed) ||
+        any(!is.finite(seed)) || any(seed != as.integer(seed))) {
+      stop("'seed' must be NULL, a single integer, or a vector of length(k_grid).",
+           call. = FALSE)
+    }
     if (length(seed) == 1L) {
       seed <- seed + seq(0L, length(k_grid) - 1L)
     }
@@ -156,9 +178,9 @@ select_k_topics <- function(
     seed <- as.integer(seed)
   }
 
-  needs_split <- holdout > 0 &&
-    (any(c("held_out_nll", "perplexity",
-           "coherence_npmi", "coherence_umass") %in% metrics))
+  needs_coherence <- any(c("coherence_npmi", "coherence_umass") %in% metrics)
+  needs_predictive <- any(c("held_out_nll", "perplexity") %in% metrics)
+  needs_split <- holdout > 0 && (needs_predictive || needs_coherence)
 
   n_docs <- nrow(.as_topic_dgCMatrix(x))
   if (needs_split && n_docs < 50L) {
@@ -193,7 +215,7 @@ select_k_topics <- function(
 
     eval_result <- evaluate_topic_model(
       fit,
-      training = if (needs_split) x_train else NULL,
+      training = if (needs_coherence) x_train else NULL,
       newdata  = x_holdout,
       metrics  = metrics,
       top_n    = top_n,
@@ -213,7 +235,7 @@ select_k_topics <- function(
   ncores_int  <- as.integer(ncores)
   export_vars <- c("x_train", "x_holdout", "engine", "model", "method",
                    "control", "metrics", "top_n", "epsilon",
-                   "needs_split", "return_fits")
+                   "needs_coherence", "return_fits")
 
   if (ncores_int <= 1L) {
     raw <- lapply(k_seed_pairs, worker)

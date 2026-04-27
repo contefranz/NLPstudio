@@ -60,22 +60,23 @@ if (getRversion() >= "2.15.1") {
 #' engines. Terms in `fit$vocab` that are absent from `training` contribute
 #' zero to all co-occurrence counts.
 #'
-#' **Diversity** is the proportion of unique terms among all top-`top_n` terms
-#' across topics: `length(unique_top_terms) / (k * top_n)`. A value of 1
-#' means no term appears in more than one topic's top list; a low value
+#' **Diversity** is the proportion of unique terms among all available
+#' top-`top_n` terms across topics:
+#' `length(unique_top_terms) / (k * min(top_n, vocabulary_size))`. A value of
+#' 1 means no term appears in more than one topic's top list; a low value
 #' indicates topics that share high-probability terms.
 #'
 #' **Exclusivity** (per topic `t`) is the mean, over the top-`top_n` terms of
 #' `t`, of `phi[t, w] / sum_j phi[j, w]`. High exclusivity means those terms
 #' are concentrated in that topic rather than spread across topics.
 #'
-#' **Perplexity** and **held-out NLL** are computed using [predict_topic_model()]
-#' to obtain document-topic weights on `newdata`, then combining those weights
-#' with `fit$tww` to reconstruct per-token log-likelihoods. Documents in
-#' `newdata` whose terms are all outside the fitted vocabulary are silently
-#' dropped (they carry no information under the fitted model). Tokens outside
-#' the fitted vocabulary are excluded from the token count, matching the
-#' convention used by `topicmodels::perplexity()`.
+#' **Perplexity** and **held-out NLL** align `newdata` to the fitted vocabulary,
+#' obtain document-topic weights, then combine those weights with `fit$tww` to
+#' reconstruct per-token log-likelihoods. Documents in `newdata` whose terms
+#' are all outside the fitted vocabulary are dropped with a warning (they carry
+#' no information under the fitted model). Tokens outside the fitted vocabulary
+#' are excluded from the token count, matching the convention used by
+#' `topicmodels::perplexity()`.
 #'
 #' @references
 #' Aletras, N., & Stevenson, M. (2013). Evaluating topic coherence using
@@ -130,26 +131,17 @@ evaluate_topic_model <- function(
     stop("'fit' must be an nlp_topic_fit object returned by fit_topic_model().",
          call. = FALSE)
   }
-  if (!is.numeric(top_n) || length(top_n) != 1L || top_n < 1L ||
+  if (!is.numeric(top_n) || length(top_n) != 1L || is.na(top_n) ||
+      !is.finite(top_n) || top_n < 1L ||
       top_n != as.integer(top_n)) {
     stop("'top_n' must be a single positive integer.", call. = FALSE)
   }
-  if (!is.numeric(epsilon) || length(epsilon) != 1L || epsilon <= 0) {
+  if (!is.numeric(epsilon) || length(epsilon) != 1L || is.na(epsilon) ||
+      !is.finite(epsilon) || epsilon <= 0) {
     stop("'epsilon' must be a single positive number.", call. = FALSE)
   }
 
-  valid_metrics <- c("coherence_npmi", "coherence_umass",
-                     "diversity", "exclusivity",
-                     "held_out_nll", "perplexity")
-  metrics <- unique(metrics)
-  bad <- setdiff(metrics, valid_metrics)
-  if (length(bad)) {
-    stop(sprintf(
-      "Unknown metric(s): %s. Valid choices are: %s.",
-      paste(bad, collapse = ", "),
-      paste(valid_metrics, collapse = ", ")
-    ), call. = FALSE)
-  }
+  metrics <- .validate_topic_eval_metrics(metrics)
 
   top_n <- as.integer(top_n)
 
@@ -229,6 +221,36 @@ evaluate_topic_model <- function(
 
 
 #' @keywords internal
+.topic_eval_metrics <- function() {
+  c("coherence_npmi", "coherence_umass",
+    "diversity", "exclusivity",
+    "held_out_nll", "perplexity")
+}
+
+#' @keywords internal
+.validate_topic_eval_metrics <- function(metrics) {
+  valid_metrics <- .topic_eval_metrics()
+
+  if (!is.character(metrics) || length(metrics) == 0L ||
+      anyNA(metrics) || any(!nzchar(metrics))) {
+    stop("'metrics' must be a non-empty character vector of valid metric names.",
+         call. = FALSE)
+  }
+
+  metrics <- unique(metrics)
+  bad <- setdiff(metrics, valid_metrics)
+  if (length(bad)) {
+    stop(sprintf(
+      "Unknown metric(s): %s. Valid choices are: %s.",
+      paste(bad, collapse = ", "),
+      paste(valid_metrics, collapse = ", ")
+    ), call. = FALSE)
+  }
+
+  metrics
+}
+
+#' @keywords internal
 .eval_tww_matrix <- function(fit) {
   if (!is.null(fit$tww)) return(fit$tww)
   tww_dt <- get_tww(fit)
@@ -298,14 +320,16 @@ evaluate_topic_model <- function(
 
 #' @keywords internal
 .metric_diversity <- function(fit, top_n) {
+  tww       <- .eval_tww_matrix(fit)
   top_terms <- get_top_terms(fit, n = top_n, format = "long")
-  k         <- data.table::uniqueN(top_terms$topic)
+  k         <- nrow(tww)
+  top_slots <- min(top_n, ncol(tww))
   n_unique  <- data.table::uniqueN(top_terms$term)
   data.table::data.table(
     metric    = "diversity",
     scope     = "overall",
     topic_id  = NA_character_,
-    value     = n_unique / (k * top_n),
+    value     = n_unique / (k * top_slots),
     supported = TRUE
   )
 }
@@ -335,42 +359,28 @@ evaluate_topic_model <- function(
 
 #' @keywords internal
 .metric_perplexity_nll <- function(fit, newdata, epsilon, which_metrics) {
-  # Get theta (document-topic weights) for newdata via predict_topic_model.
-  # predict_topic_model aligns to fitted vocab and drops empty documents.
-  theta_dt   <- predict_topic_model(fit, newdata, docvars = FALSE)
-  topic_cols <- grep("^Topic", names(theta_dt), value = TRUE)
-  theta_mat  <- as.matrix(theta_dt[, topic_cols, with = FALSE])  # D' x K
-  survived_ids <- theta_dt$doc_id
-
   # phi matrix (K x V)
   phi_mat <- .eval_tww_matrix(fit)  # K x V
   vocab   <- colnames(phi_mat)
 
-  # Align newdata token counts to fitted vocabulary, keep only surviving docs
-  counts_raw <- .as_topic_dgCMatrix(newdata)
-  train_terms <- colnames(counts_raw)
-  all_ids      <- rownames(counts_raw)
-
-  # Filter to survived docs (those not dropped by predict for being empty)
-  doc_filter <- match(survived_ids, all_ids)
-  counts_raw <- counts_raw[doc_filter, , drop = FALSE]
-
-  # Align columns to fitted vocab
-  common_v <- intersect(vocab, train_terms)
-  cv <- match(common_v, vocab)
-  ct <- match(common_v, train_terms)
-  counts_aligned <- Matrix::sparseMatrix(
-    i    = integer(0L),
-    j    = integer(0L),
-    x    = numeric(0L),
-    dims = c(nrow(counts_raw), length(vocab)),
-    dimnames = list(survived_ids, vocab)
+  aligned <- .align_topic_input_to_vocab(
+    newdata,
+    vocab = vocab,
+    vocab_label = "fitted vocabulary",
+    context = "prediction vocabulary alignment"
   )
-  counts_aligned[, cv] <- counts_raw[, ct, drop = FALSE]
+  counts_aligned <- aligned$sparse
+
+  theta_mat <- .predict_topic_matrix(
+    fit = fit,
+    newdata_aligned = aligned,
+    control = list()
+  )
+  theta_mat <- theta_mat[, rownames(phi_mat), drop = FALSE]
 
   # Compute log-likelihood efficiently using only non-zero token positions
   # Converts to triplet form: (i=doc_row, j=term_col, x=count)
-  coo <- Matrix::summary(methods::as(counts_aligned, "dgTMatrix"))
+  coo <- Matrix::summary(methods::as(counts_aligned, "TsparseMatrix"))
   if (nrow(coo) == 0L) {
     stop("'newdata' has no tokens within the fitted vocabulary.", call. = FALSE)
   }

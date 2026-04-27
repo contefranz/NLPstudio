@@ -41,6 +41,26 @@ test_that("select_k_topics rejects empty k_grid", {
   )
 })
 
+test_that("select_k_topics rejects non-finite or fractional k_grid", {
+  skip_if_not_installed("text2vec")
+  dtm <- make_sel_dtm()
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2.5, holdout = 0),
+    "k_grid"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = NA_real_, holdout = 0),
+    "k_grid"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = Inf, holdout = 0),
+    "k_grid"
+  )
+})
+
 test_that("select_k_topics rejects holdout outside [0, 1)", {
   skip_if_not_installed("text2vec")
   dtm <- make_sel_dtm()
@@ -65,6 +85,45 @@ test_that("select_k_topics rejects seed of wrong length", {
                     seed = c(1L, 2L, 3L),   # length 3 != length(k_grid) 2
                     control = fast_control()),
     "seed"
+  )
+})
+
+test_that("select_k_topics rejects invalid metrics, seed, top_n, and epsilon", {
+  skip_if_not_installed("text2vec")
+  dtm <- make_sel_dtm()
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = character(0L), holdout = 0),
+    "metrics"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = NA_character_, holdout = 0),
+    "metrics"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = "diversity", seed = NA_integer_,
+                    holdout = 0),
+    "seed"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = "diversity", seed = 1.5,
+                    holdout = 0),
+    "seed"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = "diversity", top_n = NA_integer_,
+                    holdout = 0),
+    "top_n"
+  )
+  expect_error(
+    select_k_topics(dtm, engine = "text2vec", model = "lda",
+                    k_grid = 2L, metrics = "diversity", epsilon = NA_real_,
+                    holdout = 0),
+    "epsilon"
   )
 })
 
@@ -117,6 +176,22 @@ test_that("engine-agnostic metrics work with holdout = 0", {
   ))
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
+})
+
+test_that("coherence metrics work with holdout = 0", {
+  skip_if_not_installed("text2vec")
+  dtm <- make_sel_dtm()
+  result <- suppressWarnings(select_k_topics(
+    dtm, engine = "text2vec", model = "lda",
+    k_grid  = 2L,
+    metrics = c("coherence_npmi", "coherence_umass"),
+    holdout = 0,
+    seed    = 1L,
+    control = fast_control()
+  ))
+  expect_true(all(result$supported))
+  expect_true(all(is.finite(result$value)))
+  expect_setequal(unique(result$metric), c("coherence_npmi", "coherence_umass"))
 })
 
 test_that("coherence and predictive metrics work with holdout > 0", {

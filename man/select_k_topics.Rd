@@ -42,8 +42,11 @@ to all six metrics supported by \code{\link[=evaluate_topic_model]{evaluate_topi
 \code{\link[=fit_topic_model]{fit_topic_model()}} for every k. Defaults to \code{list()}.}
 
 \item{holdout}{Fraction of documents held out for \code{held_out_nll} and
-\code{perplexity} metrics. Must be in \verb{(0, 1)}. Defaults to \code{0.2}. The
-remaining fraction is used as \code{training} for coherence metrics.
+\code{perplexity} metrics. Must be in \verb{[0, 1)}. Defaults to \code{0.2}. When
+\code{holdout > 0}, the remaining fraction is used as \code{training} for coherence
+metrics. When \code{holdout = 0}, coherence is computed on the full fitting
+input and predictive metrics are marked unsupported because no held-out
+data is available.
 If neither \code{"held_out_nll"} nor \code{"perplexity"} is in \code{metrics} AND
 neither \code{"coherence_npmi"} nor \code{"coherence_umass"} is in \code{metrics}, the
 holdout split is skipped and the full \code{x} is used for fitting.}
@@ -97,9 +100,10 @@ to compare candidate values of k on multiple quality metrics simultaneously.
 metrics are requested, \code{x} is split at the document level into a training
 shard (\code{1 - holdout} fraction) and a held-out shard (\code{holdout} fraction).
 The split is random but reproducible when \code{seed} is supplied. The training
-shard is passed to \code{\link[=fit_topic_model]{fit_topic_model()}}; both shards are passed to
-\code{\link[=evaluate_topic_model]{evaluate_topic_model()}} so that all six metrics can be computed without
-additional user input.
+shard is passed to \code{\link[=fit_topic_model]{fit_topic_model()}} and to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}} for
+coherence; the held-out shard is passed to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}} for
+predictive metrics. With \code{holdout = 0}, the full \code{x} is used for fitting and
+coherence, while predictive metrics are reported as unsupported.
 
 A warning is issued when the number of documents is fewer than 50, because
 the holdout shard may be too small for stable predictive metrics.
