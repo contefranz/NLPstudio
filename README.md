@@ -1,7 +1,7 @@
 
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
-[![release](https://img.shields.io/badge/release-v0.7.0-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.7.0)
+[![release](https://img.shields.io/badge/release-v0.8.0-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.8.0)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -28,7 +28,12 @@ unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/pa
 support for embedded topic models. The package
 standardizes document-topic weights (DTW), topic-word weights (TWW),
 representative-candidate extraction, generic topic prediction for new
-documents, and downstream visualization across those engines.
+documents, and downstream visualization across those engines. v0.8.0 adds a
+model-evaluation layer — `evaluate_topic_model()` for coherence (UMass, NPMI),
+diversity, exclusivity, training NLL/perplexity, and held-out
+NLL/perplexity, returned at aggregate level by default — and
+`select_k_topics()` for automated grid search over candidate values of K with
+an optional holdout split.
 
 Embedded topic models are available through the optional **topicmodels.etm** and
 **torch** packages when those backends are installed locally.

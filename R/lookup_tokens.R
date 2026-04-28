@@ -81,7 +81,12 @@ lookup_tokens <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "
   return(toks)
 }
 
+#' Apply token lookup to one chunk
+#'
+#' Runs quanteda token lookup for a single token chunk.
+#'
 #' @keywords internal
+#' @noRd
 .lookup_chunk <- function(tok_chunk, ...) {
   quanteda::tokens_lookup(tok_chunk, ...)
 }

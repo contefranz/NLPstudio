@@ -2,7 +2,7 @@
 % Please edit documentation in R/topic_model_api.R
 \name{fit_topic_model}
 \alias{fit_topic_model}
-\title{Fit a Topic Model Across Supported Backends}
+\title{Fit a Topic Model Via a Unified API}
 \usage{
 fit_topic_model(
   x,
@@ -38,7 +38,7 @@ Supported combinations are:
 \item \code{engine = "topicmodels.etm"} with \code{model = "etm"}
 }}
 
-\item{k}{Number of topics. Required for all supported models except
+\item{k}{Number of topics \eqn{K}. Required for all supported models except
 \verb{engine = "seededlda", model = "seededlda"}.}
 
 \item{method}{Fitting method within the selected model family.
@@ -109,6 +109,10 @@ or \code{NULL}.
 \item \code{vocab}: fitted vocabulary in term order.
 \item \code{docvars}: compact stored docvars keyed by \code{doc_id}, or \code{NULL}.
 \item \code{doc_data}: stored sidecar document data, or \code{NULL}.
+\item \code{hyperparameters}: standardized topic-model hyperparameters. Use
+\code{\link[=get_topic_hyperparameters]{get_topic_hyperparameters()}} for a stable tabular accessor.
+\item \code{backend_control}: sanitized backend-native model, fit, and optimizer
+controls after defaults and package-level normalization are applied.
 \item \code{call}: matched function call.
 }
 

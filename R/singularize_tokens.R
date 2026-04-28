@@ -104,7 +104,12 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
   return(out)
 }
 
+#' Singularize one token chunk
+#'
+#' Applies token singularization row by row for a chunk of tokens.
+#'
 #' @keywords internal
+#' @noRd
 .singularize_chunk <- function(current_chunk) {
   pkg <- "pluralize"
   singularize_fun <- getExportedValue(pkg, "singularize")
@@ -112,7 +117,12 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
   current_chunk
 }
 
+#' Singularize one token row
+#'
+#' Applies pluralize-backed singularization to one token vector while preserving non-word tokens.
+#'
 #' @keywords internal
+#' @noRd
 .singularize <- function(row) {
   pkg <- "pluralize"
   singularize_fun <- getExportedValue(pkg, "singularize")
