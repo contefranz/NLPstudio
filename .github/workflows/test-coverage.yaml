@@ -50,8 +50,7 @@ jobs:
           plugins: noop
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN != '' }}
-
+          fail_ci_if_error: true
       - name: Upload coverage test artifacts
         if: failure()
         uses: actions/upload-artifact@v4
