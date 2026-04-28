@@ -44,7 +44,7 @@ jobs:
           files: coverage.xml
           flags: r
           name: r-coverage
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           use_oidc: true
 
       - uses: codecov/codecov-action@v5
@@ -53,4 +53,4 @@ jobs:
           files: coverage.xml
           flags: r
           name: r-coverage
-          fail_ci_if_error: true
+          fail_ci_if_error: false
