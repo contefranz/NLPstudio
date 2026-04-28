@@ -24,6 +24,9 @@ test/
 # Output files from R CMD check
 /*.Rcheck/
 
+# Coverage reports
+coverage.xml
+
 # RStudio files
 .Rproj.user/
 
