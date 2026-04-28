@@ -89,7 +89,7 @@ columns:
 \describe{
 \item{\code{k}}{Topic count \eqn{K}.}
 \item{\code{metric}}{Metric name.}
-\item{\code{scope}}{\code{"overall"} or \code{"per_topic"}.}
+\item{\code{level}}{\code{"aggregate"} or \code{"topic"}.}
 \item{\code{topic_id}}{\code{Topic###} or \code{NA} (see \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}).}
 \item{\code{value}}{Numeric metric value.}
 \item{\code{supported}}{Logical; \code{TRUE} when the metric was computed.}

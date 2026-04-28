@@ -148,12 +148,12 @@ test_that("select_k_topics returns nlp_k_selection data.table with correct colum
   ))
   expect_s3_class(result, "nlp_k_selection")
   expect_s3_class(result, "data.table")
-  expect_named(result, c("k", "metric", "scope", "topic_id", "value", "supported"),
+  expect_named(result, c("k", "metric", "level", "topic_id", "value", "supported"),
                ignore.order = FALSE)
   expect_setequal(unique(result$k), 2:3)
 })
 
-test_that("select_k_topics result is ordered by k then metric then scope", {
+test_that("select_k_topics result is ordered by k then metric then level", {
   skip_if_not_installed("text2vec")
   dtm <- make_sel_dtm()
   result <- suppressWarnings(select_k_topics(
@@ -199,7 +199,7 @@ test_that("select_k_topics forwards level to evaluate_topic_model", {
     ),
     "do not have topic-level rows"
   )
-  expect_true(all(result$scope == "per_topic"))
+  expect_true(all(result$level == "topic"))
   expect_setequal(unique(result$metric), c("coherence_umass", "exclusivity"))
 })
 
@@ -323,7 +323,7 @@ test_that("ncores = 1 and ncores = 2 produce identical results", {
   # parallel execution; use a reasonable tolerance
   expect_equal(r1$k,      r2$k)
   expect_equal(r1$metric, r2$metric)
-  expect_equal(r1$scope,  r2$scope)
+  expect_equal(r1$level,  r2$level)
 })
 
 # ---- return_fits ------------------------------------------------------------

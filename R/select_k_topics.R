@@ -1,5 +1,5 @@
 if (getRversion() >= "2.15.1") {
-  utils::globalVariables(c("k"))
+  utils::globalVariables(c("k", "level", "metric", "topic_id"))
 }
 
 #' Select the Number of Topics by Grid Search
@@ -59,7 +59,7 @@ if (getRversion() >= "2.15.1") {
 #'   \describe{
 #'     \item{`k`}{Topic count \eqn{K}.}
 #'     \item{`metric`}{Metric name.}
-#'     \item{`scope`}{`"overall"` or `"per_topic"`.}
+#'     \item{`level`}{`"aggregate"` or `"topic"`.}
 #'     \item{`topic_id`}{`Topic###` or `NA` (see [evaluate_topic_model()]).}
 #'     \item{`value`}{Numeric metric value.}
 #'     \item{`supported`}{Logical; `TRUE` when the metric was computed.}
@@ -277,9 +277,9 @@ select_k_topics <- function(
   # Assemble output
   eval_list <- lapply(raw, `[[`, "eval")
   out <- data.table::rbindlist(eval_list)
-  data.table::setcolorder(out, c("k", "metric", "scope", "topic_id",
+  data.table::setcolorder(out, c("k", "metric", "level", "topic_id",
                                   "value", "supported"))
-  data.table::setorder(out, k, metric, scope, topic_id)
+  data.table::setorder(out, k, metric, level, topic_id)
 
   data.table::setattr(out, "class", c("nlp_k_selection", "data.table", "data.frame"))
 
@@ -332,16 +332,16 @@ print.nlp_k_selection <- function(x, ...) {
   cat("  K grid:  ", paste(k_vals, collapse = ", "), "\n", sep = "")
   cat("  metrics: ", paste(unique(x$metric), collapse = ", "), "\n\n", sep = "")
 
-  # Best K per metric (overall scope only, supported only)
-  overall <- x[x$scope == "overall" & x$supported, ]
-  if (nrow(overall) == 0L) {
-    cat("  No supported overall metrics to summarize.\n")
+  # Best K per metric (aggregate level only, supported only)
+  aggregate_rows <- x[x$level == "aggregate" & x$supported, ]
+  if (nrow(aggregate_rows) == 0L) {
+    cat("  No supported aggregate metrics to summarize.\n")
     return(invisible(x))
   }
 
-  cat("  Best K per metric (overall scope):\n")
-  for (m in unique(overall$metric)) {
-    sub <- overall[overall$metric == m, ]
+  cat("  Best K per metric (aggregate level):\n")
+  for (m in unique(aggregate_rows$metric)) {
+    sub <- aggregate_rows[aggregate_rows$metric == m, ]
     # For coherence: higher is better (closer to 0)
     # For nll / perplexity: lower is better
     # For diversity / exclusivity: higher is better
@@ -369,8 +369,8 @@ print.nlp_k_selection <- function(x, ...) {
 #' Plot Topic-Count Selection Results
 #'
 #' Produces a faceted line chart with \eqn{K} on the x-axis and each metric on its
-#' own facet. Per-topic rows are aggregated to their overall mean before
-#' plotting; only `scope == "overall"` rows are shown.
+#' own facet. Topic-level rows are aggregated to their aggregate mean before
+#' plotting; only `level == "aggregate"` rows are shown.
 #'
 #' @param x An `nlp_k_selection` object returned by [select_k_topics()].
 #' @param metrics Character vector of metrics to include. Defaults to all
@@ -379,13 +379,13 @@ print.nlp_k_selection <- function(x, ...) {
 #' @returns A [ggplot2::ggplot()] object.
 #' @export
 plot.nlp_k_selection <- function(x, metrics = NULL, ...) {
-  plot_data <- x[x$scope == "overall" & x$supported, ]
+  plot_data <- x[x$level == "aggregate" & x$supported, ]
 
   if (!is.null(metrics)) {
     plot_data <- plot_data[plot_data$metric %in% metrics, ]
   }
   if (nrow(plot_data) == 0L) {
-    stop("No supported overall metric rows to plot.", call. = FALSE)
+    stop("No supported aggregate metric rows to plot.", call. = FALSE)
   }
 
   plot_data <- data.table::copy(plot_data)

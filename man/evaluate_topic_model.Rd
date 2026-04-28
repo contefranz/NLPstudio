@@ -51,7 +51,7 @@ no extra data required.}
 }}
 
 \item{level}{Reporting level. One of \code{"aggregate"} (default), \code{"topic"}, or
-\code{"all"}. \code{"aggregate"} returns only corpus-level rows (\code{scope == "overall"}), \code{"topic"} returns only topic-level rows (\code{scope == "per_topic"}), and \code{"all"} returns both.}
+\code{"all"}. \code{"aggregate"} returns only corpus-level rows (\code{level == "aggregate"}), \code{"topic"} returns only topic-level rows (\code{level == "topic"}), and \code{"all"} returns both.}
 
 \item{top_n}{Integer. Number of top terms per topic used by coherence,
 diversity, and exclusivity. Defaults to \code{10L}.}
@@ -63,16 +63,16 @@ computations. Defaults to \code{1e-12}.}
 A \link[data.table:data.table]{data.table} with columns:
 \describe{
 \item{\code{metric}}{Metric name (one of the values in \code{metrics}).}
-\item{\code{scope}}{\code{"overall"} for corpus-level scalars, \code{"per_topic"} for
+\item{\code{level}}{\code{"aggregate"} for corpus-level scalars, \code{"topic"} for
 topic-level values.}
-\item{\code{topic_id}}{\code{Topic###} identifier for \code{"per_topic"} rows;
-\code{NA} for \code{"overall"} rows.}
+\item{\code{topic_id}}{\code{Topic###} identifier for \code{"topic"} rows;
+\code{NA} for \code{"aggregate"} rows.}
 \item{\code{value}}{Numeric metric value. \code{NA} when \code{supported = FALSE}.}
 \item{\code{supported}}{\code{TRUE} when the metric was computed; \code{FALSE} when
 the required data is missing or the metric is unsupported for the
 given engine.}
 }
-Rows are ordered by \code{metric} then \code{scope} then \code{topic_id}.
+Rows are ordered by \code{metric} then \code{level} then \code{topic_id}.
 }
 \description{
 Compute a standardized set of quality metrics for an object returned by

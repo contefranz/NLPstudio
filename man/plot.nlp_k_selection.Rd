@@ -19,6 +19,6 @@ A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} object.
 }
 \description{
 Produces a faceted line chart with \eqn{K} on the x-axis and each metric on its
-own facet. Per-topic rows are aggregated to their overall mean before
-plotting; only \code{scope == "overall"} rows are shown.
+own facet. Topic-level rows are aggregated to their aggregate mean before
+plotting; only \code{level == "aggregate"} rows are shown.
 }

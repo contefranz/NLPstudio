@@ -1,5 +1,5 @@
 if (getRversion() >= "2.15.1") {
-  utils::globalVariables(c("metric", "scope", "supported", "value"))
+  utils::globalVariables(c("level", "metric", "supported", "value"))
 }
 
 #' Evaluate a Fitted Topic Model
@@ -40,9 +40,9 @@ if (getRversion() >= "2.15.1") {
 #'       `exp(train_nll)`. Requires `training`.}
 #'   }
 #' @param level Reporting level. One of `"aggregate"` (default), `"topic"`, or
-#'   `"all"`. `"aggregate"` returns only corpus-level rows (`scope ==
-#'   "overall"`), `"topic"` returns only topic-level rows (`scope ==
-#'   "per_topic"`), and `"all"` returns both.
+#'   `"all"`. `"aggregate"` returns only corpus-level rows (`level ==
+#'   "aggregate"`), `"topic"` returns only topic-level rows (`level ==
+#'   "topic"`), and `"all"` returns both.
 #' @param top_n Integer. Number of top terms per topic used by coherence,
 #'   diversity, and exclusivity. Defaults to `10L`.
 #' @param epsilon Small positive constant for numerical stability in logarithm
@@ -51,16 +51,16 @@ if (getRversion() >= "2.15.1") {
 #' @returns A [data.table][data.table::data.table] with columns:
 #'   \describe{
 #'     \item{`metric`}{Metric name (one of the values in `metrics`).}
-#'     \item{`scope`}{`"overall"` for corpus-level scalars, `"per_topic"` for
+#'     \item{`level`}{`"aggregate"` for corpus-level scalars, `"topic"` for
 #'       topic-level values.}
-#'     \item{`topic_id`}{`Topic###` identifier for `"per_topic"` rows;
-#'       `NA` for `"overall"` rows.}
+#'     \item{`topic_id`}{`Topic###` identifier for `"topic"` rows;
+#'       `NA` for `"aggregate"` rows.}
 #'     \item{`value`}{Numeric metric value. `NA` when `supported = FALSE`.}
 #'     \item{`supported`}{`TRUE` when the metric was computed; `FALSE` when
 #'       the required data is missing or the metric is unsupported for the
 #'       given engine.}
 #'   }
-#'   Rows are ordered by `metric` then `scope` then `topic_id`.
+#'   Rows are ordered by `metric` then `level` then `topic_id`.
 #'
 #' @details
 #' **Coherence** metrics require `training` to be the same corpus used to fit
@@ -200,12 +200,12 @@ evaluate_topic_model <- function(
       coh     <- .compute_coherence(tww_mat, training, top_n, epsilon)
       tids    <- rownames(tww_mat)
       if ("coherence_npmi" %in% coherence_metrics) {
-        results[["coherence_npmi"]] <- .eval_per_topic_with_overall(
+        results[["coherence_npmi"]] <- .eval_topic_with_aggregate(
           "coherence_npmi", tids, coh$npmi
         )
       }
       if ("coherence_umass" %in% coherence_metrics) {
-        results[["coherence_umass"]] <- .eval_per_topic_with_overall(
+        results[["coherence_umass"]] <- .eval_topic_with_aggregate(
           "coherence_umass", tids, coh$umass
         )
       }
@@ -227,7 +227,7 @@ evaluate_topic_model <- function(
   if (length(train_likelihood_metrics)) {
     if (is.null(training)) {
       for (m in train_likelihood_metrics) {
-        results[[m]] <- .eval_unsupported_overall(m)
+        results[[m]] <- .eval_unsupported_aggregate(m)
       }
     } else {
       train_scores <- .metric_likelihood_nll(
@@ -251,7 +251,7 @@ evaluate_topic_model <- function(
   if (length(heldout_likelihood_metrics)) {
     if (is.null(newdata)) {
       for (m in heldout_likelihood_metrics) {
-        results[[m]] <- .eval_unsupported_overall(m)
+        results[[m]] <- .eval_unsupported_aggregate(m)
       }
     } else {
       heldout_scores <- .metric_likelihood_nll(
@@ -268,7 +268,7 @@ evaluate_topic_model <- function(
   }
 
   out <- data.table::rbindlist(results[metrics])
-  data.table::setorder(out, metric, scope, topic_id)
+  data.table::setorder(out, metric, level, topic_id)
   out <- .filter_eval_level(out, level)
   out[]
 }
@@ -349,28 +349,28 @@ evaluate_topic_model <- function(
   character(0L)
 }
 
-#' Build per-topic and aggregate metric rows
+#' Build topic and aggregate metric rows
 #'
-#' Combines topic-level values with their overall mean for metrics that support both levels.
+#' Combines topic-level values with their aggregate mean for metrics that support both levels.
 #'
 #' @keywords internal
 #' @noRd
-.eval_per_topic_with_overall <- function(metric_name, topic_ids, values) {
-  per_topic <- data.table::data.table(
+.eval_topic_with_aggregate <- function(metric_name, topic_ids, values) {
+  topic <- data.table::data.table(
     metric    = metric_name,
-    scope     = "per_topic",
+    level     = "topic",
     topic_id  = topic_ids,
     value     = values,
     supported = TRUE
   )
-  overall <- data.table::data.table(
+  aggregate <- data.table::data.table(
     metric    = metric_name,
-    scope     = "overall",
+    level     = "aggregate",
     topic_id  = NA_character_,
     value     = mean(values, na.rm = TRUE),
     supported = TRUE
   )
-  data.table::rbindlist(list(per_topic, overall))
+  data.table::rbindlist(list(topic, aggregate))
 }
 
 #' Build unsupported evaluation rows
@@ -384,7 +384,7 @@ evaluate_topic_model <- function(
   if (length(topic_ids)) {
     rows[[1L]] <- data.table::data.table(
       metric    = metric_name,
-      scope     = "per_topic",
+      level     = "topic",
       topic_id  = topic_ids,
       value     = NA_real_,
       supported = FALSE
@@ -392,7 +392,7 @@ evaluate_topic_model <- function(
   }
   rows[[length(rows) + 1L]] <- data.table::data.table(
     metric    = metric_name,
-    scope     = "overall",
+    level     = "aggregate",
     topic_id  = NA_character_,
     value     = NA_real_,
     supported = FALSE
@@ -402,14 +402,14 @@ evaluate_topic_model <- function(
 
 #' Build one unsupported aggregate row
 #'
-#' Returns a single unsupported overall row for corpus-level metrics.
+#' Returns a single unsupported aggregate row for corpus-level metrics.
 #'
 #' @keywords internal
 #' @noRd
-.eval_unsupported_overall <- function(metric_name) {
+.eval_unsupported_aggregate <- function(metric_name) {
   data.table::data.table(
     metric    = metric_name,
-    scope     = "overall",
+    level     = "aggregate",
     topic_id  = NA_character_,
     value     = NA_real_,
     supported = FALSE
@@ -423,19 +423,14 @@ evaluate_topic_model <- function(
 #' @keywords internal
 #' @noRd
 .filter_eval_level <- function(out, level) {
-  level <- match.arg(level, c("aggregate", "topic", "all"))
-  if (identical(level, "all")) {
+  requested_level <- match.arg(level, c("aggregate", "topic", "all"))
+  if (identical(requested_level, "all")) {
     return(out[])
   }
 
-  keep_scope <- switch(
-    level,
-    aggregate = "overall",
-    topic = "per_topic"
-  )
-  filtered <- out[scope == keep_scope, ]
+  filtered <- out[out[["level"]] == requested_level, ]
 
-  if (identical(level, "topic")) {
+  if (identical(requested_level, "topic")) {
     omitted <- setdiff(unique(out$metric), unique(filtered$metric))
     if (length(omitted)) {
       warning(
@@ -465,7 +460,7 @@ evaluate_topic_model <- function(
   n_unique  <- data.table::uniqueN(top_terms$term)
   data.table::data.table(
     metric    = "diversity",
-    scope     = "overall",
+    level     = "aggregate",
     topic_id  = NA_character_,
     value     = n_unique / (k * top_slots),
     supported = TRUE
@@ -497,7 +492,7 @@ evaluate_topic_model <- function(
     mean(excl_mat[t, top_idx])
   }, numeric(1L))
 
-  .eval_per_topic_with_overall("exclusivity", rownames(tww), excl_per_topic)
+  .eval_topic_with_aggregate("exclusivity", rownames(tww), excl_per_topic)
 }
 
 #' Compute topic-model likelihood metrics
@@ -570,7 +565,7 @@ evaluate_topic_model <- function(
   if (nll_metric %in% which_metrics) {
     out[[nll_metric]] <- data.table::data.table(
       metric    = nll_metric,
-      scope     = "overall",
+      level     = "aggregate",
       topic_id  = NA_character_,
       value     = nll_per_token,
       supported = TRUE
@@ -579,7 +574,7 @@ evaluate_topic_model <- function(
   if (perplexity_metric %in% which_metrics) {
     out[[perplexity_metric]] <- data.table::data.table(
       metric    = perplexity_metric,
-      scope     = "overall",
+      level     = "aggregate",
       topic_id  = NA_character_,
       value     = exp(nll_per_token),
       supported = TRUE

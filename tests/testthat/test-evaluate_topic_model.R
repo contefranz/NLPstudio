@@ -91,16 +91,16 @@ test_that("evaluate_topic_model returns correct column schema", {
                                   metrics = c("diversity", "exclusivity",
                                               "coherence_npmi"))
   expect_true(data.table::is.data.table(result))
-  expect_named(result, c("metric", "scope", "topic_id", "value", "supported"),
+  expect_named(result, c("metric", "level", "topic_id", "value", "supported"),
                ignore.order = FALSE)
   expect_type(result$metric,    "character")
-  expect_type(result$scope,     "character")
+  expect_type(result$level,     "character")
   expect_type(result$topic_id,  "character")
   expect_type(result$value,     "double")
   expect_type(result$supported, "logical")
 })
 
-test_that("evaluate_topic_model rows are ordered by metric then scope then topic_id", {
+test_that("evaluate_topic_model rows are ordered by metric then level then topic_id", {
   skip_if_not_installed("text2vec")
   fit    <- make_eval_fit()
   dtm    <- make_eval_dtm()
@@ -119,7 +119,7 @@ test_that("evaluate_topic_model defaults to aggregate rows", {
     training = dtm,
     metrics = c("coherence_umass", "diversity", "exclusivity")
   )
-  expect_true(all(result$scope == "overall"))
+  expect_true(all(result$level == "aggregate"))
   expect_setequal(unique(result$metric),
                   c("coherence_umass", "diversity", "exclusivity"))
 })
@@ -135,7 +135,7 @@ test_that("evaluate_topic_model level controls aggregate and topic rows", {
     metrics = c("coherence_umass", "diversity", "exclusivity"),
     level = "aggregate"
   )
-  expect_true(all(aggregate$scope == "overall"))
+  expect_true(all(aggregate$level == "aggregate"))
 
   all_rows <- evaluate_topic_model(
     fit,
@@ -143,8 +143,8 @@ test_that("evaluate_topic_model level controls aggregate and topic rows", {
     metrics = c("coherence_umass", "diversity", "exclusivity"),
     level = "all"
   )
-  expect_true("overall" %in% all_rows$scope)
-  expect_true("per_topic" %in% all_rows$scope)
+  expect_true("aggregate" %in% all_rows$level)
+  expect_true("topic" %in% all_rows$level)
 
   expect_warning(
     topic <- evaluate_topic_model(
@@ -155,19 +155,19 @@ test_that("evaluate_topic_model level controls aggregate and topic rows", {
     ),
     "do not have topic-level rows"
   )
-  expect_true(all(topic$scope == "per_topic"))
+  expect_true(all(topic$level == "topic"))
   expect_setequal(unique(topic$metric), c("coherence_umass", "exclusivity"))
 })
 
 # ---- Diversity metric -------------------------------------------------------
 
-test_that("diversity is a scalar overall in (0, 1]", {
+test_that("diversity is a scalar aggregate in (0, 1]", {
   skip_if_not_installed("text2vec")
   fit    <- make_eval_fit()
   result <- evaluate_topic_model(fit, metrics = "diversity")
   expect_equal(nrow(result), 1L)
   expect_equal(result$metric,   "diversity")
-  expect_equal(result$scope,    "overall")
+  expect_equal(result$level,    "aggregate")
   expect_true(is.na(result$topic_id))
   expect_true(result$value > 0 && result$value <= 1)
   expect_true(result$supported)
@@ -212,19 +212,19 @@ test_that("diversity denominator uses available top-term slots", {
 
 # ---- Exclusivity metric -----------------------------------------------------
 
-test_that("exclusivity returns per_topic and overall rows", {
+test_that("exclusivity returns topic and aggregate rows", {
   skip_if_not_installed("text2vec")
   fit    <- make_eval_fit()
   result <- evaluate_topic_model(fit, metrics = "exclusivity", level = "all")
-  expect_true("per_topic" %in% result$scope)
-  expect_true("overall"   %in% result$scope)
-  per_topic_rows <- result[result$scope == "per_topic", ]
-  expect_equal(nrow(per_topic_rows), 2L)  # k = 2 topics
+  expect_true("topic" %in% result$level)
+  expect_true("aggregate"   %in% result$level)
+  topic_rows <- result[result$level == "topic", ]
+  expect_equal(nrow(topic_rows), 2L)  # k = 2 topics
   expect_true(all(result$supported))
   # Overall must equal mean of per-topic values
-  overall <- result[result$scope == "overall", ]$value
-  per_vals <- result[result$scope == "per_topic", ]$value
-  expect_equal(overall, mean(per_vals), tolerance = 1e-9)
+  aggregate <- result[result$level == "aggregate", ]$value
+  per_vals <- result[result$level == "topic", ]$value
+  expect_equal(aggregate, mean(per_vals), tolerance = 1e-9)
 })
 
 test_that("exclusivity values are in (0, 1]", {
@@ -234,7 +234,7 @@ test_that("exclusivity values are in (0, 1]", {
   expect_true(all(result$value > 0 & result$value <= 1))
 })
 
-test_that("exclusivity overall equals 1 when topics are perfectly exclusive", {
+test_that("exclusivity aggregate equals 1 when topics are perfectly exclusive", {
   skip_if_not_installed("text2vec")
   dtm <- Matrix::sparseMatrix(
     i = c(1, 2, 3, 4), j = c(1, 2, 3, 4), x = rep(1, 4),
@@ -248,12 +248,12 @@ test_that("exclusivity overall equals 1 when topics are perfectly exclusive", {
   fit$tww[2, ] <- c(0, 0, 0.5, 0.5)
 
   result <- evaluate_topic_model(fit, metrics = "exclusivity", top_n = 2L)
-  expect_equal(result[result$scope == "overall", ]$value, 1, tolerance = 1e-9)
+  expect_equal(result[result$level == "aggregate", ]$value, 1, tolerance = 1e-9)
 })
 
 # ---- Coherence metrics ------------------------------------------------------
 
-test_that("coherence returns per_topic and overall rows with training", {
+test_that("coherence returns topic and aggregate rows with training", {
   skip_if_not_installed("text2vec")
   fit    <- make_eval_fit()
   dtm    <- make_eval_dtm()
@@ -263,23 +263,23 @@ test_that("coherence returns per_topic and overall rows with training", {
                                   level   = "all")
   for (m in c("coherence_npmi", "coherence_umass")) {
     sub <- result[result$metric == m, ]
-    expect_true("per_topic" %in% sub$scope)
-    expect_true("overall"   %in% sub$scope)
-    expect_equal(nrow(sub[sub$scope == "per_topic", ]), 2L)
+    expect_true("topic" %in% sub$level)
+    expect_true("aggregate"   %in% sub$level)
+    expect_equal(nrow(sub[sub$level == "topic", ]), 2L)
     expect_true(all(sub$supported))
   }
 })
 
-test_that("coherence overall equals mean of per-topic values", {
+test_that("coherence aggregate equals mean of per-topic values", {
   skip_if_not_installed("text2vec")
   fit    <- make_eval_fit()
   dtm    <- make_eval_dtm()
   for (m in c("coherence_npmi", "coherence_umass")) {
     result   <- evaluate_topic_model(fit, training = dtm, metrics = m, top_n = 3L,
                                      level = "all")
-    per_vals <- result[result$scope == "per_topic", ]$value
-    overall  <- result[result$scope == "overall",   ]$value
-    expect_equal(overall, mean(per_vals, na.rm = TRUE), tolerance = 1e-9)
+    per_vals <- result[result$level == "topic", ]$value
+    aggregate  <- result[result$level == "aggregate",   ]$value
+    expect_equal(aggregate, mean(per_vals, na.rm = TRUE), tolerance = 1e-9)
   }
 })
 
@@ -304,7 +304,7 @@ test_that("coherence UMass matches hand-computed value on symmetric corpus", {
                                   metrics = "coherence_umass", top_n = 3L,
                                   epsilon = 1e-12, level = "all")
   expected_umass <- log(2 / 3)
-  per_vals <- result[result$scope == "per_topic", ]$value
+  per_vals <- result[result$level == "topic", ]$value
   expect_equal(per_vals[1], expected_umass, tolerance = 1e-9)
   expect_equal(per_vals[2], expected_umass, tolerance = 1e-9)
 })
@@ -322,7 +322,7 @@ test_that("coherence is unsupported (with warning) when training is NULL", {
 
 # ---- Likelihood metrics -----------------------------------------------------
 
-test_that("train_perplexity and train_nll return overall scalars with training", {
+test_that("train_perplexity and train_nll return aggregate scalars with training", {
   skip_if_not_installed("text2vec")
   fit <- make_eval_fit()
   dtm <- make_eval_dtm()
@@ -334,7 +334,7 @@ test_that("train_perplexity and train_nll return overall scalars with training",
   for (m in c("train_perplexity", "train_nll")) {
     sub <- result[result$metric == m, ]
     expect_equal(nrow(sub), 1L)
-    expect_equal(sub$scope, "overall")
+    expect_equal(sub$level, "aggregate")
     expect_true(is.na(sub$topic_id))
     expect_true(sub$supported)
     expect_true(is.finite(sub$value) && sub$value > 0)
@@ -366,7 +366,7 @@ test_that("train_nll is unsupported (with warning) when training is NULL", {
   expect_true(is.na(result$value))
 })
 
-test_that("held_out_perplexity and held_out_nll return overall scalars with newdata", {
+test_that("held_out_perplexity and held_out_nll return aggregate scalars with newdata", {
   skip_if_not_installed("text2vec")
   fit     <- make_eval_fit()
   newdata <- make_eval_newdata()
@@ -375,7 +375,7 @@ test_that("held_out_perplexity and held_out_nll return overall scalars with newd
   for (m in c("held_out_perplexity", "held_out_nll")) {
     sub <- result[result$metric == m, ]
     expect_equal(nrow(sub), 1L)
-    expect_equal(sub$scope, "overall")
+    expect_equal(sub$level, "aggregate")
     expect_true(is.na(sub$topic_id))
     expect_true(sub$supported)
     expect_true(is.finite(sub$value) && sub$value > 0)
@@ -448,7 +448,7 @@ test_that("all metrics can be computed together and return correct row count", {
   result  <- evaluate_topic_model(fit, training = dtm, newdata = newdata,
                                    top_n = 3L)
   expect_equal(nrow(result), 8L)
-  expect_true(all(result$scope == "overall"))
+  expect_true(all(result$level == "aggregate"))
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
 })
@@ -461,8 +461,8 @@ test_that("all metrics can return all aggregate and topic rows", {
   result  <- evaluate_topic_model(fit, training = dtm, newdata = newdata,
                                    top_n = 3L, level = "all")
   expect_equal(nrow(result), 14L)
-  expect_true("overall" %in% result$scope)
-  expect_true("per_topic" %in% result$scope)
+  expect_true("aggregate" %in% result$level)
+  expect_true("topic" %in% result$level)
   expect_true(all(result$supported))
   expect_true(all(is.finite(result$value)))
 })
