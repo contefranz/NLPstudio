@@ -78,7 +78,12 @@ calculate_readability = function(x, ncores = 1, nchunks = ncores, socket = c("PS
   return(out_all[])
 }
 
+#' Compute readability for one corpus chunk
+#'
+#' Wraps quanteda.textstats readability computation for a single sequential or parallel chunk.
+#'
 #' @keywords internal
+#' @noRd
 .readability_chunk <- function(corp_chunk, ...) {
   out <- quanteda.textstats::textstat_readability(corp_chunk, ...)
   data.table::as.data.table(out)

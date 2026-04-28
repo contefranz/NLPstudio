@@ -32,7 +32,7 @@ documents, and downstream visualization across those engines. v0.8.0 adds a
 model-evaluation layer — `evaluate_topic_model()` for coherence (UMass, NPMI),
 diversity, exclusivity, training NLL/perplexity, and held-out
 NLL/perplexity, returned at aggregate level by default — and
-`select_k_topics()` for automated grid search over candidate values of k with
+`select_k_topics()` for automated grid search over candidate values of K with
 an optional holdout split.
 
 Embedded topic models are available through the optional **topicmodels.etm** and

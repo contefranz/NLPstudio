@@ -18,7 +18,7 @@ supported metrics present in \code{x}.}
 A \code{\link[ggplot2:ggplot]{ggplot2::ggplot()}} object.
 }
 \description{
-Produces a faceted line chart with k on the x-axis and each metric on its
+Produces a faceted line chart with \eqn{K} on the x-axis and each metric on its
 own facet. Per-topic rows are aggregated to their overall mean before
 plotting; only \code{scope == "overall"} rows are shown.
 }

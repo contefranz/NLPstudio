@@ -9,14 +9,14 @@
    diagnostics for corpus fit, topic structure, coherence, diversity, and
    training or held-out likelihood metrics in a standardized long-format table.
 
-2. Added `select_k_topics()`, a k-grid search helper that fits, evaluates,
+2. Added `select_k_topics()`, a K-grid search helper that fits, evaluates,
    prints, and plots candidate topic models, with optional document-level
    holdout splits and parallel execution.
 
 3. Added `get_topic_hyperparameters()` and stored standardized topic-model
-   hyperparameters on `nlp_topic_fit` objects. The accessor exposes `k`,
-   `alpha`, and `beta` with backend-native source metadata, while sanitized
-   backend controls remain available on the fit object.
+   hyperparameters on `nlp_topic_fit` objects. The accessor exposes topic count
+   (`k`), `alpha`, and `beta` with backend-native source metadata, while
+   sanitized backend controls remain available on the fit object.
 
 ## NLPstudio 0.7.0  (2026-04-24)
 
@@ -232,7 +232,7 @@
    and in combination, non-`data.table` input, duplicate doc-ID warning, no
    temp-column leakage into the input `data.table`) and `warp_lda()` (argument
    routing via positive contracts: valid `fit_control` args, valid `lda_control`
-   args, `k` not overridable via `lda_control`, `return_theta`/`return_phi`
+   args, topic count `k` not overridable via `lda_control`, `return_theta`/`return_phi`
    flags).
 
 3. Test count: 96 (up from 66 in v0.3.x).

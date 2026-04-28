@@ -68,7 +68,12 @@
   res
 }
 
+#' Standardize legacy theta topic names
+#'
+#' Renames legacy theta output columns to `doc_id` plus padded `Topic###` identifiers.
+#'
 #' @keywords internal
+#' @noRd
 set_theta_names <- function(theta_dt) {
   
   data.table::setnames(theta_dt, "rn", "doc_id")

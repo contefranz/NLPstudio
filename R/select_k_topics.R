@@ -6,7 +6,8 @@ if (getRversion() >= "2.15.1") {
 #'
 #' Fit a topic model for each value in a grid of topic counts and evaluate each
 #' fit with [evaluate_topic_model()]. The result provides the information needed
-#' to compare candidate values of k on multiple quality metrics simultaneously.
+#' to compare candidate values of \eqn{K} on multiple quality metrics
+#' simultaneously.
 #'
 #' @param x Document-feature input for fitting. Accepted classes are
 #'   [dgCMatrix-class][Matrix::dgCMatrix-class], [dfm][quanteda::dfm], and
@@ -14,14 +15,15 @@ if (getRversion() >= "2.15.1") {
 #'   document-feature matrix first with e.g. [quanteda::dfm()].
 #' @param engine Backend package. Forwarded to [fit_topic_model()].
 #' @param model Model family. Forwarded to [fit_topic_model()].
-#' @param k_grid Integer vector of topic counts to evaluate. Defaults to
+#' @param k_grid Integer vector of topic counts \eqn{K} to evaluate. Defaults to
 #'   `5:15`.
-#' @param metrics Character vector of metrics to compute for each k. Defaults
-#'   to all eight metrics supported by [evaluate_topic_model()].
+#' @param metrics Character vector of metrics to compute for each candidate
+#'   \eqn{K}. Defaults to all eight metrics supported by
+#'   [evaluate_topic_model()].
 #' @param level Reporting level forwarded to [evaluate_topic_model()]. One of
 #'   `"aggregate"` (default), `"topic"`, or `"all"`.
 #' @param control Named list of backend controls forwarded to
-#'   [fit_topic_model()] for every k. Defaults to `list()`.
+#'   [fit_topic_model()] for every candidate \eqn{K}. Defaults to `list()`.
 #' @param holdout Fraction of documents held out for `held_out_nll` and
 #'   `held_out_perplexity` metrics. Must be in `[0, 1)`. Defaults to `0.2`.
 #'   When `holdout > 0`, the remaining fraction is used as `training` for
@@ -34,13 +36,13 @@ if (getRversion() >= "2.15.1") {
 #'   `metrics`, the holdout split is skipped and the full `x` is used for
 #'   fitting.
 #' @param ncores Number of parallel workers. Defaults to `1L` (sequential).
-#'   Each k is fit independently, so parallelization scales linearly with
-#'   `length(k_grid)`. Uses `"PSOCK"` sockets; `"FORK"` is not used to
+#'   Each candidate \eqn{K} is fit independently, so parallelization scales
+#'   linearly with `length(k_grid)`. Uses `"PSOCK"` sockets; `"FORK"` is not used to
 #'   preserve quanteda/C++ stability.
-#' @param seed Integer vector of length `length(k_grid)` used to seed each k's
-#'   fit reproducibly. If a single integer is supplied it is expanded to a
-#'   length-`length(k_grid)` vector starting from that value. `NULL` means no
-#'   seeding. Defaults to `NULL`.
+#' @param seed Integer vector of length `length(k_grid)` used to seed each
+#'   candidate \eqn{K}'s fit reproducibly. If a single integer is supplied it is
+#'   expanded to a length-`length(k_grid)` vector starting from that value.
+#'   `NULL` means no seeding. Defaults to `NULL`.
 #' @param return_fits Logical. Should the fitted models be returned as an
 #'   attribute of the result? Defaults to `FALSE`. Fits can be large; set
 #'   `TRUE` only when you need to inspect or reuse them.
@@ -55,7 +57,7 @@ if (getRversion() >= "2.15.1") {
 #' @returns An object of class `c("nlp_k_selection", "data.table")` with
 #'   columns:
 #'   \describe{
-#'     \item{`k`}{Number of topics.}
+#'     \item{`k`}{Topic count \eqn{K}.}
 #'     \item{`metric`}{Metric name.}
 #'     \item{`scope`}{`"overall"` or `"per_topic"`.}
 #'     \item{`topic_id`}{`Topic###` or `NA` (see [evaluate_topic_model()]).}
@@ -80,7 +82,7 @@ if (getRversion() >= "2.15.1") {
 #' the holdout shard may be too small for stable predictive metrics.
 #'
 #' **Parallelisation.** Uses `"PSOCK"` sockets. Each worker receives its own
-#' k and seed and runs the full fit + evaluate cycle independently.
+#' \eqn{K} value and seed and runs the full fit + evaluate cycle independently.
 #' The `ncores = 1` path bypasses cluster creation entirely and runs
 #' sequentially.
 #'
@@ -211,7 +213,7 @@ select_k_topics <- function(
     x_holdout <- NULL
   }
 
-  # Per-k worker function
+  # Per-K worker function
   worker <- function(k_seed_pair) {
     k_val  <- k_seed_pair[[1L]]
     k_seed <- k_seed_pair[[2L]]
@@ -237,7 +239,7 @@ select_k_topics <- function(
     list(eval = eval_result, fit = if (return_fits) fit else NULL)
   }
 
-  # Pair each k with its seed
+  # Pair each K value with its seed
   k_seed_pairs <- lapply(seq_along(k_grid), function(i) {
     list(k_grid[i], if (!is.null(seed)) seed[i] else NULL)
   })
@@ -290,7 +292,12 @@ select_k_topics <- function(
   out[]
 }
 
+#' Create a K-selection holdout split
+#'
+#' Splits documents into fitting and held-out shards for `select_k_topics()`.
+#'
 #' @keywords internal
+#' @noRd
 .k_select_split <- function(x, holdout, seed) {
   mat    <- .as_topic_dgCMatrix(x)
   n_docs <- nrow(mat)
@@ -322,17 +329,17 @@ print.nlp_k_selection <- function(x, ...) {
   k_vals <- sort(unique(x$k))
 
   cat("<nlp_k_selection>\n")
-  cat("  k grid:  ", paste(k_vals, collapse = ", "), "\n", sep = "")
+  cat("  K grid:  ", paste(k_vals, collapse = ", "), "\n", sep = "")
   cat("  metrics: ", paste(unique(x$metric), collapse = ", "), "\n\n", sep = "")
 
-  # Best k per metric (overall scope only, supported only)
+  # Best K per metric (overall scope only, supported only)
   overall <- x[x$scope == "overall" & x$supported, ]
   if (nrow(overall) == 0L) {
     cat("  No supported overall metrics to summarize.\n")
     return(invisible(x))
   }
 
-  cat("  Best k per metric (overall scope):\n")
+  cat("  Best K per metric (overall scope):\n")
   for (m in unique(overall$metric)) {
     sub <- overall[overall$metric == m, ]
     # For coherence: higher is better (closer to 0)
@@ -354,14 +361,14 @@ print.nlp_k_selection <- function(x, ...) {
       ties <- sum(sub$value == best_val) > 1L
     }
     tie_flag <- if (ties) " [tied]" else ""
-    cat(sprintf("    %-20s k = %d  (%.4g)%s\n", m, best_k, best_val, tie_flag))
+    cat(sprintf("    %-20s K = %d  (%.4g)%s\n", m, best_k, best_val, tie_flag))
   }
   invisible(x)
 }
 
 #' Plot Topic-Count Selection Results
 #'
-#' Produces a faceted line chart with k on the x-axis and each metric on its
+#' Produces a faceted line chart with \eqn{K} on the x-axis and each metric on its
 #' own facet. Per-topic rows are aggregated to their overall mean before
 #' plotting; only `scope == "overall"` rows are shown.
 #'
@@ -397,7 +404,7 @@ plot.nlp_k_selection <- function(x, metrics = NULL, ...) {
     ) +
     ggplot2::scale_x_continuous(breaks = function(lims) pretty(lims, n = 8L)) +
     ggplot2::labs(
-      x     = "Number of topics (k)",
+      x     = "Number of topics (K)",
       y     = NULL,
       title = "Topic-count selection"
     ) +

@@ -71,14 +71,14 @@
 
 #' Compute per-topic UMass and NPMI coherence
 #'
-#' @param tww_matrix Numeric matrix (k x V): rows = topics, cols = terms,
+#' @param tww_matrix Numeric matrix (\eqn{K} x V): rows = topics, cols = terms,
 #'   values = word probabilities phi. Rownames are Topic### identifiers;
 #'   colnames are vocabulary terms.
 #' @param training Unprocessed training input (dgCMatrix/dfm/DocumentTermMatrix).
 #' @param top_n Number of top terms per topic used for coherence computation.
 #' @param epsilon Small positive constant for numerical stability.
 #' @returns A named list with elements `umass` and `npmi`, each a numeric
-#'   vector of length k (one value per topic).
+#'   vector of length \eqn{K} (one value per topic).
 #' @keywords internal
 #' @noRd
 .compute_coherence <- function(tww_matrix, training, top_n, epsilon) {

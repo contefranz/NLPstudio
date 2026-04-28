@@ -78,7 +78,7 @@ Rows are ordered by \code{metric} then \code{scope} then \code{topic_id}.
 Compute a standardized set of quality metrics for an object returned by
 \code{\link[=fit_topic_model]{fit_topic_model()}}. Metrics are returned in a single long-format
 \link[data.table:data.table]{data.table} so that results from different
-engines and different values of k can be compared directly.
+engines and different values of \eqn{K} can be compared directly.
 }
 \details{
 \strong{Coherence} metrics require \code{training} to be the same corpus used to fit
@@ -89,7 +89,7 @@ zero to all co-occurrence counts.
 
 \strong{Diversity} is the proportion of unique terms among all available
 top-\code{top_n} terms across topics:
-\code{length(unique_top_terms) / (k * min(top_n, vocabulary_size))}. A value of
+\code{length(unique_top_terms) / (K * min(top_n, vocabulary_size))}. A value of
 1 means no term appears in more than one topic's top list; a low value
 indicates topics that share high-probability terms.
 

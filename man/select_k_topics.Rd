@@ -33,17 +33,18 @@ document-feature matrix first with e.g. \code{\link[quanteda:dfm]{quanteda::dfm(
 
 \item{model}{Model family. Forwarded to \code{\link[=fit_topic_model]{fit_topic_model()}}.}
 
-\item{k_grid}{Integer vector of topic counts to evaluate. Defaults to
+\item{k_grid}{Integer vector of topic counts \eqn{K} to evaluate. Defaults to
 \code{5:15}.}
 
-\item{metrics}{Character vector of metrics to compute for each k. Defaults
-to all eight metrics supported by \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}.}
+\item{metrics}{Character vector of metrics to compute for each candidate
+\eqn{K}. Defaults to all eight metrics supported by
+\code{\link[=evaluate_topic_model]{evaluate_topic_model()}}.}
 
 \item{level}{Reporting level forwarded to \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}. One of
 \code{"aggregate"} (default), \code{"topic"}, or \code{"all"}.}
 
 \item{control}{Named list of backend controls forwarded to
-\code{\link[=fit_topic_model]{fit_topic_model()}} for every k. Defaults to \code{list()}.}
+\code{\link[=fit_topic_model]{fit_topic_model()}} for every candidate \eqn{K}. Defaults to \code{list()}.}
 
 \item{holdout}{Fraction of documents held out for \code{held_out_nll} and
 \code{held_out_perplexity} metrics. Must be in \verb{[0, 1)}. Defaults to \code{0.2}.
@@ -58,14 +59,14 @@ If none of \code{"held_out_nll"}, \code{"held_out_perplexity"}, \code{"train_nll
 fitting.}
 
 \item{ncores}{Number of parallel workers. Defaults to \code{1L} (sequential).
-Each k is fit independently, so parallelization scales linearly with
-\code{length(k_grid)}. Uses \code{"PSOCK"} sockets; \code{"FORK"} is not used to
+Each candidate \eqn{K} is fit independently, so parallelization scales
+linearly with \code{length(k_grid)}. Uses \code{"PSOCK"} sockets; \code{"FORK"} is not used to
 preserve quanteda/C++ stability.}
 
-\item{seed}{Integer vector of length \code{length(k_grid)} used to seed each k's
-fit reproducibly. If a single integer is supplied it is expanded to a
-length-\code{length(k_grid)} vector starting from that value. \code{NULL} means no
-seeding. Defaults to \code{NULL}.}
+\item{seed}{Integer vector of length \code{length(k_grid)} used to seed each
+candidate \eqn{K}'s fit reproducibly. If a single integer is supplied it is
+expanded to a length-\code{length(k_grid)} vector starting from that value.
+\code{NULL} means no seeding. Defaults to \code{NULL}.}
 
 \item{return_fits}{Logical. Should the fitted models be returned as an
 attribute of the result? Defaults to \code{FALSE}. Fits can be large; set
@@ -86,7 +87,7 @@ attribute of the result? Defaults to \code{FALSE}. Fits can be large; set
 An object of class \code{c("nlp_k_selection", "data.table")} with
 columns:
 \describe{
-\item{\code{k}}{Number of topics.}
+\item{\code{k}}{Topic count \eqn{K}.}
 \item{\code{metric}}{Metric name.}
 \item{\code{scope}}{\code{"overall"} or \code{"per_topic"}.}
 \item{\code{topic_id}}{\code{Topic###} or \code{NA} (see \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}).}
@@ -99,7 +100,8 @@ If \code{return_fits = TRUE} the fitted models are stored in
 \description{
 Fit a topic model for each value in a grid of topic counts and evaluate each
 fit with \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}. The result provides the information needed
-to compare candidate values of k on multiple quality metrics simultaneously.
+to compare candidate values of \eqn{K} on multiple quality metrics
+simultaneously.
 }
 \details{
 \strong{Holdout split.} When \code{holdout > 0} and either predictive or coherence
@@ -116,7 +118,7 @@ A warning is issued when the number of documents is fewer than 50, because
 the holdout shard may be too small for stable predictive metrics.
 
 \strong{Parallelisation.} Uses \code{"PSOCK"} sockets. Each worker receives its own
-k and seed and runs the full fit + evaluate cycle independently.
+\eqn{K} value and seed and runs the full fit + evaluate cycle independently.
 The \code{ncores = 1} path bypasses cluster creation entirely and runs
 sequentially.
 }

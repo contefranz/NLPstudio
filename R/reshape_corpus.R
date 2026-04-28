@@ -71,7 +71,12 @@ reshape_corpus <- function(x, to = "sentences", ncores = 1, nchunks = ncores, so
   return(corp)
 }
 
+#' Reshape one corpus chunk
+#'
+#' Converts one corpus chunk to the requested quanteda text unit.
+#'
 #' @keywords internal
+#' @noRd
 .reshape_chunk <- function(corp_chunk, to, ...) {
   quanteda::corpus_reshape(corp_chunk, to = to, ...)
 }

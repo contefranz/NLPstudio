@@ -38,7 +38,7 @@ Supported combinations are:
 \item \code{engine = "topicmodels.etm"} with \code{model = "etm"}
 }}
 
-\item{k}{Number of topics. Required for all supported models except
+\item{k}{Number of topics \eqn{K}. Required for all supported models except
 \verb{engine = "seededlda", model = "seededlda"}.}
 
 \item{method}{Fitting method within the selected model family.

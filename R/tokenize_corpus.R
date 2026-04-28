@@ -133,7 +133,12 @@ tokenize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK",
   return(toks)
 }
 
+#' Tokenize one corpus chunk
+#'
+#' Runs quanteda tokenization on a single corpus chunk.
+#'
 #' @keywords internal
+#' @noRd
 .tokenize_chunk <- function(corp_chunk, ...) {
   quanteda::tokens(corp_chunk, ...)
 }

@@ -109,7 +109,12 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
   return(out[])
 }
 
+#' Parse one corpus chunk
+#'
+#' Runs spaCy parsing on a single corpus chunk with caller-supplied parser options.
+#'
 #' @keywords internal
+#' @noRd
 .parse_chunk <- function(corp_chunk, ...) {
   parsing_func <- getExportedValue("spacyr", "spacy_parse")
   out <- parsing_func(corp_chunk, ...)

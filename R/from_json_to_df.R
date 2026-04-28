@@ -163,7 +163,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
 }
 
 
+#' Read JSON files in chunks
+#'
+#' Splits JSON input paths into chunks and reads each chunk with the configured backend.
+#'
 #' @keywords internal
+#' @noRd
 .chunked_read_json <- function(files, ncores, chunk_size, socket) {
   chunks <- split(files, ceiling(seq_along(files) / chunk_size))
   out_list <- vector("list", 0L)
@@ -177,7 +182,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   out_list
 }
 
+#' Read one JSON chunk
+#'
+#' Reads a chunk of JSON files sequentially or through the package parallel helper.
+#'
 #' @keywords internal
+#' @noRd
 .parallel_read_json <- function(files, ncores, socket) {
   # Sequential fast-path: read each file directly, no cluster overhead
   if (ncores < 2L || length(files) <= 1L) {
@@ -199,7 +209,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   unlist(nested, recursive = FALSE)
 }
 
+#' Melt normalized JSON records in parallel
+#'
+#' Reshapes normalized JSON records by chunk and combines the melted outputs.
+#'
 #' @keywords internal
+#' @noRd
 .parallel_melt <- function(temp, ncores, socket, what, drop_empty_text) {
   # Sequential fast-path
   if (ncores < 2L || length(temp) <= 1L) {
@@ -216,7 +231,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
                 drop_empty_text = drop_empty_text)
 }
 
+#' Melt one normalized JSON record table
+#'
+#' Converts one normalized JSON table into the requested long document structure.
+#'
 #' @keywords internal
+#' @noRd
 .melt_json_record <- function(dt, what, drop_empty_text) {
   resolved_what <- .infer_json_family(dt, what)
   dt <- .normalize_json_dt(dt, resolved_what)
@@ -238,7 +258,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   list(data = melted, skipped = FALSE)
 }
 
+#' List loan-measure JSON fields
+#'
+#' Returns measure field names used to detect loan-measure JSON records.
+#'
 #' @keywords internal
+#' @noRd
 .loan_measure_vars <- function() {
   c(
     "definitions",
@@ -254,7 +279,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   )
 }
 
+#' Infer JSON record family
+#'
+#' Determines whether normalized JSON records contain filing text or loan-measure data.
+#'
 #' @keywords internal
+#' @noRd
 .infer_json_family <- function(dt, what) {
   if (!is.null(what)) {
     return(what)
@@ -282,7 +312,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   "10-K"
 }
 
+#' Select measure variables for JSON reshaping
+#'
+#' Maps the requested JSON output family to the relevant normalized column names.
+#'
 #' @keywords internal
+#' @noRd
 .measure_vars_for_what <- function(nms, what) {
   if (what == "10-K") {
     return(grep("^(item_|section_)", nms, value = TRUE))
@@ -299,7 +334,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   character()
 }
 
+#' Normalize raw JSON tables
+#'
+#' Converts raw parsed JSON records into a consistent data.table shape before reshaping.
+#'
 #' @keywords internal
+#' @noRd
 .normalize_json_dt <- function(dt, what) {
   dt <- data.table::copy(dt)
   if (what == "loan") {
@@ -318,7 +358,12 @@ from_json_to_df <- function(files, ncores = 1, nchunks = ncores,
   dt
 }
 
+#' Postprocess flattened JSON output
+#'
+#' Applies final row filtering and column ordering to flattened JSON results.
+#'
 #' @keywords internal
+#' @noRd
 .postprocess_json_dt <- function(out, drop_late_filers) {
   if (!nrow(out)) {
     return(out)

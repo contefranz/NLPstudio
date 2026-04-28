@@ -80,7 +80,12 @@ summarize_corpus <- function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK"
   return(out)
 }
 
+#' Summarize one corpus chunk
+#'
+#' Runs quanteda summary on a single corpus chunk.
+#'
 #' @keywords internal
+#' @noRd
 .summarize_chunk <- function(corp_chunk, ...) {
   out <- quanteda.textstats::textstat_summary(corp_chunk, ...)
   data.table::setDT(out)

@@ -7,7 +7,7 @@ if (getRversion() >= "2.15.1") {
 #' Compute a standardized set of quality metrics for an object returned by
 #' [fit_topic_model()]. Metrics are returned in a single long-format
 #' [data.table][data.table::data.table] so that results from different
-#' engines and different values of k can be compared directly.
+#' engines and different values of \eqn{K} can be compared directly.
 #'
 #' @param fit An object of class `nlp_topic_fit` returned by [fit_topic_model()].
 #' @param training The document-feature matrix used to train `fit`. Required for
@@ -71,7 +71,7 @@ if (getRversion() >= "2.15.1") {
 #'
 #' **Diversity** is the proportion of unique terms among all available
 #' top-`top_n` terms across topics:
-#' `length(unique_top_terms) / (k * min(top_n, vocabulary_size))`. A value of
+#' `length(unique_top_terms) / (K * min(top_n, vocabulary_size))`. A value of
 #' 1 means no term appears in more than one topic's top list; a low value
 #' indicates topics that share high-probability terms.
 #'
@@ -274,7 +274,12 @@ evaluate_topic_model <- function(
 }
 
 
+#' List supported topic-evaluation metrics
+#'
+#' Returns the canonical metric names accepted by `evaluate_topic_model()`.
+#'
 #' @keywords internal
+#' @noRd
 .topic_eval_metrics <- function() {
   c("coherence_npmi", "coherence_umass",
     "diversity", "exclusivity",
@@ -282,7 +287,12 @@ evaluate_topic_model <- function(
     "train_nll", "train_perplexity")
 }
 
+#' Validate topic-evaluation metric names
+#'
+#' Checks metric input and expands aliases before evaluation starts.
+#'
 #' @keywords internal
+#' @noRd
 .validate_topic_eval_metrics <- function(metrics) {
   valid_metrics <- .topic_eval_metrics()
 
@@ -313,7 +323,12 @@ evaluate_topic_model <- function(
   metrics
 }
 
+#' Extract topic-word weights for evaluation
+#'
+#' Returns the fitted topic-word matrix needed by topic-structure metrics.
+#'
 #' @keywords internal
+#' @noRd
 .eval_tww_matrix <- function(fit) {
   if (!is.null(fit$tww)) return(fit$tww)
   tww_dt <- get_tww(fit)
@@ -322,14 +337,24 @@ evaluate_topic_model <- function(
   mat
 }
 
+#' Return fitted topic identifiers for evaluation
+#'
+#' Gets topic IDs from the topic-word matrix so evaluation rows use stable labels.
+#'
 #' @keywords internal
+#' @noRd
 .eval_topic_ids <- function(fit) {
   if (!is.null(fit$tww)) return(rownames(fit$tww))
   if (!is.null(fit$dtw)) return(colnames(fit$dtw))
   character(0L)
 }
 
+#' Build per-topic and aggregate metric rows
+#'
+#' Combines topic-level values with their overall mean for metrics that support both levels.
+#'
 #' @keywords internal
+#' @noRd
 .eval_per_topic_with_overall <- function(metric_name, topic_ids, values) {
   per_topic <- data.table::data.table(
     metric    = metric_name,
@@ -348,7 +373,12 @@ evaluate_topic_model <- function(
   data.table::rbindlist(list(per_topic, overall))
 }
 
+#' Build unsupported evaluation rows
+#'
+#' Returns `supported = FALSE` rows for metrics that cannot be computed from the supplied inputs.
+#'
 #' @keywords internal
+#' @noRd
 .eval_unsupported <- function(metric_name, topic_ids = character(0L)) {
   rows <- list()
   if (length(topic_ids)) {
@@ -370,7 +400,12 @@ evaluate_topic_model <- function(
   data.table::rbindlist(rows)
 }
 
+#' Build one unsupported aggregate row
+#'
+#' Returns a single unsupported overall row for corpus-level metrics.
+#'
 #' @keywords internal
+#' @noRd
 .eval_unsupported_overall <- function(metric_name) {
   data.table::data.table(
     metric    = metric_name,
@@ -381,7 +416,12 @@ evaluate_topic_model <- function(
   )
 }
 
+#' Filter evaluation rows by level
+#'
+#' Keeps aggregate rows, topic rows, or both according to the requested reporting level.
+#'
 #' @keywords internal
+#' @noRd
 .filter_eval_level <- function(out, level) {
   level <- match.arg(level, c("aggregate", "topic", "all"))
   if (identical(level, "all")) {
@@ -411,7 +451,12 @@ evaluate_topic_model <- function(
   filtered[]
 }
 
+#' Compute topic diversity
+#'
+#' Measures the share of unique terms among available top terms across topics.
+#'
 #' @keywords internal
+#' @noRd
 .metric_diversity <- function(fit, top_n) {
   tww       <- .eval_tww_matrix(fit)
   top_terms <- get_top_terms(fit, n = top_n, format = "long")
@@ -427,7 +472,12 @@ evaluate_topic_model <- function(
   )
 }
 
+#' Compute topic exclusivity
+#'
+#' Computes STM-style exclusivity scores from the fitted topic-word matrix.
+#'
 #' @keywords internal
+#' @noRd
 .metric_exclusivity <- function(fit, top_n) {
   tww <- .eval_tww_matrix(fit)
   k   <- nrow(tww)
@@ -450,7 +500,12 @@ evaluate_topic_model <- function(
   .eval_per_topic_with_overall("exclusivity", rownames(tww), excl_per_topic)
 }
 
+#' Compute topic-model likelihood metrics
+#'
+#' Computes mean negative log-likelihood and perplexity on training or held-out data.
+#'
 #' @keywords internal
+#' @noRd
 .metric_likelihood_nll <- function(fit, data, epsilon, which_metrics,
                                    sample = c("training", "heldout")) {
   sample <- match.arg(sample)
@@ -533,7 +588,12 @@ evaluate_topic_model <- function(
   out
 }
 
+#' Resolve training document-topic weights
+#'
+#' Uses cached fitted weights when aligned, otherwise predicts training weights from the fitted model.
+#'
 #' @keywords internal
+#' @noRd
 .training_topic_matrix <- function(fit, training_aligned) {
   if (!is.null(fit$dtw)) {
     theta_mat <- fit$dtw
