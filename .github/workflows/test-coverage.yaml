@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   test-coverage:
@@ -29,28 +28,33 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr
+          extra-packages: any::covr, any::xml2
           needs: coverage
 
       - name: Generate coverage report
         run: |
-          cov <- covr::package_coverage(type = "tests")
-          covr::to_cobertura(cov, filename = "coverage.xml")
+          cov <- covr::package_coverage(
+            type = "tests",
+            quiet = FALSE,
+            clean = FALSE,
+            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+          )
+          covr::to_cobertura(cov)
         shell: Rscript {0}
 
-      - uses: codecov/codecov-action@v5
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+      - uses: codecov/codecov-action@v6
         with:
-          files: coverage.xml
+          files: ./cobertura.xml
           flags: r
           name: r-coverage
-          fail_ci_if_error: false
-          use_oidc: true
+          plugins: noop
+          disable_search: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN != '' }}
 
-      - uses: codecov/codecov-action@v5
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+      - name: Upload coverage test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          files: coverage.xml
-          flags: r
-          name: r-coverage
-          fail_ci_if_error: false
+          name: coverage-test-failures
+          path: ${{ runner.temp }}/package

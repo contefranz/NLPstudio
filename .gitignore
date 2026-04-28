@@ -26,6 +26,7 @@ test/
 
 # Coverage reports
 coverage.xml
+cobertura.xml
 
 # RStudio files
 .Rproj.user/
