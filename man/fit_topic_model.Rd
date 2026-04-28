@@ -109,6 +109,10 @@ or \code{NULL}.
 \item \code{vocab}: fitted vocabulary in term order.
 \item \code{docvars}: compact stored docvars keyed by \code{doc_id}, or \code{NULL}.
 \item \code{doc_data}: stored sidecar document data, or \code{NULL}.
+\item \code{hyperparameters}: standardized topic-model hyperparameters. Use
+\code{\link[=get_topic_hyperparameters]{get_topic_hyperparameters()}} for a stable tabular accessor.
+\item \code{backend_control}: sanitized backend-native model, fit, and optimizer
+controls after defaults and package-level normalization are applied.
 \item \code{call}: matched function call.
 }
 

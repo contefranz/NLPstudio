@@ -110,7 +110,9 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
   expect_equal(class(fit), c("nlp_topic_fit", "list"))
   expect_named(
     fit,
-    c("engine", "model", "method", "model_object", "dtw", "tww", "doc_ids", "vocab", "docvars", "doc_data", "call")
+    c("engine", "model", "method", "model_object", "dtw", "tww",
+      "doc_ids", "vocab", "docvars", "doc_data", "hyperparameters",
+      "backend_control", "call")
   )
   expect_equal(fit$engine, "text2vec")
   expect_equal(fit$model, "lda")
@@ -126,6 +128,8 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
   expect_equal(fit$docvars$year, 2020:2025)
   expect_equal(fit$docvars$group, c("a", "a", "b", "b", "c", "c"))
   expect_null(fit$doc_data)
+  expect_true(data.table::is.data.table(fit$hyperparameters))
+  expect_named(fit$backend_control, c("model", "fit", "optimizer"))
 
   expect_equal(
     unname(rowSums(fit$dtw)),
@@ -137,6 +141,62 @@ test_that("fit_topic_model returns lean standardized text2vec output", {
     rep(1, nrow(fit$tww)),
     tolerance = 1e-8
   )
+})
+
+test_that("get_topic_hyperparameters returns standardized text2vec rows", {
+  skip_if_not_installed("text2vec")
+  fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    control = list(
+      model = list(doc_topic_prior = 0.2, topic_word_prior = 0.03),
+      fit = list(n_iter = 25, progressbar = FALSE)
+    )
+  )
+
+  hp <- get_topic_hyperparameters(fit)
+  expect_true(data.table::is.data.table(hp))
+  expect_named(hp, c("parameter", "value", "source_section", "source_name"))
+  expect_equal(hp$parameter, c("k", "alpha", "beta"))
+  expect_equal(hp[parameter == "k", value][[1L]], 2)
+  expect_equal(hp[parameter == "alpha", value][[1L]], 0.2)
+  expect_equal(hp[parameter == "beta", value][[1L]], 0.03)
+  expect_equal(hp[parameter == "alpha", source_section], "model")
+  expect_equal(hp[parameter == "alpha", source_name], "doc_topic_prior")
+  expect_equal(hp[parameter == "beta", source_section], "model")
+  expect_equal(hp[parameter == "beta", source_name], "topic_word_prior")
+
+  expect_equal(fit$backend_control$model$doc_topic_prior, 0.2)
+  expect_equal(fit$backend_control$model$topic_word_prior, 0.03)
+  expect_false("x" %in% names(fit$backend_control$fit))
+})
+
+test_that("get_topic_hyperparameters rejects non-topic fits", {
+  expect_error(get_topic_hyperparameters(list()), "fit_topic_model")
+})
+
+test_that("get_topic_hyperparameters warns for legacy topic fits", {
+  skip_if_not_installed("text2vec")
+  fit <- fit_topic_model(
+    make_topic_dtm(),
+    engine = "text2vec",
+    model = "lda",
+    k = 2,
+    control = list(fit = list(n_iter = 25, progressbar = FALSE))
+  )
+  fit$hyperparameters <- NULL
+
+  expect_warning(
+    hp <- get_topic_hyperparameters(fit),
+    "does not contain stored hyperparameters"
+  )
+  expect_equal(hp[parameter == "k", value][[1L]], 2)
+  expect_equal(hp[parameter == "k", source_section], "fit_object")
+  expect_equal(hp[parameter == "k", source_name], "dtw")
+  expect_true(is.na(hp[parameter == "alpha", value][[1L]]))
+  expect_true(is.na(hp[parameter == "beta", value][[1L]]))
 })
 
 test_that("predict_topic_model aligns new vocabulary and optionally joins docvars/doc_data", {

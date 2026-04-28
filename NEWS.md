@@ -1,33 +1,22 @@
 # NLPstudio News
 
-## NLPstudio 0.8.0  (2026-04-26)
+## NLPstudio 0.8.0  (2026-04-28)
 
 ### NEW FEATURES
 
-1. Added `evaluate_topic_model()`, a unified quality-evaluation interface for
-   any `nlp_topic_fit` object regardless of backend engine. Metrics covering
-   intrinsic corpus statistics, topic structure, and held-out predictive
-   performance are computed through a single call and returned in a
-   standardized long-format `data.table` (`metric`, `scope`, `topic_id`,
-   `value`, `supported`). When the data required for a metric is absent the
-   result is marked `supported = FALSE` rather than silently producing invalid
-   values.
+1. Added `evaluate_topic_model()`, a unified interface for evaluating fitted
+   topic models across engines. It reports aggregate and optional topic-level
+   diagnostics for corpus fit, topic structure, coherence, diversity, and
+   training or held-out likelihood metrics in a standardized long-format table.
 
-2. `evaluate_topic_model()` now distinguishes training likelihood metrics
-   (`train_nll`, `train_perplexity`) from held-out likelihood metrics
-   (`held_out_nll`, `held_out_perplexity`). The old ambiguous `perplexity`
-   metric name is retained as a deprecated alias for `held_out_perplexity`.
+2. Added `select_k_topics()`, a k-grid search helper that fits, evaluates,
+   prints, and plots candidate topic models, with optional document-level
+   holdout splits and parallel execution.
 
-3. `evaluate_topic_model()` and `select_k_topics()` gain a `level` argument.
-   The default `level = "aggregate"` returns only overall rows, while
-   `level = "topic"` returns topic-level diagnostics and `level = "all"`
-   returns both.
-
-4. Added `select_k_topics()`, a k-grid search helper that fits and evaluates a
-   topic model for each value in `k_grid`, with an optional document-level
-   holdout split and PSOCK parallel execution. Returns an `nlp_k_selection`
-   object with `print` and `plot` S3 methods (faceted line chart, one panel per
-   metric).
+3. Added `get_topic_hyperparameters()` and stored standardized topic-model
+   hyperparameters on `nlp_topic_fit` objects. The accessor exposes `k`,
+   `alpha`, and `beta` with backend-native source metadata, while sanitized
+   backend controls remain available on the fit object.
 
 ## NLPstudio 0.7.0  (2026-04-24)
 

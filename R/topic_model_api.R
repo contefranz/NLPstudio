@@ -88,6 +88,10 @@ if (getRversion() >= "2.15.1") {
 #'   - `vocab`: fitted vocabulary in term order.
 #'   - `docvars`: compact stored docvars keyed by `doc_id`, or `NULL`.
 #'   - `doc_data`: stored sidecar document data, or `NULL`.
+#'   - `hyperparameters`: standardized topic-model hyperparameters. Use
+#'     [get_topic_hyperparameters()] for a stable tabular accessor.
+#'   - `backend_control`: sanitized backend-native model, fit, and optimizer
+#'     controls after defaults and package-level normalization are applied.
 #'   - `call`: matched function call.
 #'
 #'   Users access these components with `$`, for example `fit$dtw` or
@@ -383,6 +387,8 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
       include_text = TRUE,
       arg_name = "doc_data"
     ),
+    hyperparameters = fit_result$hyperparameters,
+    backend_control = fit_result$backend_control,
     call = call
   )
 }
@@ -966,7 +972,8 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
 
 #' @keywords internal
 .new_nlp_topic_fit <- function(engine, model, method, model_object, dtw, tww,
-                               doc_ids, vocab, docvars, doc_data, call) {
+                               doc_ids, vocab, docvars, doc_data,
+                               hyperparameters, backend_control, call) {
   structure(
     list(
       engine = engine,
@@ -979,10 +986,89 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
       vocab = vocab,
       docvars = docvars,
       doc_data = doc_data,
+      hyperparameters = hyperparameters,
+      backend_control = backend_control,
       call = call
     ),
     class = c("nlp_topic_fit", "list")
   )
+}
+
+#' Extract Topic-Model Hyperparameters
+#'
+#' Return standardized hyperparameters stored on an object returned by
+#' [fit_topic_model()]. The accessor uses package-level names so users do not
+#' need to remember backend-specific argument names.
+#'
+#' @param x An object returned by [fit_topic_model()].
+#'
+#' @returns A [data.table][data.table::data.table] with columns:
+#'   \describe{
+#'     \item{`parameter`}{Standardized parameter name: `"k"`, `"alpha"`, or
+#'       `"beta"`.}
+#'     \item{`value`}{Stored parameter value. Scalar symmetric priors are shown
+#'       as scalars; non-scalar priors are preserved as vectors. `NA` means the
+#'       parameter is not available or not applicable for the fitted model.}
+#'     \item{`source_section`}{Where the value came from: e.g. `"argument"`,
+#'       `"model"`, `"fit"`, or `"model_object"`.}
+#'     \item{`source_name`}{Backend-native argument, slot, or field name.}
+#'   }
+#'
+#' @details
+#' `alpha` is the document-topic prior and `beta` is the topic-word prior, using
+#' the notation common in LDA. Engines that do not expose an equivalent prior
+#' return `NA` for that row instead of dropping it, so the table has a stable
+#' shape across engines. Objects created before hyperparameters were stored on
+#' `nlp_topic_fit` objects return a best-effort fallback with a warning; refit
+#' the model with the current package version to recover backend-native
+#' hyperparameter sources.
+#'
+#' @seealso [fit_topic_model()]
+#'
+#' @examplesIf requireNamespace("text2vec", quietly = TRUE)
+#' dtm <- methods::as(
+#'   Matrix::Matrix(
+#'     matrix(c(1, 0, 1,  1, 1, 0,  0, 1, 1,  1, 1, 1),
+#'            nrow = 4, byrow = TRUE),
+#'     sparse = TRUE
+#'   ),
+#'   "dgCMatrix"
+#' )
+#' colnames(dtm) <- paste0("term", 1:3)
+#' fit <- fit_topic_model(
+#'   dtm, engine = "text2vec", model = "lda", k = 2,
+#'   control = list(
+#'     model = list(doc_topic_prior = 0.1, topic_word_prior = 0.01),
+#'     fit = list(n_iter = 25, progressbar = FALSE)
+#'   )
+#' )
+#' get_topic_hyperparameters(fit)
+#'
+#' @export
+get_topic_hyperparameters <- function(x) {
+  if (!inherits(x, "nlp_topic_fit")) {
+    stop("x must be an object returned by fit_topic_model().", call. = FALSE)
+  }
+
+  hp <- x$hyperparameters
+  if (is.null(hp)) {
+    warning(
+      "x does not contain stored hyperparameters; returning a best-effort ",
+      "fallback. Refit with the current package version to recover ",
+      "backend-native hyperparameter sources.",
+      call. = FALSE
+    )
+    k_info <- .fit_topic_count_source(x)
+    hp <- .topic_hyperparameters_table(
+      k = k_info$value,
+      alpha = NA_real_,
+      beta = NA_real_,
+      sources = list(k = list(section = k_info$section, name = k_info$name))
+    )
+  }
+
+  out <- data.table::as.data.table(hp)
+  data.table::copy(out[])
 }
 
 #' Print a Compact Summary of a Topic-Model Fit
@@ -1229,6 +1315,233 @@ print.nlp_topic_fit <- function(x, ...) {
 }
 
 #' @keywords internal
+.topic_hyperparameters_table <- function(k = NA_real_, alpha = NA_real_,
+                                         beta = NA_real_, sources = list()) {
+  params <- c("k", "alpha", "beta")
+  values <- list(
+    .normalize_hyperparameter_value(k),
+    .normalize_hyperparameter_value(alpha),
+    .normalize_hyperparameter_value(beta)
+  )
+
+  source_section <- vapply(params, function(p) {
+    src <- sources[[p]]
+    if (is.null(src) || is.null(src$section)) {
+      return(NA_character_)
+    }
+    as.character(src$section)[1L]
+  }, character(1L))
+
+  source_name <- vapply(params, function(p) {
+    src <- sources[[p]]
+    if (is.null(src) || is.null(src$name)) {
+      return(NA_character_)
+    }
+    as.character(src$name)[1L]
+  }, character(1L))
+
+  data.table::data.table(
+    parameter = params,
+    value = I(values),
+    source_section = source_section,
+    source_name = source_name
+  )
+}
+
+#' @keywords internal
+.normalize_hyperparameter_value <- function(x) {
+  if (is.null(x) || length(x) == 0L) {
+    return(NA_real_)
+  }
+  if (!is.numeric(x) && !is.integer(x)) {
+    return(x)
+  }
+
+  x <- unname(as.numeric(x))
+  if (length(x) == 1L) {
+    return(x)
+  }
+  finite <- is.finite(x)
+  if (all(finite) && length(unique(x)) == 1L) {
+    return(x[1L])
+  }
+  x
+}
+
+#' @keywords internal
+.topicmodels_hyperparameters <- function(model_object, model, k, method) {
+  if (!identical(model, "lda")) {
+    return(.topic_hyperparameters_table(
+      k = k,
+      alpha = NA_real_,
+      beta = NA_real_,
+      sources = list(k = list(section = "argument", name = "k"))
+    ))
+  }
+
+  beta <- NA_real_
+  beta_source <- NULL
+  if (identical(method, "Gibbs") && "delta" %in% methods::slotNames(model_object@control)) {
+    beta <- model_object@control@delta
+    beta_source <- list(section = "fit", name = "delta")
+  }
+
+  sources <- list(
+    k = list(section = "argument", name = "k"),
+    alpha = list(section = "model_object", name = "alpha")
+  )
+  if (!is.null(beta_source)) {
+    sources$beta <- beta_source
+  }
+
+  .topic_hyperparameters_table(
+    k = k,
+    alpha = model_object@alpha,
+    beta = beta,
+    sources = sources
+  )
+}
+
+#' @keywords internal
+.seededlda_default_fit_args <- function(model, k) {
+  switch(
+    model,
+    lda = list(
+      k = k,
+      max_iter = 2000L,
+      auto_iter = FALSE,
+      alpha = 0.5,
+      beta = 0.1,
+      gamma = 0,
+      adjust_alpha = 0,
+      update_model = FALSE,
+      batch_size = 1L
+    ),
+    seqlda = list(
+      k = k,
+      max_iter = 2000L,
+      auto_iter = FALSE,
+      alpha = 0.5,
+      beta = 0.1,
+      batch_size = 1L
+    ),
+    seededlda = list(
+      levels = 1L,
+      valuetype = "glob",
+      case_insensitive = TRUE,
+      residual = 0,
+      weight = 0.01,
+      max_iter = 2000L,
+      auto_iter = FALSE,
+      alpha = 0.5,
+      beta = 0.1,
+      gamma = 0,
+      adjust_alpha = 0,
+      batch_size = 1L
+    )
+  )
+}
+
+#' @keywords internal
+.topic_backend_control <- function(model = list(), fit = list(),
+                                   optimizer = list()) {
+  list(
+    model = .sanitize_backend_control_list(model, drop_names = character()),
+    fit = .sanitize_backend_control_list(
+      fit,
+      drop_names = c("x", "data", "model", "optimizer", "dictionary")
+    ),
+    optimizer = .sanitize_backend_control_list(
+      optimizer,
+      drop_names = c("params")
+    )
+  )
+}
+
+#' @keywords internal
+.sanitize_backend_control_list <- function(x, drop_names = character()) {
+  if (is.null(x) || !length(x)) {
+    return(list())
+  }
+  x <- as.list(x)
+  if (length(drop_names)) {
+    x <- x[setdiff(names(x), drop_names)]
+  }
+  lapply(x, .sanitize_backend_control_value)
+}
+
+#' @keywords internal
+.sanitize_backend_control_value <- function(x) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  if (is.function(x)) {
+    return("<function>")
+  }
+  if (is.environment(x)) {
+    return(sprintf("<%s>", class(x)[1L]))
+  }
+  if (methods::is(x, "dgCMatrix") || inherits(x, "dfm") ||
+      methods::is(x, "DocumentTermMatrix")) {
+    return(list(class = class(x)[1L], dim = dim(x)))
+  }
+  if (is.matrix(x)) {
+    return(list(class = "matrix", dim = dim(x)))
+  }
+  if (methods::is(x, "simple_triplet_matrix")) {
+    return(list(class = "simple_triplet_matrix", dim = dim(x)))
+  }
+  if (methods::is(x, "BasicTextmodel") || methods::is(x, "TopicModel")) {
+    return(sprintf("<%s>", class(x)[1L]))
+  }
+  if (isS4(x)) {
+    return(.s4_slots_to_list(x))
+  }
+  if (is.list(x)) {
+    return(lapply(x, .sanitize_backend_control_value))
+  }
+
+  x
+}
+
+#' @keywords internal
+.s4_slots_to_list <- function(x) {
+  out <- lapply(methods::slotNames(x), function(nm) {
+    .sanitize_backend_control_value(methods::slot(x, nm))
+  })
+  names(out) <- methods::slotNames(x)
+  out
+}
+
+#' @keywords internal
+.fit_topic_count <- function(x) {
+  .fit_topic_count_source(x)$value
+}
+
+#' @keywords internal
+.fit_topic_count_source <- function(x) {
+  if (!is.null(x$dtw)) {
+    return(list(value = ncol(x$dtw), section = "fit_object", name = "dtw"))
+  }
+  if (!is.null(x$tww)) {
+    return(list(value = nrow(x$tww), section = "fit_object", name = "tww"))
+  }
+  if (!is.null(x$model_object)) {
+    if (!is.null(x$model_object$k)) {
+      return(list(value = x$model_object$k, section = "model_object", name = "k"))
+    }
+    if (isS4(x$model_object) && "k" %in% methods::slotNames(x$model_object)) {
+      return(list(
+        value = methods::slot(x$model_object, "k"),
+        section = "model_object",
+        name = "k"
+      ))
+    }
+  }
+  list(value = NA_real_, section = NA_character_, name = NA_character_)
+}
+
+#' @keywords internal
 .fit_text2vec_topic_model <- function(x, k, control) {
   if (!requireNamespace("text2vec", quietly = TRUE)) {
     stop("Package 'text2vec' must be installed to use engine = 'text2vec'.", call. = FALSE)
@@ -1269,7 +1582,22 @@ print.nlp_topic_fit <- function(x, ...) {
     tww = tww,
     doc_ids = .matrix_doc_ids(dtw, fallback = rownames(x_sparse)),
     term_names = colnames(tww),
-    method = NULL
+    method = NULL,
+    hyperparameters = .topic_hyperparameters_table(
+      k = k,
+      alpha = lda_args$doc_topic_prior,
+      beta = lda_args$topic_word_prior,
+      sources = list(
+        k = list(section = "argument", name = "k"),
+        alpha = list(section = "model", name = "doc_topic_prior"),
+        beta = list(section = "model", name = "topic_word_prior")
+      )
+    ),
+    backend_control = .topic_backend_control(
+      model = lda_args,
+      fit = fit_args,
+      optimizer = list()
+    )
   )
 }
 
@@ -1307,7 +1635,13 @@ print.nlp_topic_fit <- function(x, ...) {
     tww = exp(model_object@beta),
     doc_ids = .topicmodels_doc_ids(model_object),
     term_names = model_object@terms,
-    method = method
+    method = method,
+    hyperparameters = .topicmodels_hyperparameters(model_object, model, k, method),
+    backend_control = .topic_backend_control(
+      model = list(),
+      fit = .s4_slots_to_list(model_object@control),
+      optimizer = list()
+    )
   )
 }
 
@@ -1320,7 +1654,8 @@ print.nlp_topic_fit <- function(x, ...) {
 
   x_dfm <- .as_topic_dfm(x)
 
-  fit_args <- utils::modifyList(list(x = x_dfm), control$fit)
+  default_fit_args <- .seededlda_default_fit_args(model, k)
+  fit_args <- utils::modifyList(c(list(x = x_dfm), default_fit_args), control$fit)
   fit_fun <- switch(
     model,
     lda = seededlda::textmodel_lda,
@@ -1346,7 +1681,22 @@ print.nlp_topic_fit <- function(x, ...) {
     tww = model_object$phi,
     doc_ids = .seededlda_doc_ids(model_object),
     term_names = colnames(model_object$phi),
-    method = NULL
+    method = NULL,
+    hyperparameters = .topic_hyperparameters_table(
+      k = model_object$k,
+      alpha = model_object$alpha,
+      beta = model_object$beta,
+      sources = list(
+        k = list(section = "model_object", name = "k"),
+        alpha = list(section = "model_object", name = "alpha"),
+        beta = list(section = "model_object", name = "beta")
+      )
+    ),
+    backend_control = .topic_backend_control(
+      model = list(),
+      fit = fit_args,
+      optimizer = list()
+    )
   )
 }
 
@@ -1424,7 +1774,18 @@ print.nlp_topic_fit <- function(x, ...) {
     tww = tww,
     doc_ids = prep$doc_ids,
     term_names = prep$term_names,
-    method = NULL
+    method = NULL,
+    hyperparameters = .topic_hyperparameters_table(
+      k = model_args$k,
+      alpha = NA_real_,
+      beta = NA_real_,
+      sources = list(k = list(section = "argument", name = "k"))
+    ),
+    backend_control = .topic_backend_control(
+      model = model_args,
+      fit = fit_args,
+      optimizer = optimizer_args
+    )
   )
 }
 
