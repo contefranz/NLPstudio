@@ -32,6 +32,7 @@ Imports:
     quanteda.textstats (>= 0.97)
 Suggests:
     RcppSimdJson (>= 0.1.14),
+    rlang (>= 1.1.0),
     seededlda (>= 1.4.3),
     spacyr (>= 1.3.0),
     testthat (>= 3.0.0),
