@@ -101,6 +101,28 @@ test_that("singularize_tokens parallel output matches sequential output", {
   expect_equal(as.list(par_out), as.list(seq_out))
 })
 
+test_that("singularize_tokens exports namespace helper to PSOCK workers", {
+  exported <- NULL
+
+  testthat::local_mocked_bindings(
+    .has_namespace = function(pkg) TRUE,
+    .get_exported_value = function(pkg, name) fake_singularize,
+    .run_parallel = function(chunks, FUN, ncores, socket, export_vars = NULL,
+                             export_env = parent.frame(), ...) {
+      exported <<- export_vars
+      lapply(chunks, FUN, ...)
+    },
+    .package = "NLPstudio"
+  )
+
+  out <- singularize_tokens(make_plural_tokens(), ncores = 2, nchunks = 2)
+
+  expect_equal(as.list(out)$doc2, c("car", "house"))
+  expect_true(".singularize_chunk" %in% exported)
+  expect_true(".singularize" %in% exported)
+  expect_true(".get_exported_value" %in% exported)
+})
+
 test_that("singularization helpers call the pluralize backend", {
   testthat::local_mocked_bindings(
     .get_exported_value = function(pkg, name) fake_singularize,

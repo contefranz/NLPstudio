@@ -100,7 +100,7 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
   } else {
     cli::cli_alert_info("Parsing {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
     results <- .run_parallel(chunks, .parse_chunk, ncores, socket,
-                             export_vars = c(".parse_chunk"),
+                             export_vars = c(".parse_chunk", ".get_exported_value"),
                              export_env = environment(), ...)
     out <- data.table::rbindlist(results, fill = TRUE)
   }

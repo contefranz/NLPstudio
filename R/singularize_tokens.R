@@ -84,7 +84,7 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
     chunks <- lapply(groups, function(ix) hash_vocabulary[ix, ])
     
     big_list <- .run_parallel(chunks, .singularize_chunk, ncores, socket,
-                              export_vars = c(".singularize_chunk", ".singularize"),
+                              export_vars = c(".singularize_chunk", ".singularize", ".get_exported_value"),
                               export_env = environment())
     
     hash_vocabulary <- data.table::rbindlist(big_list)

@@ -98,6 +98,41 @@ test_that("parse_corpus combines parsed chunks in the parallel branch", {
   expect_true(finalized)
 })
 
+test_that("parse_corpus exports namespace helper to PSOCK workers", {
+  corp <- quanteda::corpus(c(
+    doc1 = "Alpha.",
+    doc2 = "Beta."
+  ))
+  exported <- NULL
+
+  fake_get <- function(pkg, name) {
+    switch(
+      name,
+      spacy_finalize = function() invisible(NULL),
+      spacy_parse = function(x, ...) {
+        data.frame(doc_id = quanteda::docnames(x), token = quanteda::docnames(x))
+      },
+      stop("unexpected export")
+    )
+  }
+
+  testthat::local_mocked_bindings(
+    .has_namespace = function(pkg) TRUE,
+    .get_exported_value = fake_get,
+    .run_parallel = function(chunks, FUN, ncores, socket, export_vars = NULL,
+                             export_env = parent.frame(), ...) {
+      exported <<- export_vars
+      lapply(chunks, FUN, ...)
+    },
+    .package = "NLPstudio"
+  )
+
+  parse_corpus(corp, ncores = 2, nchunks = 2)
+
+  expect_true(".parse_chunk" %in% exported)
+  expect_true(".get_exported_value" %in% exported)
+})
+
 test_that(".parse_chunk returns a data.table", {
   fake_get <- function(pkg, name) {
     function(x, ...) {
