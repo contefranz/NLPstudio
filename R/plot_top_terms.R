@@ -64,7 +64,7 @@ if ( getRversion() >= "2.15.1" ) {
 
 plot_top_terms = function(top_terms, facet_args = list(scales = "free_y"), ...) {
   
-  if (!requireNamespace("tidytext", quietly = TRUE)) {
+  if (!.has_namespace("tidytext")) {
     stop("Package 'tidytext' is required for plot_top_terms(). Please install it.", call. = FALSE)
   }
   # Detect long format structure
@@ -77,8 +77,8 @@ plot_top_terms = function(top_terms, facet_args = list(scales = "free_y"), ...) 
   top_terms[, topic := factor(topic, levels = sort(unique(topic)))]
   
   # Look up tidytext functions
-  reorder_within <- getExportedValue("tidytext", "reorder_within")
-  scale_y_reordered <- getExportedValue("tidytext", "scale_y_reordered")
+  reorder_within <- .get_exported_value("tidytext", "reorder_within")
+  scale_y_reordered <- .get_exported_value("tidytext", "scale_y_reordered")
   
   # Reorder term within each topic by descending probability
   top_terms[, term := reorder_within(term, probability, topic)]

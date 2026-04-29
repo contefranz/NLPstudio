@@ -314,13 +314,13 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
   if (!is.null(k) && (!is.numeric(k) || length(k) != 1L || k < 1L || k != as.integer(k))) {
     stop("k must be NULL or a single positive integer.")
   }
-  if (!is.logical(docvars) || length(docvars) != 1L) {
+  if (!is.logical(docvars) || length(docvars) != 1L || is.na(docvars)) {
     stop("docvars must be a single TRUE/FALSE value.")
   }
-  if (!is.logical(return_dtw) || length(return_dtw) != 1L) {
+  if (!is.logical(return_dtw) || length(return_dtw) != 1L || is.na(return_dtw)) {
     stop("return_dtw must be a single TRUE/FALSE value.")
   }
-  if (!is.logical(return_tww) || length(return_tww) != 1L) {
+  if (!is.logical(return_tww) || length(return_tww) != 1L || is.na(return_tww)) {
     stop("return_tww must be a single TRUE/FALSE value.")
   }
 
@@ -491,10 +491,10 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = FALSE,
   if (!inherits(x, "nlp_topic_fit")) {
     stop("x must be an object returned by fit_topic_model().", call. = FALSE)
   }
-  if (!is.logical(docvars) || length(docvars) != 1L) {
+  if (!is.logical(docvars) || length(docvars) != 1L || is.na(docvars)) {
     stop("docvars must be a single TRUE/FALSE value.")
   }
-  if (!is.logical(include_text) || length(include_text) != 1L) {
+  if (!is.logical(include_text) || length(include_text) != 1L || is.na(include_text)) {
     stop("include_text must be a single TRUE/FALSE value.")
   }
 
@@ -613,10 +613,10 @@ predict_topic_model <- function(x, newdata, control = list(), docvars = FALSE,
 #' @export
 get_dtw <- function(x, doc_data = NULL, docvars = FALSE, include_text = FALSE,
                     doc_id_col = "doc_id", text_col = "text") {
-  if (!is.logical(docvars) || length(docvars) != 1L) {
+  if (!is.logical(docvars) || length(docvars) != 1L || is.na(docvars)) {
     stop("docvars must be a single TRUE/FALSE value.")
   }
-  if (!is.logical(include_text) || length(include_text) != 1L) {
+  if (!is.logical(include_text) || length(include_text) != 1L || is.na(include_text)) {
     stop("include_text must be a single TRUE/FALSE value.")
   }
 

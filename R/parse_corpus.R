@@ -62,7 +62,7 @@
 
 parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...) {
 
-  if (!requireNamespace("spacyr", quietly = TRUE)) {
+  if (!.has_namespace("spacyr")) {
     stop("Package 'spacyr' is required for parse_corpus(). Please install it.")
   }
   if (!quanteda::is.corpus(x)) {
@@ -84,7 +84,7 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
   }
 
   # Ensure spaCy is finalized on exit (before any work that could fail)
-  parsing_final <- getExportedValue("spacyr", "spacy_finalize")
+  parsing_final <- .get_exported_value("spacyr", "spacy_finalize")
   on.exit(parsing_final(), add = TRUE)
 
   # Split corpus into balanced chunks by doc IDs
@@ -95,12 +95,12 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
 
   if (length(chunks) <= 1L || ncores < 2L) {
     cli::cli_alert_info("Parsing sequentially")
-    parsing_func <- getExportedValue("spacyr", "spacy_parse")
+    parsing_func <- .get_exported_value("spacyr", "spacy_parse")
     out <- data.table::as.data.table(parsing_func(x, ...))
   } else {
     cli::cli_alert_info("Parsing {length(chunks)} chunks in parallel with {ncores} cores via {socket}")
     results <- .run_parallel(chunks, .parse_chunk, ncores, socket,
-                             export_vars = c(".parse_chunk"),
+                             export_vars = c(".parse_chunk", ".get_exported_value"),
                              export_env = environment(), ...)
     out <- data.table::rbindlist(results, fill = TRUE)
   }
@@ -116,7 +116,7 @@ parse_corpus = function(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FO
 #' @keywords internal
 #' @noRd
 .parse_chunk <- function(corp_chunk, ...) {
-  parsing_func <- getExportedValue("spacyr", "spacy_parse")
+  parsing_func <- .get_exported_value("spacyr", "spacy_parse")
   out <- parsing_func(corp_chunk, ...)
   data.table::as.data.table(out)
 }
