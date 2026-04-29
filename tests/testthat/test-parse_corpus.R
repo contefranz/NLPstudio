@@ -148,3 +148,24 @@ test_that(".parse_chunk returns a data.table", {
   expect_true(data.table::is.data.table(out))
   expect_equal(out$doc_id, "doc1")
 })
+
+test_that("parse_corpus integrates with real spacyr backend", {
+  skip_on_ci()
+  skip_if_not_installed("spacyr")
+  if (!nzchar(Sys.getenv("NLPSTUDIO_TEST_SPACYR"))) {
+    skip("Set NLPSTUDIO_TEST_SPACYR=1 to run the spacyr integration test.")
+  }
+
+  corp <- quanteda::corpus(c(
+    doc1 = "Cats chase mice.",
+    doc2 = "Markets react quickly."
+  ))
+
+  out <- parse_corpus(corp, lemma = TRUE, pos = TRUE)
+
+  expect_true(data.table::is.data.table(out))
+  expect_true(nrow(out) > 0L)
+  expect_setequal(unique(out$doc_id), c("doc1", "doc2"))
+  expect_true("pos" %in% names(out))
+  expect_true(any(nzchar(out$pos)))
+})

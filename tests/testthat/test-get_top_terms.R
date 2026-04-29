@@ -43,6 +43,21 @@ test_that("get_top_terms rejects unavailable topic filters", {
     get_top_terms(tww, topics = list("Topic001")),
     "topics must be NULL, numeric topic indices, or Topic### identifiers"
   )
+  expect_error(
+    get_top_terms(tww, topics = NA),
+    "topics must be NULL, numeric topic indices, or Topic### identifiers"
+  )
+  expect_error(
+    get_top_terms(tww, topics = NA_integer_),
+    "positive integer indices or Topic### identifiers"
+  )
+})
+
+test_that("get_top_terms returns an empty table for empty topic selectors", {
+  tww <- make_tww_table()
+  out <- get_top_terms(tww, topics = integer(0))
+  expect_true(data.table::is.data.table(out))
+  expect_equal(nrow(out), 0L)
 })
 
 test_that("get_top_terms returns wide output by rank", {

@@ -44,4 +44,10 @@ test_that("plot_top_terms returns a ggplot object", {
   expect_s3_class(plot_obj, "ggplot")
   expect_equal(plot_obj$labels$title, "Top Terms per Topic")
   expect_equal(plot_obj$labels$x, "Topic-Word Probability")
+
+  mapping <- plot_obj$layers[[1]]$mapping
+  if (is.null(mapping$x)) mapping$x <- plot_obj$mapping$x
+  if (is.null(mapping$y)) mapping$y <- plot_obj$mapping$y
+  expect_equal(rlang::as_label(mapping$x), "probability")
+  expect_equal(rlang::as_label(mapping$y), "term")
 })
