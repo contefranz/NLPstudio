@@ -663,7 +663,7 @@
   optimizer <- do.call(torch::optim_adam, optimizer_args)
   fit_args$optimizer <- optimizer
 
-  do.call(model_object$fit, fit_args)
+  .fit_etm_model_original(model_object, fit_args)
 
   dtw <- stats::predict(
     model_object,
@@ -672,14 +672,15 @@
     batch_size = as.integer(min(fit_args$batch_size, nrow(prep$x))),
     normalize = if ("normalize" %in% names(fit_args)) fit_args$normalize else TRUE
   )
-  tww <- as.matrix(model_object, type = "beta")
+  beta <- .etm_beta_tww(model_object, term_names = prep$term_names)
+  tww <- beta$tww
 
   list(
     model_object = model_object,
     dtw = dtw,
     tww = tww,
     doc_ids = prep$doc_ids,
-    term_names = prep$term_names,
+    term_names = beta$term_names,
     method = NULL,
     hyperparameters = .topic_hyperparameters_table(
       k = model_args$k,
@@ -693,6 +694,71 @@
       optimizer = optimizer_args
     )
   )
+}
+
+#' Fit an ETM model with drop-safe train/test splits
+#'
+#' Calls `fit_original()` with explicit `drop = FALSE` subsetting so one-row
+#' held-out splits remain `dgCMatrix` objects for `topicmodels.etm`.
+#'
+#' @keywords internal
+#' @noRd
+.fit_etm_model_original <- function(model_object, fit_args) {
+  data <- fit_args$data
+  if (inherits(data, "sparseMatrix")) {
+    data <- data[Matrix::rowSums(data) > 0, , drop = FALSE]
+  }
+  data <- methods::as(data, "dgCMatrix")
+  if (nrow(data) < 3L) {
+    stop("ETM fitting requires at least 3 non-empty documents.", call. = FALSE)
+  }
+
+  idx <- .etm_train_test_indices(nrow(data), train_pct = 0.7)
+  as_tokencounts <- utils::getFromNamespace("as_tokencounts", "topicmodels.etm")
+
+  original_args <- list(
+    data = as_tokencounts(data[idx$train, , drop = FALSE]),
+    test1 = as_tokencounts(data[idx$test1, , drop = FALSE]),
+    test2 = as_tokencounts(data[idx$test2, , drop = FALSE]),
+    optimizer = fit_args$optimizer,
+    epoch = fit_args$epoch,
+    batch_size = fit_args$batch_size,
+    normalize = fit_args$normalize,
+    clip = fit_args$clip,
+    lr_anneal_factor = fit_args$lr_anneal_factor,
+    lr_anneal_nonmono = fit_args$lr_anneal_nonmono
+  )
+
+  loss_evolution <- do.call(model_object$fit_original, original_args)
+  model_object$loss_fit <- loss_evolution
+  invisible(loss_evolution)
+}
+
+#' Create ETM train/test indices with non-empty held-out halves
+#'
+#' Mirrors the backend 70/30 split while ensuring both held-out halves contain
+#' at least one document and preserving integer row indices.
+#'
+#' @keywords internal
+#' @noRd
+.etm_train_test_indices <- function(n, train_pct = 0.7) {
+  if (!is.numeric(n) || length(n) != 1L || n < 3L || n != as.integer(n)) {
+    stop("n must be a single integer greater than or equal to 3.", call. = FALSE)
+  }
+  n <- as.integer(n)
+  test_n <- max(2L, as.integer(round(n * (1 - train_pct))))
+  test_n <- min(test_n, n - 1L)
+
+  idx <- seq_len(n)
+  test <- sort(sample(idx, size = test_n, replace = FALSE))
+  test1_n <- max(1L, as.integer(round(length(test) / 2)))
+  test1_n <- min(test1_n, length(test) - 1L)
+
+  test1 <- sort(sample(test, size = test1_n, replace = FALSE))
+  test2 <- sort(setdiff(test, test1))
+  train <- sort(setdiff(idx, test))
+
+  list(train = train, test1 = test1, test2 = test2)
 }
 
 # -----------------------------------------------------------------------------
@@ -885,6 +951,7 @@
     if (is.null(rownames(embeddings))) {
       stop("Pretrained ETM embeddings must have rownames.", call. = FALSE)
     }
+    storage.mode(embeddings) <- "double"
     if (!is.null(model_control$vocab) &&
         !identical(as.character(model_control$vocab), rownames(embeddings))) {
       stop(
@@ -1054,10 +1121,10 @@
   }
 
   if (.is_etm_object(x)) {
-    beta <- as.matrix(x, type = "beta")
+    beta <- .etm_beta_tww(x)
     return(.tww_dt_from_matrix(
-      beta,
-      term_names = if (!is.null(colnames(beta))) colnames(beta) else .stored_topic_vocab(x)
+      beta$tww,
+      term_names = if (!is.null(beta$term_names)) beta$term_names else .stored_topic_vocab(x)
     ))
   }
 
@@ -1194,6 +1261,33 @@
   colnames(mat) <- term_names
   storage.mode(mat) <- "double"
   mat
+}
+
+#' Normalize ETM beta output to topic-by-term orientation
+#'
+#' `topicmodels.etm` exposes beta as term-by-topic; NLPstudio stores TWW matrices
+#' as topic-by-term. This helper also carries the backend vocabulary forward.
+#'
+#' @keywords internal
+#' @noRd
+.etm_beta_tww <- function(model_object, term_names = NULL) {
+  beta <- as.matrix(model_object, type = "beta")
+  beta <- as.matrix(beta)
+
+  if (is.null(term_names)) {
+    term_names <- rownames(beta)
+  }
+  if (is.null(term_names)) {
+    term_names <- colnames(beta)
+  }
+  if (!is.null(term_names)) {
+    term_names <- as.character(term_names)
+    if (nrow(beta) == length(term_names) && ncol(beta) != length(term_names)) {
+      beta <- t(beta)
+    }
+  }
+
+  list(tww = beta, term_names = term_names)
 }
 
 #' Convert DTW matrix to data.table

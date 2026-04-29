@@ -204,6 +204,66 @@ test_that("backend-control sanitizer returns compact stored values", {
   expect_equal(out$nested$mat, list(class = "matrix", dim = c(1L, 2L)))
 })
 
+test_that("ETM input preparation coerces pretrained embeddings to double", {
+  x <- Matrix::Matrix(
+    matrix(
+      c(1, 0, 2,
+        0, 1, 1,
+        1, 3, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+  rownames(x) <- paste0("doc", seq_len(nrow(x)))
+  colnames(x) <- paste0("term", seq_len(ncol(x)))
+  embeddings <- matrix(
+    seq_len(ncol(x) * 3),
+    nrow = ncol(x),
+    ncol = 3,
+    dimnames = list(colnames(x), NULL)
+  )
+
+  prep <- NLPstudio:::.prepare_etm_input(x, list(embeddings = embeddings))
+
+  expect_s4_class(prep$x, "dgCMatrix")
+  expect_type(prep$model_control$embeddings, "double")
+  expect_equal(prep$model_control$vocab, colnames(x))
+})
+
+test_that("ETM train/test splitter keeps all partitions non-empty", {
+  set.seed(1)
+  idx <- NLPstudio:::.etm_train_test_indices(6)
+
+  expect_setequal(unlist(idx, use.names = FALSE), 1:6)
+  expect_true(length(idx$train) >= 1L)
+  expect_true(length(idx$test1) >= 1L)
+  expect_true(length(idx$test2) >= 1L)
+  expect_error(NLPstudio:::.etm_train_test_indices(2), "greater than or equal to 3")
+})
+
+test_that("ETM beta output is normalized to topic-by-term orientation", {
+  beta <- structure(
+    matrix(
+      c(0.7, 0.3,
+        0.2, 0.8,
+        0.4, 0.6),
+      nrow = 3,
+      byrow = TRUE,
+      dimnames = list(c("term1", "term2", "term3"), NULL)
+    ),
+    class = "fake_etm_beta"
+  )
+  as.matrix.fake_etm_beta <- function(x, ...) unclass(x)
+
+  out <- NLPstudio:::.etm_beta_tww(beta)
+
+  expect_equal(dim(out$tww), c(2L, 3L))
+  expect_equal(out$term_names, c("term1", "term2", "term3"))
+  expect_equal(unname(out$tww[1, ]), c(0.7, 0.2, 0.4))
+})
+
 test_that("set_theta_names standardizes legacy topic columns", {
   theta <- data.table::data.table(
     rn = c("doc1", "doc2"),
