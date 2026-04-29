@@ -561,13 +561,17 @@ test_that("ETM prediction and embedding helpers are supported", {
   topic_emb <- get_topic_embeddings(fit)
   raw_topic_emb <- get_topic_embeddings(fit$model_object)
   term_emb <- get_term_embeddings(fit)
-  plot_obj <- plot_topic_embeddings(
-    fit,
-    top_n = 3,
-    metric = "cosine",
-    n_neighbors = 2,
-    fast_sgd = FALSE,
-    verbose = FALSE
+  plot_obj <- expect_warning(
+    plot_topic_embeddings(
+      fit,
+      top_n = 3,
+      metric = "cosine",
+      n_neighbors = 2,
+      fast_sgd = FALSE,
+      verbose = FALSE,
+      init = "random"
+    ),
+    NA
   )
 
   expect_equal(topic_cols(pred), c("Topic001", "Topic002"))
@@ -629,8 +633,9 @@ test_that("ETM validates pretrained embeddings and keeps alignment after pruning
     dimnames = list(c("term2", "term3", "term4"), NULL)
   )
 
-  expect_warning(
-    fit <- fit_topic_model(
+  alignment_warnings <- character()
+  fit <- withCallingHandlers(
+    fit_topic_model(
       x,
       engine = "topicmodels.etm",
       model = "etm",
@@ -640,8 +645,13 @@ test_that("ETM validates pretrained embeddings and keeps alignment after pruning
         fit = list(epoch = 2, batch_size = 2)
       )
     ),
-    "Dropping"
+    warning = function(w) {
+      alignment_warnings <<- c(alignment_warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
   )
+  expect_true(any(grepl("Dropping", alignment_warnings, fixed = TRUE)))
+  expect_length(alignment_warnings[!grepl("Dropping", alignment_warnings, fixed = TRUE)], 0L)
 
   expect_equal(fit$doc_ids, c("doc2", "doc3", "doc4"))
   expect_equal(fit$docvars$doc_id, c("doc2", "doc3", "doc4"))

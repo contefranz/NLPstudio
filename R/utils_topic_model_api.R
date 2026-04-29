@@ -859,7 +859,9 @@
   predicted <- withCallingHandlers(
     do.call(fit_fun, predict_args),
     warning = function(w) {
-      if (grepl("overwritten by the fitted model", conditionMessage(w), fixed = TRUE)) {
+      msg <- conditionMessage(w)
+      if (grepl("overwritten by the fitted model", msg, fixed = TRUE) ||
+          grepl("gamma has no effect when docid are all unique", msg, fixed = TRUE)) {
         tryInvokeRestart("muffleWarning")
       }
     }
