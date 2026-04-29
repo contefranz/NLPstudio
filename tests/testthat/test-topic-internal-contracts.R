@@ -82,6 +82,8 @@ test_that("prediction controls and hyperparameter values normalize predictably",
   expect_equal(NLPstudio:::.normalize_prediction_control(list(batch_size = 2)), list(batch_size = 2))
 
   expect_true(is.na(NLPstudio:::.normalize_hyperparameter_value(NULL)))
+  expect_true(is.na(NLPstudio:::.normalize_hyperparameter_value(numeric())))
+  expect_true(is.na(NLPstudio:::.normalize_hyperparameter_value(NA_real_)))
   expect_equal(NLPstudio:::.normalize_hyperparameter_value("asymmetric"), "asymmetric")
   expect_equal(NLPstudio:::.normalize_hyperparameter_value(c(0.1, 0.1)), 0.1)
   expect_equal(NLPstudio:::.normalize_hyperparameter_value(c(0.1, 0.2)), c(0.1, 0.2))
@@ -159,6 +161,10 @@ test_that("topic control validators reject malformed inputs", {
   expect_error(NLPstudio:::.normalize_topic_control(list(list())), "control must be a named list")
   expect_error(NLPstudio:::.normalize_topic_control(list(extra = list())), "Unknown top-level")
   expect_error(NLPstudio:::.normalize_topic_control(list(model = "bad")), "must all be lists")
+  expect_equal(
+    NLPstudio:::.normalize_topic_control(list(model = list(), fit = NULL, optimizer = NULL)),
+    list(model = list(), fit = list(), optimizer = list())
+  )
 
   control <- list(model = list(), fit = list(), optimizer = list())
   expect_error(
@@ -232,6 +238,87 @@ test_that("ETM input preparation coerces pretrained embeddings to double", {
   expect_equal(prep$model_control$vocab, colnames(x))
 })
 
+test_that("ETM input preparation preserves survivors after pruning docs and terms", {
+  x <- Matrix::Matrix(
+    matrix(
+      c(1, 0, 0, 0,
+        0, 2, 0, 0,
+        0, 0, 0, 3,
+        0, 1, 0, 1),
+      nrow = 4,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+  rownames(x) <- paste0("doc", seq_len(nrow(x)))
+  colnames(x) <- paste0("term", seq_len(ncol(x)))
+  embeddings <- matrix(
+    seq_len(2 * 3),
+    nrow = 2,
+    ncol = 3,
+    dimnames = list(c("term2", "term4"), NULL)
+  )
+
+  warnings <- character()
+  prep <- withCallingHandlers(
+    NLPstudio:::.prepare_etm_input(x, list(embeddings = embeddings)),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_true(any(grepl("Dropping 2 terms", warnings, fixed = TRUE)))
+  expect_true(any(grepl("Dropping 1 documents", warnings, fixed = TRUE)))
+  expect_equal(prep$doc_ids, c("doc2", "doc3", "doc4"))
+  expect_equal(prep$term_names, c("term2", "term4"))
+  expect_equal(rownames(prep$model_control$embeddings), c("term2", "term4"))
+})
+
+test_that("ETM input preparation drops all-zero rows for learned embeddings", {
+  x <- Matrix::Matrix(
+    matrix(
+      c(0, 0, 0,
+        1, 0, 1,
+        0, 2, 0),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+  rownames(x) <- paste0("doc", seq_len(nrow(x)))
+  colnames(x) <- paste0("term", seq_len(ncol(x)))
+
+  expect_warning(
+    prep <- NLPstudio:::.prepare_etm_input(x, list(embeddings = 2)),
+    "Dropping 1 documents"
+  )
+
+  expect_equal(prep$doc_ids, c("doc2", "doc3"))
+  expect_equal(prep$term_names, colnames(x))
+})
+
+test_that("ETM fitting rejects fewer than three surviving documents", {
+  x <- Matrix::Matrix(
+    matrix(
+      c(1, 0,
+        0, 0,
+        0, 2),
+      nrow = 3,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  x <- methods::as(x, "dgCMatrix")
+
+  expect_error(
+    NLPstudio:::.fit_etm_model_original(NULL, list(data = x)),
+    "requires at least 3 non-empty documents"
+  )
+})
+
 test_that("ETM train/test splitter keeps all partitions non-empty", {
   set.seed(1)
   idx <- NLPstudio:::.etm_train_test_indices(6)
@@ -264,6 +351,33 @@ test_that("ETM beta output is normalized to topic-by-term orientation", {
   expect_equal(unname(out$tww[1, ]), c(0.7, 0.2, 0.4))
 })
 
+test_that("legacy DTW and TWW coercion standardizes supported shapes", {
+  dtw <- data.table::data.table(
+    rn = c("doc1", "doc2"),
+    topic1 = c(0.8, 0.2),
+    topic2 = c(0.2, 0.8)
+  )
+  coerced_dtw <- NLPstudio:::.coerce_existing_dtw_table(dtw)
+
+  expect_named(
+    coerced_dtw,
+    c("doc_id", "Topic001", "Topic002", "topic_max_id", "topic_max_int", "topic_max_value")
+  )
+  expect_equal(coerced_dtw$doc_id, c("doc1", "doc2"))
+  expect_equal(coerced_dtw$topic_max_id, c("Topic001", "Topic002"))
+  expect_equal(coerced_dtw$topic_max_int, c(1L, 2L))
+
+  tww <- data.table::data.table(
+    topic_id = 1:2,
+    term_a = c(0.7, 0.3),
+    term_b = c(0.3, 0.7)
+  )
+  coerced_tww <- NLPstudio:::.coerce_existing_tww_table(tww)
+
+  expect_named(coerced_tww, c("topic_id", "term_a", "term_b"))
+  expect_equal(coerced_tww$topic_id, c("Topic001", "Topic002"))
+})
+
 test_that("set_theta_names standardizes legacy topic columns", {
   theta <- data.table::data.table(
     rn = c("doc1", "doc2"),
@@ -275,4 +389,87 @@ test_that("set_theta_names standardizes legacy topic columns", {
 
   expect_named(out, c("doc_id", "Topic1", "Topic2"))
   expect_equal(out$doc_id, c("doc1", "doc2"))
+})
+
+# ----------------------------------------------------------------------------
+# Vocabulary alignment (.align_topic_input_to_vocab)
+# ----------------------------------------------------------------------------
+
+make_aligned_dfm <- function(doc_terms, doc_ids = NULL) {
+  if (is.null(doc_ids)) doc_ids <- paste0("doc", seq_along(doc_terms))
+  corp <- quanteda::corpus(stats::setNames(doc_terms, doc_ids))
+  quanteda::dfm(quanteda::tokens(corp))
+}
+
+test_that(".align_topic_input_to_vocab pads when input is a strict subset of vocab", {
+  x <- make_aligned_dfm(c("alpha beta", "alpha"))
+  vocab <- c("alpha", "beta", "gamma")
+
+  out <- expect_silent(
+    NLPstudio:::.align_topic_input_to_vocab(x, vocab)
+  )
+
+  expect_equal(out$term_names, vocab)
+  expect_equal(colnames(out$sparse), vocab)
+  expect_equal(unname(out$sparse[, "gamma"]), c(0, 0))
+})
+
+test_that(".align_topic_input_to_vocab warns and drops terms when input is a superset", {
+  x <- make_aligned_dfm(c("alpha beta extra", "alpha gamma"))
+  vocab <- c("alpha", "beta")
+
+  expect_warning(
+    out <- NLPstudio:::.align_topic_input_to_vocab(x, vocab),
+    "Dropping 2 terms that were not found"
+  )
+
+  expect_equal(colnames(out$sparse), vocab)
+  expect_setequal(out$doc_ids, c("doc1", "doc2"))
+})
+
+test_that(".align_topic_input_to_vocab errors when vocab and input are disjoint", {
+  x <- make_aligned_dfm(c("alpha beta", "alpha"))
+  vocab <- c("delta", "epsilon")
+
+  expect_error(
+    suppressWarnings(NLPstudio:::.align_topic_input_to_vocab(x, vocab)),
+    "No documents remain"
+  )
+})
+
+test_that(".align_topic_input_to_vocab reorders columns to match vocab", {
+  x <- make_aligned_dfm("beta alpha gamma")
+  vocab <- c("gamma", "alpha", "beta")
+
+  out <- NLPstudio:::.align_topic_input_to_vocab(x, vocab)
+
+  expect_equal(colnames(out$sparse), vocab)
+  expect_equal(unname(out$sparse[1, ]), c(1, 1, 1))
+})
+
+test_that(".align_topic_input_to_vocab rejects an empty vocab", {
+  x <- make_aligned_dfm("alpha beta")
+
+  expect_error(
+    NLPstudio:::.align_topic_input_to_vocab(x, character()),
+    "vocab must contain at least one term"
+  )
+})
+
+test_that(".align_topic_input_to_vocab drops empty docs after alignment with a warning", {
+  x <- make_aligned_dfm(c("alpha beta", "gamma"))
+  vocab <- c("alpha", "beta")
+
+  warnings <- character()
+  out <- withCallingHandlers(
+    NLPstudio:::.align_topic_input_to_vocab(x, vocab),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_true(any(grepl("Dropping 1 terms", warnings)))
+  expect_true(any(grepl("Dropping 1 documents", warnings)))
+  expect_equal(out$doc_ids, "doc1")
 })

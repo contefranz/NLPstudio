@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.8.1-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.8.1)
+[![release](https://img.shields.io/badge/release-v0.8.2-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.8.2)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
