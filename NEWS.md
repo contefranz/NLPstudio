@@ -1,5 +1,18 @@
 # NLPstudio News
 
+## NLPstudio 0.8.1  (2026-04-29)
+
+### BREAKING CHANGES
+
+1. Removed the deprecated `set_ff_industries()` API. Fama-French industry
+   mapping is outside the current package scope and should be performed
+   upstream before corpus analysis.
+
+### TESTS
+
+1. Added focused coverage for under-tested public helpers and compact internal
+   contracts supporting topic-model output handling.
+
 ## NLPstudio 0.8.0  (2026-04-28)
 
 ### NEW FEATURES

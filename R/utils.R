@@ -1,5 +1,19 @@
 # Some utility functions
 
+#' Check whether an optional namespace is available
+#' @keywords internal
+#' @noRd
+.has_namespace <- function(pkg) {
+  requireNamespace(pkg, quietly = TRUE)
+}
+
+#' Retrieve an exported function from a namespace
+#' @keywords internal
+#' @noRd
+.get_exported_value <- function(pkg, name) {
+  getExportedValue(pkg, name)
+}
+
 #' Validate parallel arguments
 #' @keywords internal
 #' @noRd
