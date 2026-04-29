@@ -1,5 +1,16 @@
 # NLPstudio News
 
+## NLPstudio 0.8.2  (2026-04-29)
+
+### TESTS
+
+1. Expanded topic API stability coverage for vocabulary alignment, ETM pruning,
+   public topic selectors, legacy DTW/TWW coercion, and unsupported backend
+   combinations.
+
+2. Added regression coverage for user-facing topic-model warnings and errors
+   while keeping this release behavior-preserving.
+
 ## NLPstudio 0.8.1  (2026-04-29)
 
 ### BREAKING CHANGES

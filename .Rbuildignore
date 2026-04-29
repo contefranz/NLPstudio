@@ -9,6 +9,7 @@ NLPstudio.Rproj$
 ^pkgdown$
 ^_pkgdown\.yml$
 ^\.github$
+^codecov\.yml$
 ^\.claude$
 ^scratch$
 ^test$

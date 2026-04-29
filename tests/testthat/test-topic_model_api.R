@@ -309,6 +309,10 @@ test_that("fit_topic_model validates unsupported combinations and control struct
     ),
     "method must be NULL"
   )
+  expect_error(
+    fit_topic_model(make_topic_dtm(), engine = "topicmodels.etm", model = "lda", k = 2),
+    "Unsupported model"
+  )
 })
 
 test_that("predict_topic_model works for topicmodels LDA and CTM", {
@@ -745,8 +749,15 @@ test_that("get_top_terms and plot_dtw use standardized extractors", {
   expect_true(all(c("rank", "topic", "term", "probability") %in% names(top_terms)))
   expect_true(all(unique(top_terms$topic) %in% c("Topic001", "Topic002")))
 
+  selected_terms <- get_top_terms(fit, n = 1, topics = "Topic001")
+  expect_equal(unique(selected_terms$topic), "Topic001")
+  expect_error(get_top_terms(fit, n = 1, topics = 99), "Some requested topics are not available")
+
   plot_obj <- plot_dtw(fit, topics = 1:2, bins = 5)
   expect_s3_class(plot_obj, "ggplot")
+  expect_s3_class(plot_dtw(fit, topics = "Topic001", bins = 5), "ggplot")
+  expect_error(plot_dtw(fit, topics = "Topic999"), "Some requested topics are not available")
+  expect_error(plot_dtw(fit, topics = NA_integer_), "positive integer")
 })
 
 test_that("representative candidates band within topic and fall back on ties", {
@@ -789,6 +800,31 @@ test_that("representative candidates band within topic and fall back on ties", {
 
   expect_false(anyNA(tied_out$candidate_band))
   expect_equal(sort(unique(tied_out$candidate_band)), c("HIGH", "LOW"))
+})
+
+test_that("representative candidates validate public topic selectors", {
+  dtw <- data.table::data.table(
+    doc_id = paste0("doc", 1:4),
+    Topic001 = c(0.9, 0.8, 0.1, 0.2),
+    Topic002 = c(0.1, 0.2, 0.9, 0.8)
+  )
+
+  numeric_out <- get_representative_candidates(dtw, topics = 1)
+  character_out <- get_representative_candidates(dtw, topics = "Topic002")
+  empty_out <- get_representative_candidates(dtw, topics = integer())
+
+  expect_equal(unique(numeric_out$topic_max_id), "Topic001")
+  expect_equal(unique(character_out$topic_max_id), "Topic002")
+  expect_equal(nrow(empty_out), 0L)
+  expect_named(
+    empty_out,
+    c("doc_id", "Topic001", "Topic002", "topic_max_id", "topic_max_int",
+      "topic_max_value", "candidate_band", "topic_rank")
+  )
+  expect_error(get_representative_candidates(dtw, topics = 3), "Some requested topics are not available")
+  expect_error(get_representative_candidates(dtw, topics = "Topic099"), "Some requested topics are not available")
+  expect_error(get_representative_candidates(dtw, topics = NA_integer_), "positive integer")
+  expect_error(get_representative_candidates(dtw, topics = list("Topic001")), "topics must be NULL")
 })
 
 test_that("representative candidates optionally include stored docvars", {
