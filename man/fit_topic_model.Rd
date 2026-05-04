@@ -290,7 +290,7 @@ Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003).
 \emph{Journal of Machine Learning Research}, 3, 993-1022.
 
 Blei, D. M., & Lafferty, J. D. (2006).
-\href{https://www.cs.cmu.edu/afs/cs/usr/lafferty/www/pub/ctm.pdf}{Correlated topic models}.
+\href{https://papers.nips.cc/paper/2906-correlated-topic-models}{Correlated topic models}.
 \emph{Advances in Neural Information Processing Systems}, 18, 147.
 
 Blei, D. M., & Lafferty, J. D. (2007).

@@ -141,7 +141,7 @@ if (getRversion() >= "2.15.1") {
 #' _Journal of Machine Learning Research_, 3, 993-1022.
 #'
 #' Blei, D. M., & Lafferty, J. D. (2006).
-#' [Correlated topic models](https://www.cs.cmu.edu/afs/cs/usr/lafferty/www/pub/ctm.pdf).
+#' [Correlated topic models](https://papers.nips.cc/paper/2906-correlated-topic-models).
 #' _Advances in Neural Information Processing Systems_, 18, 147.
 #'
 #' Blei, D. M., & Lafferty, J. D. (2007).
