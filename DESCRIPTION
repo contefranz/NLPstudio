@@ -1,6 +1,6 @@
 Package: NLPstudio
 Title: Parallel NLP Tools for Processing SEC Filings, Corpus Management, Topic Modeling, and Other Perks
-Version: 0.8.4
+Version: 0.9.0
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))
@@ -13,7 +13,8 @@ Description: NLPstudio provides a streamlined and high-performance workflow for 
   topicmodels, seededlda, and topicmodels.etm, with standardized document-topic weights (DTW),
   topic-word weights (TWW), representative-candidate extraction, generic prediction for new documents,
   and visualization helpers. A model-evaluation and selection layer provides engine-agnostic quality
-  metrics and automated grid search over candidate topic counts. NLPstudio supports export-ready wide
+  metrics, topic-stability diagnostics, topic summaries, and automated grid search over candidate
+  topic counts. NLPstudio supports export-ready wide
   and long formats and includes curated domain dictionaries for financial text analysis.
   Built on data.table, quanteda, and parallel, NLPstudio is intended for scalable text analysis in an
   academic context with a particular focus on accounting and finance research domains.
@@ -31,8 +32,10 @@ Imports:
     quanteda (>= 4.0.1),
     quanteda.textstats (>= 0.97)
 Suggests:
+    knitr (>= 1.45),
     RcppSimdJson (>= 0.1.14),
     rlang (>= 1.1.0),
+    rmarkdown (>= 2.25),
     seededlda (>= 1.4.3),
     spacyr (>= 1.3.0),
     testthat (>= 3.0.0),
@@ -44,3 +47,4 @@ Suggests:
     uwot (>= 0.2.4)
 Config/testthat/edition: 3
 LazyData: true
+VignetteBuilder: knitr

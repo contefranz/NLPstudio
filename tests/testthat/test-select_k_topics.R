@@ -353,6 +353,107 @@ test_that("return_fits = TRUE attaches nlp_topic_fit objects as attribute", {
   expect_true(all(vapply(fits, inherits, logical(1L), "nlp_topic_fit")))
 })
 
+# ---- Stability diagnostics --------------------------------------------------
+
+make_select_mock_fit <- function(k, x, engine, model, method, control) {
+  topic_ids <- sprintf("Topic%03d", seq_len(k))
+  tww <- diag(k)
+  rownames(tww) <- topic_ids
+  colnames(tww) <- paste0("term", seq_len(k))
+  dtw <- matrix(1 / k, nrow = nrow(x), ncol = k)
+  rownames(dtw) <- rownames(x)
+  colnames(dtw) <- topic_ids
+
+  structure(
+    list(
+      engine = engine,
+      model = model,
+      method = method,
+      model_object = list(),
+      dtw = dtw,
+      tww = tww,
+      doc_ids = rownames(dtw),
+      vocab = colnames(tww),
+      docvars = NULL,
+      doc_data = NULL,
+      hyperparameters = data.table::data.table(parameter = "k", value = k),
+      backend_control = control,
+      call = quote(fit_topic_model())
+    ),
+    class = c("nlp_topic_fit", "list")
+  )
+}
+
+test_that("select_k_topics validates stability options without changing defaults", {
+  dtm <- make_sel_dtm()
+  expect_error(
+    select_k_topics(
+      dtm,
+      engine = "topicmodels",
+      model = "lda",
+      k_grid = 2L,
+      metrics = "diversity",
+      holdout = 0,
+      stability_resampling = list(fraction = 0.5)
+    ),
+    "requires"
+  )
+  expect_error(
+    select_k_topics(
+      dtm,
+      engine = "topicmodels",
+      model = "lda",
+      k_grid = 2L,
+      metrics = "diversity",
+      holdout = 0,
+      stability_seeds = 1L
+    ),
+    "seeds"
+  )
+})
+
+test_that("select_k_topics adds aggregate stability rows and details when requested", {
+  dtm <- make_sel_dtm()
+  calls <- list()
+
+  testthat::local_mocked_bindings(
+    fit_topic_model = function(x, engine, model, k, method, control, ...) {
+      calls[[length(calls) + 1L]] <<- list(k = k, control = control)
+      make_select_mock_fit(k, x, engine, model, method, control)
+    },
+    .package = "NLPstudio"
+  )
+
+  result <- select_k_topics(
+    dtm,
+    engine = "topicmodels",
+    model = "lda",
+    method = "Gibbs",
+    k_grid = 2:3,
+    metrics = "diversity",
+    holdout = 0,
+    seed = 100L,
+    stability_seeds = c(11L, 12L),
+    control = list(fit = list(iter = 10L))
+  )
+
+  stability_rows <- result[metric == "stability"]
+  expect_equal(nrow(stability_rows), 2L)
+  expect_equal(stability_rows$level, rep("aggregate", 2L))
+  expect_equal(stability_rows$value, rep(1, 2L), tolerance = 1e-8)
+
+  stability <- attr(result, "stability")
+  expect_named(stability, c("k2", "k3"))
+  expect_true(all(vapply(stability, inherits, logical(1L), "nlp_topic_stability")))
+  expect_equal(unique(stability$k2$seed), 12L)
+
+  seed_calls <- vapply(calls, function(x) {
+    seed <- x$control$fit$seed
+    if (is.null(seed)) NA_integer_ else seed
+  }, integer(1L))
+  expect_equal(seed_calls, c(NA_integer_, 11L, 12L, NA_integer_, 11L, 12L))
+})
+
 # ---- print and plot ---------------------------------------------------------
 
 test_that("print.nlp_k_selection runs without error and returns invisibly", {

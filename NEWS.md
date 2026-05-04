@@ -1,5 +1,30 @@
 # NLPstudio News
 
+## NLPstudio 0.9.0  (2026-05-04)
+
+### NEW FEATURES
+
+1. Added `assess_topic_stability()`, a transparent repeated-fit wrapper around
+   `fit_topic_model()` for scoring topic stability under the same model
+   specification and different seeds.
+
+2. Added `summarize_topics()`, a one-row-per-topic interpretation table with
+   top terms, prevalence, available metrics, representative documents, and
+   optional text or document metadata.
+
+3. Extended `select_k_topics()` with optional `stability_seeds`,
+   `stability_resampling`, and `stability_ncores` arguments. Existing defaults
+   are unchanged; when seeds are supplied, aggregate stability rows are added
+   and full stability details are attached as an attribute.
+
+### DOCUMENTATION
+
+1. Added a topic-model selection vignette covering fitting, evaluation,
+   K selection, stability assessment, topic summarization, and table export.
+
+2. Updated visible README release references and the topic-model workflow for
+   `v0.9.0`.
+
 ## NLPstudio 0.8.4  (2026-05-04)
 
 ### CI
