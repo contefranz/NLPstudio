@@ -3,6 +3,7 @@ NLPstudio.Rproj$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
+^CONTRIBUTING\.md$
 ^LICENSE\.md$
 ^cran-comments\.md$
 ^data-raw$

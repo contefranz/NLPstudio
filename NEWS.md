@@ -1,5 +1,33 @@
 # NLPstudio News
 
+## NLPstudio 0.8.3  (2026-05-04)
+
+### TESTS
+
+1. Raised local line coverage above 95% with focused regression coverage for
+   topic-model internals, JSON ingestion edge cases, tokenizer branching,
+   selection summaries, and evaluation helpers.
+
+2. Added lightweight synthetic ETM coverage for package-owned accessor and
+   helper behavior without requiring the optional `topicmodels.etm` or `torch`
+   backends in CI.
+
+### CI
+
+1. Enforced a 95% Codecov project coverage target with a 1% tolerance while
+   keeping patch coverage informational.
+
+### DOCUMENTATION
+
+1. Added developer coverage instructions so local tests and coverage can be
+   reproduced before pushing.
+
+### BUG FIXES
+
+1. `calculate_similarity()` and `calculate_distance()` now preserve backend
+   default `method` and `margin` metadata when callers rely on default
+   quanteda.textstats arguments.
+
 ## NLPstudio 0.8.2  (2026-04-29)
 
 ### TESTS

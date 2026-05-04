@@ -85,8 +85,10 @@ calculate_similarity <- function(x, ncores = 1, ...) {
     temp_matrix <- methods::as(out_matrix, "packedMatrix")
     textstat_obj <- methods::new("textstat_simil_symm",
                         temp_matrix,
-                        method = args$method,
-                        margin = args$margin,
+                        method = if (!is.null(args$method)) args$method else
+                          out_measures@method,
+                        margin = if (!is.null(args$margin)) args$margin else
+                          out_measures@margin,
                         type   = "textstat_simil")
   } else {
     textstat_obj <- out_measures
@@ -133,8 +135,10 @@ calculate_distance <- function(x, ncores = 1, ...) {
     temp_matrix <- methods::as(out_matrix, "packedMatrix")
     textstat_obj <- methods::new("textstat_dist_symm",
                         temp_matrix,
-                        method = args$method,
-                        margin = args$margin,
+                        method = if (!is.null(args$method)) args$method else
+                          out_measures@method,
+                        margin = if (!is.null(args$margin)) args$margin else
+                          out_measures@margin,
                         type   = "textstat_dist")
   } else {
     textstat_obj <- out_measures
