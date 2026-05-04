@@ -8,13 +8,13 @@
 An object of class \code{dictionary2} of length 4.
 }
 \source{
-\url{https://www.tandfonline.com/doi/epdf/10.1080/09638180.2019.1670223?src=getftr}
+DOI: 10.1080/09638180.2019.1670223
 }
 \usage{
 data_dictionary_Cannon_Ling_Wang_Watanabe
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing the Cannon, Ling, Wang, and Watanabe corporate
+A \link[quanteda:dictionary]{dictionary} containing the Cannon, Ling, Wang, and Watanabe corporate
 social responsibility word list. The object has four top-level categories
 and mixes unigrams with multi-word expressions.
 }

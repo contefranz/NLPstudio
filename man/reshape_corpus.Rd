@@ -40,7 +40,7 @@ and reshaped text units as defined by \code{to}.
 Reshape a \code{\link[quanteda:corpus]{quanteda::corpus()}} into smaller units (typically sentences or
 paragraphs) using parallel backends from the \strong{parallel} package.
 By default, reshaping is parallelized with PSOCK clusters
-(\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for cross-platform stability and dynamic
+(\code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}}) for cross-platform stability and dynamic
 load balancing. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this can
 lead to instability with quanteda (see \emph{Note}).

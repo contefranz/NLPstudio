@@ -16,7 +16,7 @@ An object of class \code{dictionary2} of length 1.
 data_dictionary_LoughranMcDonald_Complexity
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing the 2024 Loughran and McDonald firm complexity
+A \link[quanteda:dictionary]{dictionary} containing the 2024 Loughran and McDonald firm complexity
 word list. The object has a single top-level entry, \code{Firm_Complexity}, with
 53 terms for complexity-oriented text analysis.
 }

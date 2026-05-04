@@ -1,8 +1,8 @@
 
-[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://www.tidyverse.org/lifecycle/#maturing)
+[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
-[![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.8.3-blue.svg)](https://github.com/contefranz/NLPstudio/releases/tag/v0.8.3)
+[![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
+[![release](https://img.shields.io/badge/release-v0.8.4-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -29,7 +29,7 @@ unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/pa
 support for embedded topic models. The package
 standardizes document-topic weights (DTW), topic-word weights (TWW),
 representative-candidate extraction, generic topic prediction for new
-documents, and downstream visualization across those engines. v0.8.0 adds a
+documents, and downstream visualization across those engines. v0.8.4 includes a
 model-evaluation layer — `evaluate_topic_model()` for coherence (UMass, NPMI),
 diversity, exclusivity, training NLL/perplexity, and held-out
 NLL/perplexity, returned at aggregate level by default — and
@@ -74,13 +74,73 @@ torch::install_torch()
 torch::torch_is_installed()
 ```
 
+### Topic-model workflow
+
+This example uses the optional **topicmodels** backend and a small in-memory
+corpus so the current v0.8.4 workflow can be reproduced without external data.
+
+```r
+library(NLPstudio)
+library(quanteda)
+
+docs <- data.frame(
+  doc_id = paste0("doc", 1:6),
+  text = c(
+    "Revenue growth improved after subscription demand increased.",
+    "Operating margin expanded as cloud costs declined.",
+    "Audit committee oversight focused on internal controls.",
+    "Risk disclosures emphasized liquidity and refinancing pressure.",
+    "Customer retention supported recurring software revenue.",
+    "Debt covenants and interest expense shaped capital allocation."
+  )
+)
+
+corp <- quanteda::corpus(docs, text_field = "text", docid_field = "doc_id")
+toks <- quanteda::tokens(corp, remove_punct = TRUE)
+toks <- quanteda::tokens_tolower(toks)
+toks <- quanteda::tokens_remove(toks, pattern = quanteda::stopwords("en"))
+dfm <- quanteda::dfm(toks)
+
+fit <- fit_topic_model(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  k = 2,
+  method = "Gibbs",
+  control = list(fit = list(seed = 1L, iter = 50L, burnin = 0L, thin = 1L))
+)
+
+tww <- get_tww(fit)
+get_top_terms(tww, n = 4)
+
+evaluate_topic_model(
+  fit,
+  training = dfm,
+  metrics = c("diversity", "exclusivity", "coherence_umass"),
+  top_n = 4L
+)
+
+select_k_topics(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  method = "Gibbs",
+  k_grid = 2:3,
+  metrics = c("diversity", "exclusivity"),
+  top_n = 4L,
+  holdout = 0,
+  seed = 1L,
+  control = list(fit = list(iter = 50L, burnin = 0L, thin = 1L))
+)
+```
+
 ---
 
 #### Author
 
-[Francesco Grossetti](https://accounting.unibocconi.eu/people/francesco-grossetti) 
+[Francesco Grossetti](https://accounting.unibocconi.eu/faculty/francesco-grossetti)
 
-_Assistant Professor of Accounting Analytics and Data Science_  
-Department of Accounting, Bocconi University  
-Fellow at Bocconi Institute for Data Science and Analytics ([BIDSA](https://www.bidsa.unibocconi.eu/wps/wcm/connect/Site/Bidsa/Home))  
+_Assistant Professor of Accounting Analytics and Data Science_<br>
+Department of Accounting, Bocconi University<br>
+Fellow at Bocconi Institute for Data Science and Analytics ([BIDSA](https://bidsa.unibocconi.eu/))<br>
 Contact: francesco.grossetti@unibocconi.it

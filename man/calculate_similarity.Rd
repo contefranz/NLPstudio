@@ -10,28 +10,28 @@ calculate_similarity(x, ncores = 1, ...)
 calculate_distance(x, ncores = 1, ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:dfm]{quanteda::dfm} object.}
+\item{x}{A \strong{quanteda} \link[quanteda:dfm]{dfm} object.}
 
 \item{ncores}{Integer. Number of threads to pass to
 \code{\link[quanteda:quanteda_options]{quanteda::quanteda_options()}} for the duration of the call.
 Defaults to 1 (quanteda's own default). The setting is restored on
 exit so it does not affect the caller's global state.}
 
-\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or
-\link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}.}
+\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_simil]{textstat_simil} or
+\link[quanteda.textstats:textstat_dist]{textstat_dist}.}
 }
 \value{
-A sparse matrix as S4 class following \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil}
-or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist} from the \strong{Matrix} package.
+A sparse matrix as S4 class following \link[quanteda.textstats:textstat_simil-class]{textstat_simil}
+or \link[quanteda.textstats:textstat_dist-class]{textstat_dist} from the \strong{Matrix} package.
 }
 \description{
-Compute similarity and distance measures using \link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_simil} or
-\link[quanteda.textstats:textstat_simil]{quanteda.textstats::textstat_dist}, optionally routing additional CPU threads through
+Compute similarity and distance measures using \link[quanteda.textstats:textstat_simil]{textstat_simil} or
+\link[quanteda.textstats:textstat_dist]{textstat_dist}, optionally routing additional CPU threads through
 quanteda's built-in OpenMP backend.
 }
 \details{
 Earlier versions of these functions attempted to parallelise by
-splitting the input \link[quanteda:dfm]{quanteda::dfm} by rows and computing partial matrices on
+splitting the input \link[quanteda:dfm]{dfm} by rows and computing partial matrices on
 separate workers. That approach is fundamentally incorrect: each chunk
 only sees its own documents, so cross-chunk pairs are never evaluated
 and the merged result is block-diagonal rather than a true full
@@ -43,10 +43,10 @@ OpenMP. Setting \code{ncores > 1} therefore exposes that mechanism rather
 than introducing an external worker pool.
 
 If a second matrix (\code{y}) is not provided, the output is forced into a
-symmetric structure using \link[Matrix:forceSymmetric-methods]{Matrix::forceSymmetric} and packed into a
-\link[Matrix:dsyMatrix-class]{Matrix::dspMatrix} for memory efficiency.  The result is wrapped into
+symmetric structure using \link[Matrix:forceSymmetric]{forceSymmetric} and packed into a
+\link[Matrix:dspMatrix-class]{dspMatrix} for memory efficiency.  The result is wrapped into
 the appropriate \strong{quanteda.textstats} S4 class
-(\link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_simil} or \link[quanteda.textstats:textstat_proxy-class]{quanteda.textstats::textstat_dist}).
+(\link[quanteda.textstats:textstat_simil-class]{textstat_simil} or \link[quanteda.textstats:textstat_dist-class]{textstat_dist}).
 }
 \examples{
 dfmat <- quanteda::dfm(quanteda::tokens(c(

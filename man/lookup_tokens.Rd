@@ -35,7 +35,7 @@ documents in the same order as the input.
 \description{
 Lookup tokens in parallel using backends from the \strong{parallel}
 package. By default, lookup is parallelized with PSOCK clusters
-(\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for stable cross-platform performance
+(\code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}}) for stable cross-platform performance
 and dynamic load balancing. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this
 can lead to instability with quanteda (see \emph{Note}).

@@ -35,7 +35,7 @@ with the same number and order of documents as the input corpus.
 \description{
 Tokenize a \code{\link[quanteda:corpus]{quanteda::corpus()}} in parallel using backends from the
 \strong{parallel} package. By default, tokenization is parallelized with
-PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for stability across
+PSOCK clusters (\code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}}) for stability across
 platforms. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS, but this
 can lead to crashes or silent failures because \code{quanteda} uses C++
@@ -47,7 +47,7 @@ Each chunk is tokenized in parallel by \code{\link[quanteda:tokens]{quanteda::to
 resulting token objects are combined. Original document order is
 restored before returning the result.
 The corpus is split into \code{nchunks} balanced chunks by document IDs.
-With PSOCK backends, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}} is used to assign
+With PSOCK backends, \code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}} is used to assign
 chunks dynamically across \code{ncores} workers. This improves utilization
 when document sizes are highly variable. With FORK, \code{\link[parallel:mclapply]{parallel::mclapply()}}
 is used, which distributes chunks upfront.
