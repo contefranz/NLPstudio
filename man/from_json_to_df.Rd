@@ -74,7 +74,7 @@ Internally the function proceeds in three phases:
 default, chunk size is derived from \code{nchunks} as
 \code{ceiling(length(files) / nchunks)}. If \code{max_chunk_size} is explicitly
 provided, it overrides this calculation. Each chunk is read in parallel
-with \code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}} and converted to data tables.
+with \code{\link[RcppSimdJson:fload]{RcppSimdJson::fload()}} and converted to data tables.
 \item \strong{Reshape} – Each parsed table is normalized and reshaped from wide to
 long format in parallel. The selected text columns depend on \code{what}:
 \code{"10-K"} uses \verb{item_*}/\verb{section_*}, \code{"10-Q"} uses \verb{part_*} and
@@ -88,7 +88,7 @@ and column order standardized.
 
 Parallel backends are controlled with the \code{socket} argument:
 \itemize{
-\item When \code{socket = "PSOCK"}, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}} is used, which
+\item When \code{socket = "PSOCK"}, \code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}} is used, which
 dynamically balances work across workers and is portable across operating
 systems.
 \item When \code{socket = "FORK"}, \code{\link[parallel:mclapply]{parallel::mclapply()}} is used, which can be
@@ -140,6 +140,6 @@ head(dt)
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[RcppSimdJson:fparse]{RcppSimdJson::fload()}}, \code{\link[data.table:melt.data.table]{data.table::melt()}},
-\code{\link[parallel:mclapply]{parallel::mclapply()}}, \code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}
+\code{\link[RcppSimdJson:fload]{RcppSimdJson::fload()}}, \code{\link[data.table:melt]{data.table::melt()}},
+\code{\link[parallel:mclapply]{parallel::mclapply()}}, \code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}}
 }

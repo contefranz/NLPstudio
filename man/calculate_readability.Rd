@@ -13,7 +13,7 @@ calculate_readability(
 )
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus} or a character vector containing the documents to process.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{corpus} or a character vector containing the documents to process.}
 
 \item{ncores}{Integer. Number of CPU cores to use for parallel
 processing. Defaults to 1 (sequential).}
@@ -26,16 +26,16 @@ balancing when documents vary in size. See \emph{Details}.}
 (default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
 supported and will trigger an error.}
 
-\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_readability]{quanteda.textstats::textstat_readability}.}
+\item{...}{Additional arguments passed to \link[quanteda.textstats:textstat_readability]{textstat_readability}.}
 }
 \value{
-A \link[data.table:data.table]{data.table::data.table} with as many columns as passed to
+A \link[data.table:data.table]{data.table} with as many columns as passed to
 \code{measure} and \code{doc_id} as the document identifier.
 }
 \description{
 Compute readability measures in parallel using backends from the
 \strong{parallel} package. By default, computation is parallelized with
-PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for cross-platform
+PSOCK clusters (\code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}}) for cross-platform
 stability. Optionally, FORK-based parallelism
 (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS.
 }

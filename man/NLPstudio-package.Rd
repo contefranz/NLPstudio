@@ -82,5 +82,10 @@ data, the framework generalizes to any structured document corpus within the
 \author{
 \strong{Maintainer}: Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]
+}
+
 }
 \keyword{internal}

@@ -318,14 +318,16 @@ Jagarlamudi, J., Daume III, H., & Udupa, R. (2012).
 In \emph{Proceedings of the 13th Conference of the European Chapter of the Association for Computational Linguistics}, 204-213.
 
 Watanabe, K., & Zhou, Y. (2022).
-\href{https://journals.sagepub.com/doi/full/10.1177/0894439320907027}{Theory-Driven Analysis of Large Corpora: Semisupervised Topic Classification of the UN Speeches}.
+Theory-Driven Analysis of Large Corpora: Semisupervised Topic Classification of the UN Speeches.
+DOI: 10.1177/0894439320907027.
 \emph{Social Science Computer Review}, 40(2), 346-366.
 
 Watanabe, K., & Baturo, A. (2024).
-\href{https://journals.sagepub.com/doi/10.1177/08944393231178605}{Seeded Sequential LDA: A Semi-Supervised Algorithm for Topic-Specific Analysis of Sentences}.
+Seeded Sequential LDA: A Semi-Supervised Algorithm for Topic-Specific Analysis of Sentences.
+DOI: 10.1177/08944393231178605.
 \emph{Social Science Computer Review}, 42(1), 224-248.
 }
 \seealso{
-\code{\link[topicmodels:lda]{topicmodels::LDA()}} \code{\link[topicmodels:ctm]{topicmodels::CTM()}} \code{\link[text2vec:LatentDirichletAllocation]{text2vec::LDA()}} \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}
+\code{\link[topicmodels:LDA]{topicmodels::LDA()}} \code{\link[topicmodels:CTM]{topicmodels::CTM()}} \code{\link[text2vec:LDA]{text2vec::LDA()}} \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}
 \code{\link[topicmodels.etm:ETM]{topicmodels.etm::ETM()}}
 }

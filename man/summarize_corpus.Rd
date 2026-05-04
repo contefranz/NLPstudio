@@ -29,12 +29,12 @@ supported and will trigger an error.}
 \item{...}{Additional arguments passed to [quanteda.textstats::textstat_summary().}
 }
 \value{
-A \link[data.table:data.table]{data.table::data.table} object with detailed information about each document.
+A \link[data.table:data.table]{data.table} object with detailed information about each document.
 }
 \description{
 Summarize a \code{\link[quanteda:corpus]{quanteda::corpus()}} in parallel using backends from the
 \strong{parallel} package. By default, summarization is parallelized with
-PSOCK clusters (\code{\link[parallel:clusterApply]{parallel::clusterApplyLB()}}) for stable cross-platform
+PSOCK clusters (\code{\link[parallel:clusterApplyLB]{parallel::clusterApplyLB()}}) for stable cross-platform
 performance and dynamic load balancing. Optionally, FORK-based
 parallelism (\code{\link[parallel:mclapply]{parallel::mclapply()}}) may be requested on Linux/macOS,
 but this can lead to instability with quanteda (see \emph{Note}).

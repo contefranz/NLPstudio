@@ -16,7 +16,7 @@ An object of class \code{dictionary2} of length 16.
 data_dictionary_SDG
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing key terms for mapping research text to
+A \link[quanteda:dictionary]{dictionary} containing key terms for mapping research text to
 Sustainable Development Goal themes following Wang et al. (2023). The object
 has 16 top-level entries named \code{SDG1} through \code{SDG16}.
 }
@@ -32,6 +32,6 @@ effectively tailoring global SDG themes to specific local research needs and nar
 }
 \references{
 Wang, W., Kang, W., & Mu, J. (2023). Mapping research to the sustainable development goals
-\emph{Working Paper} available \href{https://assets.researchsquare.com/files/rs-2544385/v3/de08997f5c48f22a37cc4f93.pdf?c=1678389566}{here}.
+\emph{Working Paper} available at \url{https://www.researchsquare.com/article/rs-2544385/v2}.
 }
 \keyword{data}

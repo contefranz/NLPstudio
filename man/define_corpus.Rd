@@ -60,5 +60,5 @@ summary(corp)
 quanteda::docvars(corp)
 }
 \seealso{
-\code{\link[quanteda:corpus]{quanteda::corpus()}}, \code{\link[quanteda:docvars]{quanteda::docvars()}}
+\code{\link[quanteda:corpus]{corpus()}}, \code{\link[quanteda:docvars]{docvars()}}
 }

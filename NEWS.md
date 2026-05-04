@@ -1,5 +1,28 @@
 # NLPstudio News
 
+## NLPstudio 0.8.4  (2026-05-04)
+
+### CI
+
+1. Expanded R CMD check coverage to include Ubuntu `oldrel-1`, `release`, and
+   `devel`, while keeping Windows and macOS on release R.
+
+2. Added a roxygen consistency workflow using `roxygen2 >= 8.0.0` so stale
+   `NAMESPACE` and `man/*.Rd` files fail CI.
+
+3. Added a strict URL check workflow for README, package, and Rd links.
+
+### DOCUMENTATION
+
+1. Refreshed the README release badge to `v0.8.4` and linked it to the generic
+   releases page until the release tag exists.
+
+2. Added a reproducible in-memory `topicmodels` workflow to the README for the
+   current v0.8.x topic-model API.
+
+3. Normalized several documentation references to stable article URLs or plain
+   DOI citations so automated URL checks can run consistently.
+
 ## NLPstudio 0.8.3  (2026-05-04)
 
 ### TESTS

@@ -7,7 +7,7 @@
 parse_corpus(x, ncores = 1, nchunks = ncores, socket = c("PSOCK", "FORK"), ...)
 }
 \arguments{
-\item{x}{A \strong{quanteda} \link[quanteda:corpus]{quanteda::corpus}.}
+\item{x}{A \strong{quanteda} \link[quanteda:corpus]{corpus}.}
 
 \item{ncores}{Integer. Number of CPU cores to use for parallel
 processing. Defaults to 1 (sequential).}
@@ -20,31 +20,31 @@ balancing when documents vary in size. See \emph{Details}.}
 (default, recommended) or \code{"FORK"}. On Windows, \code{"FORK"} is not
 supported and will trigger an error.}
 
-\item{...}{Additional arguments passed to \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}.}
+\item{...}{Additional arguments passed to \code{\link[spacyr:spacy_parse]{spacy_parse()}}.}
 }
 \value{
-A \link[data.table:data.table]{data.table::data.table} of tokenized, parsed, and annotated tokens.
+A \link[data.table:data.table]{data.table} of tokenized, parsed, and annotated tokens.
 }
 \description{
-Parse a \link[quanteda:corpus]{quanteda::corpus} in parallel using backends from the \strong{parallel} package.
-This function is a wrapper of \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}. Thus, it is critical to have
-a working installation of the \strong{\link[spacyr:spacyr-package]{spacyr::spacyr}} package. Please refer to the
+Parse a \link[quanteda:corpus]{corpus} in parallel using backends from the \strong{parallel} package.
+This function is a wrapper of \code{\link[spacyr:spacy_parse]{spacy_parse()}}. Thus, it is critical to have
+a working installation of the \strong{\link[spacyr:spacyr]{spacyr}} package. Please refer to the
 \href{https://github.com/quanteda/spacyr?tab=readme-ov-file#installing-the-package}{installation guide}
 to troubleshoot issues.
 }
 \details{
-The workhorse of this function is \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}} such that all the usual parameters
+The workhorse of this function is \code{\link[spacyr:spacy_parse]{spacy_parse()}} such that all the usual parameters
 can be passed to \code{parse_corpus()} as well. It is critical to have a proper installation of the
 \href{https://spacy.io/}{\strong{spaCy}} library and all of its components. \code{parse_corpus()} does not
-initialize any instance of spaCy so call \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} beforehand.
+initialize any instance of spaCy so call \code{\link[spacyr:spacy_initialize]{spacy_initialize()}} beforehand.
 
 In particular, one can pass and use any language model as currently supported by version 3.7 via
-the argument \code{model} in \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}}.
-By default, \code{\link[spacyr:spacy_install]{spacyr::spacy_install()}} downloads and uses the smallest English model
-\code{en_core_web_sm}. It is recommended to use \code{\link[spacyr:spacy_download_langmodel]{spacyr::spacy_download_langmodel()}}
+the argument \code{model} in \code{\link[spacyr:spacy_initialize]{spacy_initialize()}}.
+By default, \code{\link[spacyr:spacy_install]{spacy_install()}} downloads and uses the smallest English model
+\code{en_core_web_sm}. It is recommended to use \code{\link[spacyr:spacy_download_langmodel]{spacy_download_langmodel()}}
 to properly download and activate the desired model.
 
-To avoid any issue, \code{parse_corpus()} finalizes the session if one is active via \code{\link[spacyr:spacy_finalize]{spacyr::spacy_finalize()}} \code{on.exit()}.
+To avoid any issue, \code{parse_corpus()} finalizes the session if one is active via \code{\link[spacyr:spacy_finalize]{spacy_finalize()}} \code{on.exit()}.
 If no session is active, \code{parse_corpus()} will error on exit.
 }
 \note{
@@ -54,7 +54,7 @@ On large corpora, allocating too many workers may exhaust available RAM and
 significantly slow down or even terminate the process. It is recommended to
 increase \code{ncores} gradually and monitor memory consumption.
 
-Note that the returned \link[data.table:data.table]{data.table::data.table} may contain a very large number of rows
+Note that the returned \link[data.table:data.table]{data.table} may contain a very large number of rows
 when \code{x} is large, which also can have implications for memory usage and downstream
 processing.
 }
@@ -74,7 +74,7 @@ spacyr::spacy_finalize()
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[spacyr:spacy_install]{spacyr::spacy_install()}} \code{\link[spacyr:spacy_initialize]{spacyr::spacy_initialize()}} \code{\link[spacyr:spacy_parse]{spacyr::spacy_parse()}}
+\code{\link[spacyr:spacy_install]{spacy_install()}} \code{\link[spacyr:spacy_initialize]{spacy_initialize()}} \code{\link[spacyr:spacy_parse]{spacy_parse()}}
 }
 \author{
 Francesco Grossetti \href{mailto:francesco.grossetti@unibocconi.it}{francesco.grossetti@unibocconi.it}

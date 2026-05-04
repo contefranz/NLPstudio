@@ -19,7 +19,7 @@
 #'
 #' A [dictionary] containing Feng Li's 2010 forward-looking statement word
 #' list. The object has a single top-level entry, `FLS_Li`, with 18 terms.
-#' @source <https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1475-679X.2010.00382.x>
+#' @source DOI: 10.1111/j.1475-679X.2010.00382.x
 #' @references
 #'   Li, F. (2010). The Information Content of Forward-Looking Statements in
 #'   Corporate Filings—A Naïve Bayesian Machine Learning Approach,
@@ -53,7 +53,7 @@
 #' * `Product`
 #' * `General`
 #'
-#' @source <https://www.tandfonline.com/doi/epdf/10.1080/09638180.2019.1670223?src=getftr>
+#' @source DOI: 10.1080/09638180.2019.1670223
 #' @references
 #'   Cannon, J. N., Ling, Z., Wang, Q., & Watanabe, O. V. (2020).
 #'   10-K disclosure of corporate social responsibility and firms’ competitive advantages.
@@ -83,8 +83,6 @@
 #' <https://www.sdgmapping.auckland.ac.nz/>
 #' @references
 #'   Wang, W., Kang, W., & Mu, J. (2023). Mapping research to the sustainable development goals
-#'   _Working Paper_ available [here](https://assets.researchsquare.com/files/rs-2544385/v3/de08997f5c48f22a37cc4f93.pdf?c=1678389566).
+#'   _Working Paper_ available at <https://www.researchsquare.com/article/rs-2544385/v2>.
 #' @keywords data
 "data_dictionary_SDG"
-
-

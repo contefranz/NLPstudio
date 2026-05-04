@@ -14,7 +14,7 @@ plot_top_terms(top_terms, facet_args = list(scales = "free_y"), ...)
 \item{facet_args}{A named list of additional arguments passed to \link[ggplot2:facet_wrap]{facet_wrap()}.
 Defaults to \code{list(scales = "free_y")}, which allows each facet to have its own y-axis scale.}
 
-\item{...}{Additional arguments passed to \link[ggplot2:geom_bar]{geom_col()}.}
+\item{...}{Additional arguments passed to \link[ggplot2:geom_col]{geom_col()}.}
 }
 \value{
 A \link[ggplot2:ggplot]{ggplot} object: a faceted horizontal bar chart with
@@ -23,7 +23,7 @@ topic, as estimated by the topic–word distribution matrix (\eqn{\phi}).
 }
 \description{
 Create a faceted bar chart of the highest-probability terms for each topic
-using the long-format output from \code{\link[=get_top_terms]{get_top_terms()}} via \strong{\link[ggplot2:ggplot2-package]{ggplot2}}. Each facet corresponds
+using the long-format output from \code{\link[=get_top_terms]{get_top_terms()}} via \strong{\link[ggplot2:ggplot2]{ggplot2}}. Each facet corresponds
 to one topic, and bars represent the estimated topic–word probabilities
 (\eqn{\phi}).
 }

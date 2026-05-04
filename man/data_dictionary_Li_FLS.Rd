@@ -8,13 +8,13 @@
 An object of class \code{dictionary2} of length 1.
 }
 \source{
-\url{https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1475-679X.2010.00382.x}
+DOI: 10.1111/j.1475-679X.2010.00382.x
 }
 \usage{
 data_dictionary_Li_FLS
 }
 \description{
-A \link[quanteda:dictionary]{quanteda::dictionary} containing Feng Li's 2010 forward-looking statement word
+A \link[quanteda:dictionary]{dictionary} containing Feng Li's 2010 forward-looking statement word
 list. The object has a single top-level entry, \code{FLS_Li}, with 18 terms.
 }
 \references{
