@@ -33,6 +33,7 @@ Imports:
     quanteda.textstats (>= 0.97)
 Suggests:
     knitr (>= 1.45),
+    pluralize (>= 0.2.0),
     RcppSimdJson (>= 0.1.14),
     rlang (>= 1.1.0),
     rmarkdown (>= 2.25),

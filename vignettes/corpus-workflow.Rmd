@@ -11,7 +11,7 @@ vignette: >
 
 ```{r setup, include=FALSE}
 has_json <- requireNamespace("RcppSimdJson", quietly = TRUE)
-has_pluralize <- "pluralize" %in% rownames(utils::installed.packages())
+has_pluralize <- requireNamespace("pluralize", quietly = TRUE)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
