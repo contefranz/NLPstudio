@@ -23,7 +23,14 @@
    standardized DTW/TWW extraction, prediction, evaluation, K selection,
    stability assessment, topic summarization, ETM extensions, and table export.
 
-2. Updated visible README release references and the topic-model workflow for
+2. Added a corpus workflow vignette using bundled SEC-style 10-K JSON examples
+   to demonstrate JSON ingestion, corpus construction, tokenization,
+   dictionary lookup, readability, similarity/distance, and table export.
+
+3. Added five public 10-K JSON example files under `inst/extdata/json/` for
+   vignette and example workflows.
+
+4. Updated visible README release references and the topic-model workflow for
    `v0.9.0`.
 
 ### CI

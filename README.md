@@ -43,6 +43,11 @@ workflow: fit once through a common interface, inspect standardized DTW/TWW
 outputs, interpret topics, predict new documents, evaluate model quality,
 select K, assess stability, summarize topics, and export tables.
 
+The [corpus workflow vignette](vignettes/corpus-workflow.Rmd) covers the
+non-topic-model workflow from bundled SEC-style JSON examples to a `quanteda`
+corpus, tokens, dictionary lookups, readability, similarity and distance
+measures, and export-ready tables.
+
 Embedded topic models are available through the optional **topicmodels.etm** and
 **torch** packages when those backends are installed locally.
 When ETM support is available, **NLPstudio** also exposes ETM-specific topic and
