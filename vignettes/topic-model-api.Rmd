@@ -1,0 +1,539 @@
+---
+title: "Topic Model API and Usage"
+subtitle: "A Consistent Workflow Across Topic-Model Backends"
+author: "by Francesco Grossetti"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Topic Model API and Usage}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+has_topicmodels <- requireNamespace("topicmodels", quietly = TRUE)
+has_tidytext <- requireNamespace("tidytext", quietly = TRUE)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = has_topicmodels
+)
+```
+
+Topic models are useful, but the R ecosystem exposes them through several
+different object types, argument names, and output formats. That makes it harder
+than it should be to compare models, reuse diagnostics, or move a workflow from
+one backend to another.
+
+NLPstudio's topic-model API is built to remove that friction. The package gives
+you one workflow for fitting, inspecting, predicting, evaluating, selecting, and
+summarizing topic models. The backend can change, but the main verbs and the
+standardized outputs stay the same.
+
+This vignette walks through that workflow from start to finish. We will prepare
+a small corpus, fit one topic model, inspect the standardized outputs, evaluate
+the model, compare candidate values of `k`, assess seed stability, build an
+interpretation table, and sketch how the same calls transfer to other engines.
+
+The notation follows Lewis and Grossetti (2022). In particular, this vignette
+uses DTW for document-topic weights and TWW for topic-word weights. Those two
+tables are the main package-standard representation of a fitted topic model:
+DTW describes documents in the topic space, while TWW describes topics in the
+vocabulary space.
+
+The package currently supports topic models from **text2vec**, **topicmodels**,
+**seededlda**, and optionally **topicmodels.etm**. To keep this vignette fast and
+reliable during package checks, only the **topicmodels** examples are evaluated.
+The other backend sections are included as non-evaluated templates so you can see
+the same API shape without requiring every optional backend on your machine.
+
+## Prepare Data Once
+
+The workflow starts with ordinary data: one row per document, one text column,
+and any metadata that helps interpret the documents later. Here the metadata is
+minimal, but the same pattern works with richer document-level fields such as
+firm identifiers, filing dates, industries, countries, or human-coded labels.
+
+Topic models are estimated from a document-feature matrix. The metadata does not
+enter the model directly in this example, but we keep it next to the model so it
+can be returned by downstream helpers. That is what lets later calls attach text,
+groups, and document identifiers to predictions, representative documents, and
+summary tables.
+
+```{r data}
+library(NLPstudio)
+library(quanteda)
+
+docs <- data.frame(
+  doc_id = paste0("doc", 1:10),
+  text = c(
+    "Revenue growth improved after subscription demand increased.",
+    "Recurring software revenue supported customer retention.",
+    "Cloud infrastructure costs declined and operating margin expanded.",
+    "Capital allocation reflected debt covenants and interest expense.",
+    "Audit committee oversight focused on internal control remediation.",
+    "Risk disclosures emphasized liquidity and refinancing pressure.",
+    "Cybersecurity controls shaped technology governance disclosures.",
+    "Management discussed compliance monitoring and reporting quality.",
+    "Subscription renewals improved annual recurring revenue trends.",
+    "Debt refinancing reduced interest expense and liquidity risk."
+  ),
+  group = rep(c("performance", "governance"), each = 5),
+  stringsAsFactors = FALSE
+)
+
+corp <- quanteda::corpus(docs, text_field = "text", docid_field = "doc_id")
+toks <- quanteda::tokens(corp, remove_punct = TRUE)
+toks <- quanteda::tokens_tolower(toks)
+toks <- quanteda::tokens_remove(toks, pattern = quanteda::stopwords("en"))
+dfm <- quanteda::dfm(toks)
+dfm
+```
+
+## Fit One Model
+
+`fit_topic_model()` is the basic modeling verb. One call means one model
+specification: one input matrix, one engine, one model family, one value of `k`,
+and one set of backend controls.
+
+The object returned by `fit_topic_model()` is an `nlp_topic_fit`. It keeps the
+original backend model, but it also stores the package-owned pieces that make the
+rest of the API consistent: document-topic weights (DTW), topic-word weights
+(TWW), stable topic identifiers, the fitted vocabulary, optional document
+metadata, backend controls, and available hyperparameters.
+
+```{r fit}
+fit <- fit_topic_model(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  method = "Gibbs",
+  k = 2,
+  doc_data = docs,
+  control = list(fit = list(seed = 1L, iter = 75L, burnin = 0L, thin = 1L))
+)
+
+fit
+```
+
+The printed object is intentionally compact. It tells you what was fit and gives
+you enough context to confirm that the model has the expected engine, model
+family, topic count, document count, and vocabulary size.
+
+Notice the topic labels. Standardized outputs use identifiers such as
+`Topic001` and `Topic002`. Those labels are generated by NLPstudio rather than
+by a specific backend, which is what allows the same helper functions to work
+across engines.
+
+## Inspect Standardized Outputs
+
+After fitting, the first question is usually: "What did the model learn?"
+NLPstudio answers that with two standardized tables.
+
+Use `get_dtw()` for document-topic weights. Each row corresponds to a document,
+and the `Topic###` columns describe how much of that document is associated with
+each topic. Use `get_tww()` for topic-word weights. Each row corresponds to a
+topic, and the columns describe the topic's distribution over the fitted
+vocabulary.
+
+```{r standardized-outputs}
+dtw <- get_dtw(fit, docvars = TRUE, include_text = TRUE)
+tww <- get_tww(fit)
+
+head(dtw)
+tww[, 1:6, with = FALSE]
+```
+
+The full TWW matrix is useful for computation, but it is often too wide for
+human reading. When the goal is interpretation, `get_top_terms()` returns the
+most important words for each topic in either long or wide format. It accepts a
+fitted model or a TWW table, so you can use it early in exploration or later in
+a reporting pipeline.
+
+```{r top-terms}
+top_terms <- get_top_terms(fit, n = 5, format = "long")
+top_terms
+
+get_top_terms(tww, n = 3, format = "wide")
+```
+
+Some engines expose topic-model hyperparameters, while others expose only part
+of that information. NLPstudio returns what is available through
+`get_topic_hyperparameters()` in a backend-neutral table. The original backend
+controls are still stored on `fit$backend_control`, which is helpful when you
+need to audit exactly how a model was estimated.
+
+```{r hyperparameters}
+get_topic_hyperparameters(fit)
+```
+
+## Interpret Topics
+
+Topic interpretation usually combines two views. The first is lexical: which
+words define the topic? The second is documentary: which documents are strongest
+examples of the topic?
+
+For the lexical view, `plot_top_terms()` uses the long output from
+`get_top_terms()`. The plot is a quick check on whether the discovered topics
+look distinct and interpretable.
+
+```{r plot-top-terms, eval=has_topicmodels && has_tidytext, fig.width=7, fig.height=4}
+plot_top_terms(top_terms)
+```
+
+`plot_dtw()` gives the document-side view. It shows how topic weights are spread
+across documents, which helps you see whether the fitted topics dominate a few
+documents, appear broadly across the corpus, or remain very diffuse.
+
+```{r plot-dtw, fig.width=7, fig.height=4}
+plot_dtw(fit)
+```
+
+Representative documents are often the easiest way to name and validate a
+topic. `get_representative_candidates()` ranks documents by their dominant topic
+weight and assigns simple candidate bands. If metadata or text are available,
+the function can return them with the ranking so you can inspect the examples in
+context.
+
+```{r representatives}
+representatives <- get_representative_candidates(
+  fit,
+  doc_data = docs,
+  include_text = TRUE
+)
+
+representatives[
+  ,
+  .(doc_id, topic_max_id, topic_max_value, candidate_band, topic_rank, text)
+]
+```
+
+## Predict New Documents
+
+Once a model is fit, you may want to score new documents against the same topic
+space. `predict_topic_model()` handles the practical detail that new documents
+rarely have exactly the same vocabulary columns as the training matrix. The new
+input is aligned to the fitted vocabulary before backend prediction, and the
+returned DTW table uses the same `Topic###` naming contract as the fitted model.
+
+```{r predict}
+new_docs <- data.frame(
+  doc_id = paste0("new", 1:3),
+  text = c(
+    "Recurring revenue improved after subscription renewals.",
+    "Audit remediation and compliance controls remained a priority.",
+    "Debt refinancing lowered liquidity risk and interest expense."
+  ),
+  source = c("forecast", "governance", "capital"),
+  stringsAsFactors = FALSE
+)
+
+new_corp <- quanteda::corpus(new_docs, text_field = "text", docid_field = "doc_id")
+new_toks <- quanteda::tokens(new_corp, remove_punct = TRUE)
+new_toks <- quanteda::tokens_tolower(new_toks)
+new_toks <- quanteda::tokens_remove(new_toks, pattern = quanteda::stopwords("en"))
+new_dfm <- quanteda::dfm(new_toks)
+
+pred <- predict_topic_model(
+  fit,
+  new_dfm,
+  doc_data = new_docs,
+  include_text = TRUE
+)
+
+pred
+```
+
+## Evaluate Model Quality
+
+Interpretability is not only visual. `evaluate_topic_model()` collects common
+quality metrics into one long-format table so they can be compared, plotted, or
+joined to model-selection results. Some metrics summarize the whole model;
+others are defined topic by topic. Setting `level = "all"` returns both where
+available.
+
+```{r evaluate}
+evaluation <- evaluate_topic_model(
+  fit,
+  training = dfm,
+  metrics = c("coherence_umass", "diversity", "exclusivity", "train_perplexity"),
+  top_n = 5L,
+  level = "all"
+)
+
+evaluation
+```
+
+## Select K
+
+Choosing the number of topics is a modeling decision, not just a software
+argument. `select_k_topics()` makes that decision easier to inspect by fitting a
+grid of candidate topic counts and returning the requested metrics in one
+selection table.
+
+The default behavior remains the simple path: fit each value of `k` once and
+evaluate it. When `stability_seeds` is supplied, each candidate `k` is also
+refit across those seeds. The selection table then includes aggregate stability,
+and the full stability details are attached as an attribute for deeper
+inspection.
+
+```{r select-k}
+k_selection <- select_k_topics(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  method = "Gibbs",
+  k_grid = 2:3,
+  metrics = c("coherence_umass", "diversity", "exclusivity"),
+  top_n = 5L,
+  holdout = 0,
+  seed = 10L,
+  stability_seeds = c(1L, 2L),
+  control = list(fit = list(iter = 75L, burnin = 0L, thin = 1L))
+)
+
+k_selection
+attr(k_selection, "stability")$k2
+```
+
+## Assess Stability Directly
+
+Topic models can move when the random seed changes. That does not necessarily
+mean a model is bad, but it is information you should see before treating topic
+labels as stable research objects.
+
+`assess_topic_stability()` makes that check explicit. In the automatic workflow,
+it repeatedly calls `fit_topic_model()` with the same model specification and
+different seeds. Unless you supply `resampling`, the seed is the only thing that
+changes across runs.
+
+Topic labels are arbitrary across repeated runs. A topic called `Topic001` in
+one seed may correspond to `Topic002` in another seed. The stability helper
+therefore extracts standardized TWW from each run, aligns vocabularies, matches
+topics across runs, and reports matched-topic cosine similarities.
+
+```{r stability-auto}
+stability <- assess_topic_stability(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  method = "Gibbs",
+  k = 2,
+  seeds = 1:3,
+  control = list(fit = list(iter = 75L, burnin = 0L, thin = 1L))
+)
+
+stability
+```
+
+If you prefer to fit models yourself, you can still use the same matching and
+scoring code. Pass a list of `nlp_topic_fit` objects, and
+`assess_topic_stability()` will skip fitting and move directly to standardized
+TWW extraction, topic matching, and stability scoring.
+
+```{r stability-manual}
+fits <- lapply(1:3, function(seed) {
+  fit_topic_model(
+    dfm,
+    engine = "topicmodels",
+    model = "lda",
+    method = "Gibbs",
+    k = 2,
+    control = list(fit = list(seed = seed, iter = 75L, burnin = 0L, thin = 1L))
+  )
+})
+
+assess_topic_stability(fits, seeds = 1:3)
+```
+
+## Summarize and Export
+
+After fitting, inspecting, evaluating, and checking stability, the next step is
+usually a table that can be reviewed, exported, or adapted for a paper appendix.
+`summarize_topics()` builds that table directly from the fitted object. It
+returns one row per topic with top terms, top-term probabilities, topic
+prevalence, available metrics, representative documents, and optional text or
+metadata.
+
+```{r summarize}
+topic_summary <- summarize_topics(
+  fit,
+  training = dfm,
+  doc_data = docs,
+  top_n = 5L,
+  representative_n = 2L,
+  include_text = TRUE
+)
+
+topic_summary
+```
+
+The summary includes a `representative_documents` list column. That is useful
+inside R because each topic can carry its own small document table. For flat file
+exports, drop the list column and write the remaining scalar columns.
+
+```{r export}
+export_summary <- data.table::copy(topic_summary)
+export_summary[, representative_documents := NULL]
+data.table::fwrite(export_summary, tempfile(fileext = ".csv"))
+```
+
+## Backend Portability
+
+The point of the API is that the workflow above does not belong only to one
+backend. The fitting controls differ by engine, but the surrounding calls stay
+recognizable: fit a model, extract DTW/TWW, interpret top terms, evaluate, and
+summarize.
+
+The examples below are not evaluated in this vignette because optional backend
+availability varies across machines and CI environments. They are meant as
+templates for moving the same workflow to another estimator.
+
+```{r text2vec-backend, eval=FALSE}
+fit_text2vec <- fit_topic_model(
+  dfm,
+  engine = "text2vec",
+  model = "lda",
+  k = 2,
+  control = list(fit = list(n_iter = 100, progressbar = FALSE))
+)
+
+get_top_terms(fit_text2vec, n = 5)
+evaluate_topic_model(fit_text2vec, training = dfm, metrics = c("diversity", "exclusivity"))
+```
+
+```{r seededlda-backend, eval=FALSE}
+fit_seededlda <- fit_topic_model(
+  dfm,
+  engine = "seededlda",
+  model = "lda",
+  k = 2
+)
+
+get_dtw(fit_seededlda)
+get_tww(fit_seededlda)
+```
+
+Seeded LDA uses the same wrapper but requires a dictionary. Once the model is
+fit, the downstream accessors remain the same.
+
+```{r seededlda-dictionary, eval=FALSE}
+seed_dict <- quanteda::dictionary(list(
+  performance = c("revenue", "subscription", "margin"),
+  governance = c("audit", "control", "compliance")
+))
+
+fit_seeded <- fit_topic_model(
+  dfm,
+  engine = "seededlda",
+  model = "seededlda",
+  dictionary = seed_dict
+)
+
+summarize_topics(fit_seeded, doc_data = docs)
+```
+
+## Optional ETM Extensions
+
+Embedded topic models are an optional advanced path. They are available when
+**topicmodels.etm**, **torch**, and a working torch backend are installed. ETM
+fits still use the same downstream accessors for DTW, TWW, top terms,
+prediction, evaluation, and summaries. They also expose ETM-specific topic and
+term embeddings when those are present on the fitted object.
+
+```{r etm-backend, eval=FALSE}
+fit_etm <- fit_topic_model(
+  dfm,
+  engine = "topicmodels.etm",
+  model = "etm",
+  k = 2,
+  control = list(
+    model = list(embeddings = 50L),
+    fit = list(epochs = 10L, batch_size = 8L)
+  )
+)
+
+get_topic_embeddings(fit_etm)
+get_term_embeddings(fit_etm)
+plot_topic_embeddings(fit_etm, top_n = 10)
+```
+
+## API Map
+
+The main topic-model API is intentionally layered. You can use only the pieces
+you need, but the functions are designed to compose into one continuous
+workflow:
+
+| Task | Primary function |
+|---|---|
+| Fit one model | `fit_topic_model()` |
+| Extract DTW/TWW | `get_dtw()`, `get_tww()` |
+| Interpret terms and documents | `get_top_terms()`, `get_representative_candidates()` |
+| Plot standardized outputs | `plot_top_terms()`, `plot_dtw()` |
+| Predict new documents | `predict_topic_model()` |
+| Evaluate quality | `evaluate_topic_model()` |
+| Select K | `select_k_topics()` |
+| Assess seed stability | `assess_topic_stability()` |
+| Build interpretation tables | `summarize_topics()` |
+| Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |
+
+## References
+
+Aletras, N., & Stevenson, M. (2013). Evaluating topic coherence using
+distributional semantics. _Proceedings of the 14th Conference of the European
+Chapter of the Association for Computational Linguistics_, 13-22.
+
+Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003).
+[Latent Dirichlet Allocation](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf).
+_Journal of Machine Learning Research_, 3, 993-1022.
+
+Blei, D. M., & Lafferty, J. D. (2006).
+[Correlated topic models](https://papers.nips.cc/paper/2906-correlated-topic-models).
+_Advances in Neural Information Processing Systems_, 18, 147.
+
+Blei, D. M., & Lafferty, J. D. (2007).
+[A correlated topic model of Science](https://doi.org/10.1214/07-AOAS114).
+_The Annals of Applied Statistics_, 1(1), 17-35.
+
+Chen, J., Li, K., Zhu, J., & Chen, W. (2016).
+[WarpLDA: A Cache Efficient O(1) Algorithm for Latent Dirichlet Allocation](https://pacman.cs.tsinghua.edu.cn/~cwg/publication/vldb16/vldb16.pdf).
+_Proceedings of the VLDB Endowment_, 9(10), 744-755.
+
+Dieng, A. B., Ruiz, F. J. R., & Blei, D. M. (2020).
+[Topic Modeling in Embedding Spaces](https://arxiv.org/pdf/1907.04907).
+_Transactions of the Association for Computational Linguistics_, 8, 439-453.
+
+Du, L., Buntine, W. L., Jin, H., & Chen, C. (2012).
+[Sequential latent Dirichlet allocation](https://doi.org/10.1007/s10115-011-0425-1).
+_Knowledge and Information Systems_, 31(3), 475-503.
+
+Jagarlamudi, J., Daume III, H., & Udupa, R. (2012).
+[Incorporating lexical priors into topic models](https://aclanthology.org/E12-1021.pdf).
+In _Proceedings of the 13th Conference of the European Chapter of the
+Association for Computational Linguistics_, 204-213.
+
+Lewis, C. M., & Grossetti, F. (2022).
+[A statistical approach for optimal topic model identification](https://www.jmlr.org/papers/volume23/19-297/19-297.pdf).
+_Journal of Machine Learning Research_, 23(58), 1-20.
+
+Lu, B., Ott, M., Cardie, C., & Tsou, B. K. (2011).
+[Multi-aspect sentiment analysis with topic models](https://doi.org/10.1109/ICDMW.2011.125).
+In _2011 IEEE 11th International Conference on Data Mining Workshops_, 81-88.
+
+Mimno, D., Wallach, H., Talley, E., Leenders, M., & McCallum, A. (2011).
+Optimizing semantic coherence in topic models. _Proceedings of the 2011
+Conference on Empirical Methods in Natural Language Processing_, 262-272.
+
+Roberts, M. E., Stewart, B. M., Tingley, D., Lucas, C., Leder-Luis, J.,
+Gadarian, S. K., Albertson, B., & Rand, D. G. (2014). Structural topic models
+for open-ended survey responses. _American Journal of Political Science_,
+58(4), 1064-1082.
+
+Watanabe, K., & Zhou, Y. (2022).
+Theory-Driven Analysis of Large Corpora: Semisupervised Topic Classification of
+the UN Speeches. _Social Science Computer Review_, 40(2), 346-366.
+https://doi.org/10.1177/0894439320907027.
+
+Watanabe, K., & Baturo, A. (2024).
+Seeded Sequential LDA: A Semi-Supervised Algorithm for Topic-Specific Analysis
+of Sentences. _Social Science Computer Review_, 42(1), 224-248.
+https://doi.org/10.1177/08944393231178605.

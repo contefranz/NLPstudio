@@ -1,5 +1,43 @@
 # NLPstudio News
 
+## NLPstudio 0.9.0  (2026-05-04)
+
+### NEW FEATURES
+
+1. Added `assess_topic_stability()`, a transparent repeated-fit wrapper around
+   `fit_topic_model()` for scoring topic stability under the same model
+   specification and different seeds.
+
+2. Added `summarize_topics()`, a one-row-per-topic interpretation table with
+   top terms, prevalence, available metrics, representative documents, and
+   optional text or document metadata.
+
+3. Extended `select_k_topics()` with optional `stability_seeds`,
+   `stability_resampling`, and `stability_ncores` arguments. Existing defaults
+   are unchanged; when seeds are supplied, aggregate stability rows are added
+   and full stability details are attached as an attribute.
+
+### DOCUMENTATION
+
+1. Added a comprehensive topic-model API vignette covering backend portability,
+   standardized DTW/TWW extraction, prediction, evaluation, K selection,
+   stability assessment, topic summarization, ETM extensions, and table export.
+
+2. Added a corpus workflow vignette using bundled SEC-style 10-K JSON examples
+   to demonstrate JSON ingestion, corpus construction, tokenization,
+   dictionary lookup, readability, similarity/distance, and table export.
+
+3. Added five public 10-K JSON example files under `inst/extdata/json/` for
+   vignette and example workflows.
+
+4. Updated visible README release references and the topic-model workflow for
+   `v0.9.0`.
+
+### CI
+
+1. Removed the dedicated URL-check workflow because external link and DNS
+   failures made it too fragile for merge gating.
+
 ## NLPstudio 0.8.4  (2026-05-04)
 
 ### CI

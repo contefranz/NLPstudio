@@ -4,7 +4,7 @@ if (getRversion() >= "2.15.1") {
 #' Fast Tokens Singularization
 #'
 #' Singularize tokens from a **quanteda** [tokens] object using a parallel
-#' hashing strategy. Internally relies on [pluralize::singularize()]. Short
+#' hashing strategy. Internally relies on the optional pluralize package. Short
 #' tokens can optionally be removed.
 #'
 #' @inheritParams tokenize_corpus

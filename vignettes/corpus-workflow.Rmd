@@ -1,0 +1,285 @@
+---
+title: "Corpus Preparation and Text Analysis"
+subtitle: "From SEC-Style JSON to Quanteda Workflows"
+author: "by Francesco Grossetti"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Corpus Preparation and Text Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+has_json <- requireNamespace("RcppSimdJson", quietly = TRUE)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = has_json
+)
+```
+
+NLPstudio is designed for workflows where text starts outside R: scraped
+filings, structured JSON records, large corpora, and document metadata that
+needs to stay aligned with the text. The topic-model vignette starts after the
+modeling input is already prepared. This vignette covers the earlier part of
+the workflow: getting filing text into a reliable corpus and producing common
+document-level features.
+
+The examples use five bundled 10-K JSON filings. They are small enough to ship
+with the package but realistic enough to show the intended data path. Each JSON
+file contains filing metadata and top-level `item_*` fields, such as `item_1`,
+`item_1A`, and `item_7`.
+
+The JSON import chunks require the optional **RcppSimdJson** package. If it is
+not installed, the vignette still knits and shows the code, but the JSON-backed
+chunks are not evaluated.
+
+## Locate the Example JSON Files
+
+The example files live in `inst/extdata/json/` in the source package. Once the
+package is installed, they are available through `system.file()`.
+
+```{r locate-json}
+library(NLPstudio)
+library(data.table)
+library(quanteda)
+
+json_dir <- system.file("extdata", "json", package = "NLPstudio")
+if (!nzchar(json_dir)) {
+  json_dir <- file.path("..", "inst", "extdata", "json")
+}
+
+json_files <- list.files(
+  json_dir,
+  pattern = "_10K_.*\\.json$",
+  full.names = TRUE
+)
+
+basename(json_files)
+```
+
+## Flatten JSON to a Filing-Item Table
+
+`from_json_to_df()` reads the JSON files, identifies the 10-K item fields, and
+returns one row per filing item. Metadata such as CIK, company name, filing
+type, filing date, period of report, SIC, and filename stay attached to each
+item row.
+
+```{r import-json}
+filings <- from_json_to_df(
+  json_files,
+  what = "10-K",
+  ncores = 1,
+  max_chunk_size = 1
+)
+
+nrow(filings)
+filings[, .N, by = .(company, filing_type, fyear)]
+filings[, .N, by = item][order(item)]
+```
+
+The full imported table contains all non-empty 10-K sections from the five
+filings. For the rest of the vignette, we focus on three sections that are easy
+to interpret: business description (`item_1`), risk factors (`item_1A`), and
+management discussion (`item_7`).
+
+```{r focus-items}
+analysis_dt <- filings[
+  item %in% c("item_1", "item_1A", "item_7"),
+  .(cik, company, filing_type, filing_date, period_of_report,
+    fyear, sic, filename, item, text)
+]
+
+analysis_dt[, text_chars := nchar(text)]
+analysis_dt[, .(company, item, text_chars)][order(company, item)]
+```
+
+## Build a Quanteda Corpus
+
+`define_corpus()` turns the filing-item table into a `quanteda` corpus. It uses
+the filing filename and item name to create stable document identifiers, while
+the remaining columns become document variables.
+
+```{r define-corpus}
+corp <- define_corpus(data.table::copy(analysis_dt))
+
+summary(corp, n = 6)
+quanteda::docvars(corp)[1:6, c("company", "item", "fyear")]
+```
+
+At this point, each filing item is a separate document. This is usually the most
+useful unit for downstream analysis because risk factors, business descriptions,
+and management discussion sections often answer different research questions.
+
+## Tokenize and Build a DFM
+
+`tokenize_corpus()` wraps `quanteda::tokens()` and keeps document order stable.
+For small examples, a single core is enough. On larger corpora, the same
+function can split the corpus into chunks and process them through the package's
+parallel helper.
+
+```{r tokenize}
+toks <- tokenize_corpus(
+  corp,
+  ncores = 1,
+  remove_punct = TRUE,
+  remove_numbers = TRUE,
+  remove_symbols = TRUE
+)
+
+toks <- quanteda::tokens_tolower(toks)
+toks <- quanteda::tokens_remove(toks, pattern = quanteda::stopwords("en"))
+
+dfmat <- quanteda::dfm(toks)
+dfmat <- quanteda::dfm_trim(dfmat, min_termfreq = 5)
+
+dfmat
+quanteda::topfeatures(dfmat, 15)
+```
+
+Singularization is optional and uses the **pluralize** package. Because
+**pluralize** is archived on CRAN, this vignette shows the call shape but does
+not evaluate the chunk during package checks.
+
+```{r singularize, eval=FALSE}
+singular_toks <- singularize_tokens(toks, ncores = 1, min_char = 4)
+singular_dfm <- quanteda::dfm(singular_toks)
+quanteda::topfeatures(singular_dfm, 15)
+```
+
+## Apply a Dictionary
+
+NLPstudio ships domain dictionaries as `quanteda` dictionary objects. Dictionary
+lookup is useful when the construct is known in advance and the goal is to
+measure document-level exposure to a curated vocabulary.
+
+```{r dictionary-lookup}
+fls_toks <- lookup_tokens(
+  toks,
+  dictionary = data_dictionary_BozanicRoulstoneVanBuskirk_FLS,
+  ncores = 1,
+  exclusive = FALSE
+)
+
+fls_dfm <- quanteda::dfm(fls_toks)
+quanteda::topfeatures(fls_dfm, 10)
+```
+
+The same pattern works with the other bundled dictionaries, including firm
+complexity, corporate social responsibility, sustainable development goals, and
+the Feng Li forward-looking statement dictionary.
+
+## Reshape and Summarize the Corpus
+
+`reshape_corpus()` changes the document unit. For example, item-level documents
+can be split into sentence-level documents before computing readability or
+other document-level statistics.
+
+```{r reshape}
+sentence_corp <- reshape_corpus(corp, to = "sentences", ncores = 1)
+
+quanteda::ndoc(corp)
+quanteda::ndoc(sentence_corp)
+```
+
+`summarize_corpus()` returns a compact table of document-level corpus statistics
+from `quanteda.textstats`.
+
+```{r summarize-corpus}
+corpus_summary <- summarize_corpus(corp, ncores = 1)
+
+corpus_summary[1:6]
+```
+
+## Readability
+
+Readability scores are often useful when filing sections differ substantially in
+length and complexity. `calculate_readability()` keeps the same corpus input and
+returns a `data.table`.
+
+```{r readability}
+readability <- calculate_readability(
+  corp,
+  ncores = 1,
+  measure = c("Flesch", "Flesch.Kincaid")
+)
+
+readability[1:6]
+```
+
+## Similarity and Distance
+
+`calculate_similarity()` and `calculate_distance()` work on a `quanteda` dfm.
+They expose quanteda's internal threaded computation through `ncores`, avoiding
+the incorrect pattern of splitting an all-pairs matrix across document chunks.
+
+```{r similarity-distance}
+similarity <- calculate_similarity(
+  dfmat,
+  ncores = 1,
+  margin = "documents",
+  method = "cosine"
+)
+
+distance <- calculate_distance(
+  dfmat,
+  ncores = 1,
+  margin = "documents",
+  method = "euclidean"
+)
+
+round(as.matrix(similarity)[1:5, 1:5], 3)
+round(as.matrix(distance)[1:5, 1:5], 3)
+```
+
+## Export Tables
+
+Most outputs are ordinary tabular objects or can be converted to tabular form.
+That makes it straightforward to save intermediate results for review,
+appendix tables, or downstream modeling.
+
+```{r export}
+export_readability <- data.table::copy(readability)
+export_readability[, source := "bundled_10k_json"]
+
+out_file <- tempfile(fileext = ".csv")
+data.table::fwrite(export_readability, out_file)
+out_file
+```
+
+## Optional spaCy Parsing
+
+`parse_corpus()` wraps **spacyr** for part-of-speech parsing and related
+annotations. It requires a working Python spaCy installation, so it is shown
+but not evaluated in this vignette.
+
+```{r spacy-parse, eval=FALSE}
+spacyr::spacy_initialize(model = "en_core_web_sm")
+
+parsed <- parse_corpus(
+  corp,
+  ncores = 1,
+  lemma = TRUE,
+  pos = TRUE
+)
+
+head(parsed)
+```
+
+## Workflow Map
+
+The non-topic-model API is designed to be composable:
+
+| Task | Primary function |
+|---|---|
+| Flatten SEC-style JSON | `from_json_to_df()` |
+| Build a quanteda corpus | `define_corpus()` |
+| Tokenize text | `tokenize_corpus()` |
+| Singularize tokens | `singularize_tokens()` |
+| Apply dictionaries | `lookup_tokens()` |
+| Reshape documents | `reshape_corpus()` |
+| Summarize corpus | `summarize_corpus()` |
+| Compute readability | `calculate_readability()` |
+| Compute similarity | `calculate_similarity()` |
+| Compute distance | `calculate_distance()` |
+| Optional spaCy parsing | `parse_corpus()` |

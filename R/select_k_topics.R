@@ -43,6 +43,15 @@ if (getRversion() >= "2.15.1") {
 #'   candidate \eqn{K}'s fit reproducibly. If a single integer is supplied it is
 #'   expanded to a length-`length(k_grid)` vector starting from that value.
 #'   `NULL` means no seeding. Defaults to `NULL`.
+#' @param stability_seeds Optional integer vector of seeds used to assess topic
+#'   stability for each candidate \eqn{K}. When `NULL` (default), no stability
+#'   runs are performed and output is unchanged. When supplied, each \eqn{K} is
+#'   refit across these seeds via `assess_topic_stability()`.
+#' @param stability_resampling Optional resampling settings forwarded to
+#'   `assess_topic_stability()`. Defaults to `NULL`.
+#' @param stability_ncores Integer. Number of workers used inside each
+#'   stability assessment when the outer K grid is sequential. Defaults to
+#'   `ncores`. Nested parallelism is avoided when `ncores > 1`.
 #' @param return_fits Logical. Should the fitted models be returned as an
 #'   attribute of the result? Defaults to `FALSE`. Fits can be large; set
 #'   `TRUE` only when you need to inspect or reuse them.
@@ -66,6 +75,9 @@ if (getRversion() >= "2.15.1") {
 #'   }
 #'   If `return_fits = TRUE` the fitted models are stored in
 #'   `attr(result, "fits")`, a named list with names `"k<value>"`.
+#'   If `stability_seeds` is supplied, aggregate stability rows are added with
+#'   `metric = "stability"` and full per-topic stability outputs are stored in
+#'   `attr(result, "stability")`.
 #'
 #' @details
 #' **Holdout split.** When `holdout > 0` and either predictive or coherence
@@ -127,6 +139,9 @@ select_k_topics <- function(
   holdout     = 0.2,
   ncores      = 1L,
   seed        = NULL,
+  stability_seeds = NULL,
+  stability_resampling = NULL,
+  stability_ncores = ncores,
   return_fits = FALSE,
   top_n       = 10L,
   epsilon     = 1e-12,
@@ -171,6 +186,7 @@ select_k_topics <- function(
     stop("'epsilon' must be a single positive number.", call. = FALSE)
   }
   .validate_parallel_args(ncores, nchunks = length(k_grid))
+  ncores_int <- as.integer(ncores)
 
   if (!is.null(seed)) {
     if (!is.numeric(seed) || length(seed) == 0L || anyNA(seed) ||
@@ -186,6 +202,27 @@ select_k_topics <- function(
            call. = FALSE)
     }
     seed <- as.integer(seed)
+  }
+
+  stability_requested <- !is.null(stability_seeds)
+  if (!stability_requested && !is.null(stability_resampling)) {
+    stop("'stability_resampling' requires 'stability_seeds'.", call. = FALSE)
+  }
+  if (stability_requested) {
+    stability_seeds <- .validate_stability_seeds(stability_seeds, required = TRUE)
+    stability_resampling <- .validate_stability_resampling(stability_resampling)
+    .validate_parallel_args(stability_ncores, nchunks = length(stability_seeds))
+    stability_ncores <- as.integer(stability_ncores)
+  } else {
+    stability_ncores <- 1L
+  }
+  worker_stability_ncores <- stability_ncores
+  if (stability_requested && ncores_int > 1L && stability_ncores > 1L) {
+    warning(
+      "Using stability_ncores = 1 inside parallel K-grid workers to avoid nested PSOCK clusters.",
+      call. = FALSE
+    )
+    worker_stability_ncores <- 1L
   }
 
   needs_coherence <- any(c("coherence_npmi", "coherence_umass") %in% metrics)
@@ -212,6 +249,7 @@ select_k_topics <- function(
     x_train   <- x
     x_holdout <- NULL
   }
+  extra_args <- list(...)
 
   # Per-K worker function
   worker <- function(k_seed_pair) {
@@ -220,9 +258,19 @@ select_k_topics <- function(
 
     if (!is.null(k_seed)) set.seed(k_seed)
 
-    fit <- fit_topic_model(
-      x_train, engine = engine, model = model,
-      k = k_val, method = method, control = control, ...
+    fit <- do.call(
+      fit_topic_model,
+      c(
+        list(
+          x = x_train,
+          engine = engine,
+          model = model,
+          k = k_val,
+          method = method,
+          control = control
+        ),
+        extra_args
+      )
     )
 
     eval_result <- evaluate_topic_model(
@@ -236,7 +284,45 @@ select_k_topics <- function(
     )
     eval_result[, k := k_val]
 
-    list(eval = eval_result, fit = if (return_fits) fit else NULL)
+    stability_result <- NULL
+    if (stability_requested) {
+      stability_result <- do.call(
+        assess_topic_stability,
+        c(
+          list(
+            x = x_train,
+            engine = engine,
+            model = model,
+            k = k_val,
+            seeds = stability_seeds,
+            method = method,
+            control = control,
+            resampling = stability_resampling,
+            ncores = worker_stability_ncores,
+            return_fits = FALSE
+          ),
+          extra_args
+        )
+      )
+      stability_row <- data.table::data.table(
+        k = k_val,
+        metric = "stability",
+        level = "aggregate",
+        topic_id = NA_character_,
+        value = unique(stability_result$aggregate_stability)[1L],
+        supported = TRUE
+      )
+      eval_result <- data.table::rbindlist(
+        list(eval_result, stability_row),
+        fill = TRUE
+      )
+    }
+
+    list(
+      eval = eval_result,
+      fit = if (return_fits) fit else NULL,
+      stability = stability_result
+    )
   }
 
   # Pair each K value with its seed
@@ -245,10 +331,12 @@ select_k_topics <- function(
   })
 
   # Run (parallel or sequential)
-  ncores_int  <- as.integer(ncores)
   export_vars <- c("x_train", "x_holdout", "engine", "model", "method",
                    "control", "metrics", "top_n", "epsilon", "level",
-                   "needs_training_eval", "return_fits")
+                   "needs_training_eval", "return_fits",
+                   "stability_requested", "stability_seeds",
+                   "stability_resampling", "worker_stability_ncores",
+                   "extra_args")
 
   if (ncores_int <= 1L) {
     raw <- lapply(k_seed_pairs, worker)
@@ -287,6 +375,11 @@ select_k_topics <- function(
     fits <- lapply(raw, `[[`, "fit")
     names(fits) <- paste0("k", k_grid)
     data.table::setattr(out, "fits", fits)
+  }
+  if (stability_requested) {
+    stability <- lapply(raw, `[[`, "stability")
+    names(stability) <- paste0("k", k_grid)
+    data.table::setattr(out, "stability", stability)
   }
 
   out[]
@@ -331,6 +424,9 @@ print.nlp_k_selection <- function(x, ...) {
   cat("<nlp_k_selection>\n")
   cat("  K grid:  ", paste(k_vals, collapse = ", "), "\n", sep = "")
   cat("  metrics: ", paste(unique(x$metric), collapse = ", "), "\n\n", sep = "")
+  if ("stability" %in% unique(x$metric)) {
+    cat("  stability: included\n\n")
+  }
 
   # Best K per metric (aggregate level only, supported only)
   aggregate_rows <- x[x$level == "aggregate" & x$supported, ]

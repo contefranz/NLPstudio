@@ -16,6 +16,9 @@ select_k_topics(
   holdout = 0.2,
   ncores = 1L,
   seed = NULL,
+  stability_seeds = NULL,
+  stability_resampling = NULL,
+  stability_ncores = ncores,
   return_fits = FALSE,
   top_n = 10L,
   epsilon = 1e-12,
@@ -68,6 +71,18 @@ candidate \eqn{K}'s fit reproducibly. If a single integer is supplied it is
 expanded to a length-\code{length(k_grid)} vector starting from that value.
 \code{NULL} means no seeding. Defaults to \code{NULL}.}
 
+\item{stability_seeds}{Optional integer vector of seeds used to assess topic
+stability for each candidate \eqn{K}. When \code{NULL} (default), no stability
+runs are performed and output is unchanged. When supplied, each \eqn{K} is
+refit across these seeds via \code{assess_topic_stability()}.}
+
+\item{stability_resampling}{Optional resampling settings forwarded to
+\code{assess_topic_stability()}. Defaults to \code{NULL}.}
+
+\item{stability_ncores}{Integer. Number of workers used inside each
+stability assessment when the outer K grid is sequential. Defaults to
+\code{ncores}. Nested parallelism is avoided when \code{ncores > 1}.}
+
 \item{return_fits}{Logical. Should the fitted models be returned as an
 attribute of the result? Defaults to \code{FALSE}. Fits can be large; set
 \code{TRUE} only when you need to inspect or reuse them.}
@@ -96,6 +111,9 @@ columns:
 }
 If \code{return_fits = TRUE} the fitted models are stored in
 \code{attr(result, "fits")}, a named list with names \code{"k<value>"}.
+If \code{stability_seeds} is supplied, aggregate stability rows are added with
+\code{metric = "stability"} and full per-topic stability outputs are stored in
+\code{attr(result, "stability")}.
 }
 \description{
 Fit a topic model for each value in a grid of topic counts and evaluate each
