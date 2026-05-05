@@ -34,7 +34,13 @@ a small corpus, fit one topic model, inspect the standardized outputs, evaluate
 the model, compare candidate values of `k`, assess seed stability, build an
 interpretation table, and sketch how the same calls transfer to other engines.
 
-The package supports topic models from **text2vec**, **topicmodels**,
+The notation follows Lewis and Grossetti (2022). In particular, this vignette
+uses DTW for document-topic weights and TWW for topic-word weights. Those two
+tables are the main package-standard representation of a fitted topic model:
+DTW describes documents in the topic space, while TWW describes topics in the
+vocabulary space.
+
+The package currently supports topic models from **text2vec**, **topicmodels**,
 **seededlda**, and optionally **topicmodels.etm**. To keep this vignette fast and
 reliable during package checks, only the **topicmodels** examples are evaluated.
 The other backend sections are included as non-evaluated templates so you can see
@@ -469,3 +475,65 @@ workflow:
 | Assess seed stability | `assess_topic_stability()` |
 | Build interpretation tables | `summarize_topics()` |
 | Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |
+
+## References
+
+Aletras, N., & Stevenson, M. (2013). Evaluating topic coherence using
+distributional semantics. _Proceedings of the 14th Conference of the European
+Chapter of the Association for Computational Linguistics_, 13-22.
+
+Blei, D. M., Ng, A. Y., & Jordan, M. I. (2003).
+[Latent Dirichlet Allocation](https://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf).
+_Journal of Machine Learning Research_, 3, 993-1022.
+
+Blei, D. M., & Lafferty, J. D. (2006).
+[Correlated topic models](https://papers.nips.cc/paper/2906-correlated-topic-models).
+_Advances in Neural Information Processing Systems_, 18, 147.
+
+Blei, D. M., & Lafferty, J. D. (2007).
+[A correlated topic model of Science](https://doi.org/10.1214/07-AOAS114).
+_The Annals of Applied Statistics_, 1(1), 17-35.
+
+Chen, J., Li, K., Zhu, J., & Chen, W. (2016).
+[WarpLDA: A Cache Efficient O(1) Algorithm for Latent Dirichlet Allocation](https://pacman.cs.tsinghua.edu.cn/~cwg/publication/vldb16/vldb16.pdf).
+_Proceedings of the VLDB Endowment_, 9(10), 744-755.
+
+Dieng, A. B., Ruiz, F. J. R., & Blei, D. M. (2020).
+[Topic Modeling in Embedding Spaces](https://arxiv.org/pdf/1907.04907).
+_Transactions of the Association for Computational Linguistics_, 8, 439-453.
+
+Du, L., Buntine, W. L., Jin, H., & Chen, C. (2012).
+[Sequential latent Dirichlet allocation](https://doi.org/10.1007/s10115-011-0425-1).
+_Knowledge and Information Systems_, 31(3), 475-503.
+
+Jagarlamudi, J., Daume III, H., & Udupa, R. (2012).
+[Incorporating lexical priors into topic models](https://aclanthology.org/E12-1021.pdf).
+In _Proceedings of the 13th Conference of the European Chapter of the
+Association for Computational Linguistics_, 204-213.
+
+Lewis, C. M., & Grossetti, F. (2022).
+[A statistical approach for optimal topic model identification](https://www.jmlr.org/papers/volume23/19-297/19-297.pdf).
+_Journal of Machine Learning Research_, 23(58), 1-20.
+
+Lu, B., Ott, M., Cardie, C., & Tsou, B. K. (2011).
+[Multi-aspect sentiment analysis with topic models](https://doi.org/10.1109/ICDMW.2011.125).
+In _2011 IEEE 11th International Conference on Data Mining Workshops_, 81-88.
+
+Mimno, D., Wallach, H., Talley, E., Leenders, M., & McCallum, A. (2011).
+Optimizing semantic coherence in topic models. _Proceedings of the 2011
+Conference on Empirical Methods in Natural Language Processing_, 262-272.
+
+Roberts, M. E., Stewart, B. M., Tingley, D., Lucas, C., Leder-Luis, J.,
+Gadarian, S. K., Albertson, B., & Rand, D. G. (2014). Structural topic models
+for open-ended survey responses. _American Journal of Political Science_,
+58(4), 1064-1082.
+
+Watanabe, K., & Zhou, Y. (2022).
+Theory-Driven Analysis of Large Corpora: Semisupervised Topic Classification of
+the UN Speeches. _Social Science Computer Review_, 40(2), 346-366.
+https://doi.org/10.1177/0894439320907027.
+
+Watanabe, K., & Baturo, A. (2024).
+Seeded Sequential LDA: A Semi-Supervised Algorithm for Topic-Specific Analysis
+of Sentences. _Social Science Computer Review_, 42(1), 224-248.
+https://doi.org/10.1177/08944393231178605.
