@@ -40,7 +40,7 @@ A \link[quanteda:tokens]{quanteda::tokens} object with singularized tokens.
 }
 \description{
 Singularize tokens from a \strong{quanteda} \link[quanteda:tokens]{tokens} object using a parallel
-hashing strategy. Internally relies on \code{\link[pluralize:singularize]{pluralize::singularize()}}. Short
+hashing strategy. Internally relies on the optional pluralize package. Short
 tokens can optionally be removed.
 }
 \details{
