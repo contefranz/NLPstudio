@@ -323,9 +323,8 @@ print.nlp_topic_stability <- function(x, ...) {
   worker <- function(seed) {
     x_run <- .stability_resample_input(x, resampling, seed)
     control_run <- .stability_control_for_seed(control, engine, seed)
-    if (identical(engine, "topicmodels.etm") &&
-        requireNamespace("torch", quietly = TRUE)) {
-      torch::torch_manual_seed(seed)
+    if (identical(engine, "topicmodels.etm") && .has_namespace("torch")) {
+      .get_exported_value("torch", "torch_manual_seed")(seed)
     }
     set.seed(seed)
     do.call(

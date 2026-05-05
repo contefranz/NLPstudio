@@ -119,6 +119,10 @@ test_that("assess_topic_stability reports inferred missing seeds in list mode", 
     assess_topic_stability(list(ref, cand), seeds = 1:3),
     "one seed per fit"
   )
+  expect_error(
+    NLPstudio:::.validate_stability_seeds(NULL, required = TRUE),
+    "seeds"
+  )
 })
 
 test_that("assess_topic_stability aligns missing and extra vocabulary", {
@@ -280,6 +284,160 @@ test_that("stability resampling preserves dfm inputs", {
 
   expect_true(inherits(out, "dfm"))
   expect_equal(quanteda::ndoc(out), 3L)
+})
+
+test_that("automatic stability seeds torch when ETM backend is available", {
+  calls <- list()
+  tww <- matrix(
+    c(0.7, 0.3,
+      0.2, 0.8),
+    nrow = 2L,
+    byrow = TRUE,
+    dimnames = list(c("Topic001", "Topic002"), c("alpha", "beta"))
+  )
+  x <- methods::as(Matrix::Matrix(matrix(1, nrow = 4L, ncol = 2L), sparse = TRUE), "dgCMatrix")
+  rownames(x) <- paste0("doc", 1:4)
+  colnames(x) <- c("alpha", "beta")
+
+  testthat::local_mocked_bindings(
+    fit_topic_model = function(x, engine, model, k, method, control, ...) {
+      calls[[length(calls) + 1L]] <<- list(engine = engine, seed = control$fit$seed)
+      make_diag_fit(tww, seed = control$fit$seed,
+                    engine = engine, model = model, method = method)
+    },
+    .package = "NLPstudio"
+  )
+  testthat::local_mocked_bindings(
+    .has_namespace = function(pkg) {
+      identical(pkg, "torch")
+    },
+    .get_exported_value = function(pkg, name) {
+      expect_equal(pkg, "torch")
+      expect_equal(name, "torch_manual_seed")
+      function(seed) {
+        calls[[length(calls) + 1L]] <<- list(engine = "torch", seed = seed)
+      }
+    },
+    .package = "NLPstudio"
+  )
+
+  out <- assess_topic_stability(
+    x,
+    engine = "topicmodels.etm",
+    model = "etm",
+    k = 2L,
+    seeds = c(3L, 4L),
+    control = list(fit = list(epoch = 1L))
+  )
+
+  expect_s3_class(out, "nlp_topic_stability")
+  expect_equal(vapply(calls, `[[`, character(1L), "engine"),
+               c("torch", "topicmodels.etm", "torch", "topicmodels.etm"))
+  call_seeds <- vapply(calls, function(call) {
+    seed <- call$seed
+    if (is.null(seed)) NA_integer_ else seed
+  }, integer(1L))
+  expect_equal(call_seeds, c(3L, NA_integer_, 4L, NA_integer_))
+})
+
+test_that("automatic stability falls back when a PSOCK cluster cannot be created", {
+  calls <- list()
+  tww <- matrix(
+    c(0.7, 0.3,
+      0.2, 0.8),
+    nrow = 2L,
+    byrow = TRUE,
+    dimnames = list(c("Topic001", "Topic002"), c("alpha", "beta"))
+  )
+  x <- methods::as(Matrix::Matrix(matrix(1, nrow = 4L, ncol = 2L), sparse = TRUE), "dgCMatrix")
+  rownames(x) <- paste0("doc", 1:4)
+  colnames(x) <- c("alpha", "beta")
+
+  testthat::local_mocked_bindings(
+    fit_topic_model = function(x, engine, model, k, method, control, ...) {
+      calls[[length(calls) + 1L]] <<- control$fit$seed
+      make_diag_fit(tww, seed = control$fit$seed,
+                    engine = engine, model = model, method = method)
+    },
+    .package = "NLPstudio"
+  )
+  testthat::local_mocked_bindings(
+    makeCluster = function(...) stop("cluster unavailable"),
+    .package = "parallel"
+  )
+
+  expect_warning(
+    out <- assess_topic_stability(
+      x,
+      engine = "topicmodels",
+      model = "lda",
+      k = 2L,
+      seeds = c(7L, 8L),
+      ncores = 2L
+    ),
+    "falling back to sequential"
+  )
+
+  expect_s3_class(out, "nlp_topic_stability")
+  expect_equal(unlist(calls), c(7L, 8L))
+})
+
+test_that("automatic stability uses PSOCK workers when available", {
+  calls <- list()
+  tww <- matrix(
+    c(0.7, 0.3,
+      0.2, 0.8),
+    nrow = 2L,
+    byrow = TRUE,
+    dimnames = list(c("Topic001", "Topic002"), c("alpha", "beta"))
+  )
+  x <- methods::as(Matrix::Matrix(matrix(1, nrow = 4L, ncol = 2L), sparse = TRUE), "dgCMatrix")
+  rownames(x) <- paste0("doc", 1:4)
+  colnames(x) <- c("alpha", "beta")
+
+  testthat::local_mocked_bindings(
+    fit_topic_model = function(x, engine, model, k, method, control, ...) {
+      make_diag_fit(tww, seed = control$fit$seed,
+                    engine = engine, model = model, method = method)
+    },
+    .package = "NLPstudio"
+  )
+  testthat::local_mocked_bindings(
+    makeCluster = function(ncores) {
+      calls[[length(calls) + 1L]] <<- list(fn = "makeCluster", ncores = ncores)
+      structure(list(), class = "mock_cluster")
+    },
+    stopCluster = function(cl) {
+      calls[[length(calls) + 1L]] <<- list(fn = "stopCluster")
+    },
+    clusterEvalQ = function(cl, expr) {
+      calls[[length(calls) + 1L]] <<- list(fn = "clusterEvalQ")
+      list(TRUE)
+    },
+    clusterExport = function(cl, varlist, envir) {
+      calls[[length(calls) + 1L]] <<- list(fn = "clusterExport", varlist = varlist)
+      invisible(NULL)
+    },
+    clusterApplyLB = function(cl, seeds, worker) {
+      calls[[length(calls) + 1L]] <<- list(fn = "clusterApplyLB", seeds = seeds)
+      lapply(seeds, worker)
+    },
+    .package = "parallel"
+  )
+
+  out <- assess_topic_stability(
+    x,
+    engine = "topicmodels",
+    model = "lda",
+    k = 2L,
+    seeds = c(9L, 10L),
+    ncores = 2L
+  )
+
+  expect_s3_class(out, "nlp_topic_stability")
+  expect_true(all(c("makeCluster", "clusterEvalQ", "clusterExport", "clusterApplyLB", "stopCluster") %in%
+                    vapply(calls, `[[`, character(1L), "fn")))
+  expect_equal(calls[[1L]]$ncores, 2L)
 })
 
 test_that("summarize_topics returns interpretation schema with representative metadata", {

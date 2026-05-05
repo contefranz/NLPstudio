@@ -41,6 +41,7 @@ Suggests:
     testthat (>= 3.0.0),
     text2vec (>= 0.6.4),
     tidytext (>= 0.4.2),
+    tm (>= 0.7),
     topicmodels (>= 0.2),
     topicmodels.etm (>= 0.1.0),
     torch (>= 0.16.3),

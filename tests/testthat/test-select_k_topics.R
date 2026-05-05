@@ -454,6 +454,64 @@ test_that("select_k_topics adds aggregate stability rows and details when reques
   expect_equal(seed_calls, c(NA_integer_, 11L, 12L, NA_integer_, 11L, 12L))
 })
 
+test_that("select_k_topics avoids nested stability clusters inside K-grid workers", {
+  dtm <- make_sel_dtm()
+
+  testthat::local_mocked_bindings(
+    fit_topic_model = function(x, engine, model, k, method, control, ...) {
+      make_select_mock_fit(k, x, engine, model, method, control)
+    },
+    .package = "NLPstudio"
+  )
+  testthat::local_mocked_bindings(
+    makeCluster = function(ncores) {
+      structure(list(ncores = ncores), class = "mock_cluster")
+    },
+    stopCluster = function(cl) invisible(NULL),
+    clusterEvalQ = function(cl, expr) list(TRUE),
+    clusterExport = function(cl, varlist, envir) invisible(NULL),
+    clusterApplyLB = function(cl, k_seed_pairs, worker) lapply(k_seed_pairs, worker),
+    .package = "parallel"
+  )
+
+  expect_warning(
+    result <- select_k_topics(
+      dtm,
+      engine = "topicmodels",
+      model = "lda",
+      method = "Gibbs",
+      k_grid = 2L,
+      metrics = "diversity",
+      holdout = 0,
+      ncores = 2L,
+      stability_seeds = c(1L, 2L),
+      stability_ncores = 2L,
+      control = list(fit = list(iter = 10L))
+    ),
+    "Using stability_ncores = 1"
+  )
+
+  expect_s3_class(result, "nlp_k_selection")
+  expect_equal(result[metric == "stability", value], 1, tolerance = 1e-8)
+})
+
+test_that("print.nlp_k_selection reports stability rows", {
+  result <- data.table::data.table(
+    k = 2L,
+    metric = "stability",
+    level = "aggregate",
+    topic_id = NA_character_,
+    value = 1,
+    supported = TRUE
+  )
+  class(result) <- c("nlp_k_selection", class(result))
+
+  out <- utils::capture.output(ret <- print(result))
+
+  expect_true(any(grepl("stability: included", out)))
+  expect_identical(ret, result)
+})
+
 # ---- print and plot ---------------------------------------------------------
 
 test_that("print.nlp_k_selection runs without error and returns invisibly", {
@@ -505,4 +563,15 @@ test_that(".k_select_split preserves dfm class", {
   sp  <- NLPstudio:::.k_select_split(dfm, holdout = 0.3, seed = 1L)
   expect_true(inherits(sp$train,   "dfm"))
   expect_true(inherits(sp$holdout, "dfm"))
+})
+
+test_that(".k_select_split preserves DocumentTermMatrix class", {
+  skip_if_not_installed("tm")
+  dtm <- make_sel_dtm()
+  doc_term <- tm::as.DocumentTermMatrix(dtm, weighting = tm::weightTf)
+
+  sp <- NLPstudio:::.k_select_split(doc_term, holdout = 0.3, seed = 1L)
+
+  expect_true(methods::is(sp$train, "DocumentTermMatrix"))
+  expect_true(methods::is(sp$holdout, "DocumentTermMatrix"))
 })
