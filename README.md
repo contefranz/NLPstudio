@@ -38,6 +38,11 @@ an optional holdout split. It also adds `assess_topic_stability()` for
 same-specification repeated fits across seeds and `summarize_topics()` for
 export-ready topic interpretation tables.
 
+The [topic-model API vignette](vignettes/topic-model-api.Rmd) gives the full
+workflow: fit once through a common interface, inspect standardized DTW/TWW
+outputs, interpret topics, predict new documents, evaluate model quality,
+select K, assess stability, summarize topics, and export tables.
+
 Embedded topic models are available through the optional **topicmodels.etm** and
 **torch** packages when those backends are installed locally.
 When ETM support is available, **NLPstudio** also exposes ETM-specific topic and

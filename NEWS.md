@@ -19,8 +19,9 @@
 
 ### DOCUMENTATION
 
-1. Added a topic-model selection vignette covering fitting, evaluation,
-   K selection, stability assessment, topic summarization, and table export.
+1. Added a comprehensive topic-model API vignette covering backend portability,
+   standardized DTW/TWW extraction, prediction, evaluation, K selection,
+   stability assessment, topic summarization, ETM extensions, and table export.
 
 2. Updated visible README release references and the topic-model workflow for
    `v0.9.0`.
