@@ -25,6 +25,11 @@
 2. Updated visible README release references and the topic-model workflow for
    `v0.9.0`.
 
+### CI
+
+1. Removed the dedicated URL-check workflow because external link and DNS
+   failures made it too fragile for merge gating.
+
 ## NLPstudio 0.8.4  (2026-05-04)
 
 ### CI
