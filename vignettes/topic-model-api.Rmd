@@ -377,6 +377,33 @@ export_summary[, representative_documents := NULL]
 data.table::fwrite(export_summary, tempfile(fileext = ".csv"))
 ```
 
+## Migrate Legacy WarpLDA Outputs
+
+Earlier versions of NLPstudio exposed `warp_lda()` as a direct wrapper around
+the **text2vec** WarpLDA estimator. That fitting function is no longer part of
+the public API, but saved outputs from old projects can still be brought into
+the current workflow. `as_nlp_topic_fit()` converts the old list structure into
+an `nlp_topic_fit` object without refitting the model.
+
+Legacy objects usually contain `lda_object`, `theta`, and `phi`. The adapter
+uses `theta` as DTW, `phi` as TWW, and keeps the original WarpLDA backend object
+as `model_object`.
+
+```{r legacy-warplda, eval=FALSE}
+old <- readRDS("legacy-warp-lda-output.rds")
+legacy_fit <- as_nlp_topic_fit(old)
+
+get_dtw(legacy_fit)
+get_tww(legacy_fit)
+get_top_terms(legacy_fit, n = 10)
+summarize_topics(legacy_fit, training = original_dfm)
+```
+
+If the old object was saved without `theta` or `phi`, the adapter preserves the
+parts that are available and warns about the missing cache. Functions that need
+the missing component will then fail with the same messages used by current
+partial `nlp_topic_fit` objects.
+
 ## Backend Portability
 
 The point of the API is that the workflow above does not belong only to one
@@ -474,6 +501,7 @@ workflow:
 | Select K | `select_k_topics()` |
 | Assess seed stability | `assess_topic_stability()` |
 | Build interpretation tables | `summarize_topics()` |
+| Migrate legacy WarpLDA output | `as_nlp_topic_fit()` |
 | Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |
 
 ## References

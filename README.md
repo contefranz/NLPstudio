@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.0-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v0.9.1-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -29,14 +29,16 @@ unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/pa
 support for embedded topic models. The package
 standardizes document-topic weights (DTW), topic-word weights (TWW),
 representative-candidate extraction, generic topic prediction for new
-documents, and downstream visualization across those engines. v0.9.0 includes a
+documents, and downstream visualization across those engines. v0.9.x includes a
 model-evaluation layer — `evaluate_topic_model()` for coherence (UMass, NPMI),
 diversity, exclusivity, training NLL/perplexity, and held-out
 NLL/perplexity, returned at aggregate level by default — and
 `select_k_topics()` for automated grid search over candidate values of K with
 an optional holdout split. It also adds `assess_topic_stability()` for
 same-specification repeated fits across seeds and `summarize_topics()` for
-export-ready topic interpretation tables.
+export-ready topic interpretation tables. Saved outputs from the removed
+`warp_lda()` wrapper can be migrated into the current API with
+`as_nlp_topic_fit()`.
 
 The [topic-model API vignette](vignettes/topic-model-api.Rmd) gives the full
 workflow: fit once through a common interface, inspect standardized DTW/TWW
@@ -89,7 +91,7 @@ torch::torch_is_installed()
 ### Topic-model workflow
 
 This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.0 workflow can be reproduced without external data.
+corpus so the current v0.9.1 workflow can be reproduced without external data.
 
 ```r
 library(NLPstudio)
@@ -163,6 +165,17 @@ summarize_topics(
   representative_n = 2L,
   include_text = TRUE
 )
+```
+
+Legacy `warp_lda()` outputs can be adapted without refitting:
+
+```r
+old <- readRDS("legacy-warp-lda-output.rds")
+fit <- as_nlp_topic_fit(old)
+
+get_dtw(fit)
+get_tww(fit)
+get_top_terms(fit, n = 10)
 ```
 
 ---

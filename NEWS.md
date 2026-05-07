@@ -1,5 +1,18 @@
 # NLPstudio News
 
+## NLPstudio 0.9.1  (2026-05-07)
+
+### NEW FEATURES
+
+1. Added `as_nlp_topic_fit()`, an S3 migration helper that converts saved
+   legacy `warp_lda()` outputs into current `nlp_topic_fit` objects without
+   refitting models.
+
+### DOCUMENTATION
+
+1. Added legacy WarpLDA migration notes to the topic-model API documentation
+   and README.
+
 ## NLPstudio 0.9.0  (2026-05-04)
 
 ### NEW FEATURES

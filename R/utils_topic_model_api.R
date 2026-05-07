@@ -1131,6 +1131,12 @@
   }
 
   if (inherits(x, "WarpLDA")) {
+    if (is.null(x$topic_word_distribution)) {
+      stop(
+        "Raw text2vec WarpLDA objects do not contain recoverable TWW. Use fit_topic_model(..., return_tww = TRUE) or convert a legacy object with saved phi.",
+        call. = FALSE
+      )
+    }
     return(.tww_dt_from_matrix(
       x$topic_word_distribution,
       term_names = colnames(x$topic_word_distribution)
