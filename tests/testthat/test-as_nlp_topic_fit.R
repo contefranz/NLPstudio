@@ -33,6 +33,41 @@ make_legacy_warp <- function(theta = NULL, phi = NULL, model_tww = NULL,
   )
 }
 
+make_topic_conversion_dtm <- function() {
+  mat <- Matrix::Matrix(
+    matrix(
+      c(
+        4, 2, 0, 0, 1, 0,
+        3, 1, 1, 0, 0, 0,
+        0, 1, 4, 2, 0, 0,
+        0, 0, 3, 3, 1, 0,
+        1, 0, 0, 1, 4, 2,
+        0, 0, 1, 0, 3, 3
+      ),
+      nrow = 6,
+      byrow = TRUE
+    ),
+    sparse = TRUE
+  )
+  rownames(mat) <- paste0("doc", seq_len(nrow(mat)))
+  colnames(mat) <- c("market", "revenue", "risk", "loss", "audit", "control")
+  tm::as.DocumentTermMatrix(mat, weighting = tm::weightTf)
+}
+
+make_seededlda_dfm <- function() {
+  texts <- c(
+    "market revenue profit market",
+    "revenue market sales profit",
+    "risk loss uncertainty risk",
+    "loss uncertainty risk audit",
+    "audit control compliance audit",
+    "control compliance audit risk"
+  )
+  names(texts) <- paste0("doc", seq_along(texts))
+  toks <- quanteda::tokens(texts, remove_punct = TRUE)
+  quanteda::dfm(toks)
+}
+
 test_that("as_nlp_topic_fit converts complete legacy WarpLDA output", {
   old <- make_legacy_warp()
   fit <- as_nlp_topic_fit(old)
@@ -71,6 +106,213 @@ test_that("converted legacy WarpLDA output works with extraction and plotting he
 test_that("as_nlp_topic_fit is idempotent for current topic fits", {
   fit <- as_nlp_topic_fit(make_legacy_warp())
   expect_identical(as_nlp_topic_fit(fit), fit)
+})
+
+test_that("as_nlp_topic_fit converts topicmodels Gibbs LDA objects", {
+  skip_if_not_installed("topicmodels")
+  skip_if_not_installed("tm")
+
+  lda <- topicmodels::LDA(
+    make_topic_conversion_dtm(),
+    k = 2L,
+    method = "Gibbs",
+    control = list(seed = 42L, iter = 25L, burnin = 0L, thin = 1L)
+  )
+
+  fit <- as_nlp_topic_fit(lda)
+
+  expect_s3_class(fit, "nlp_topic_fit")
+  expect_equal(fit$engine, "topicmodels")
+  expect_equal(fit$model, "lda")
+  expect_equal(fit$method, "Gibbs")
+  expect_equal(fit$doc_ids, paste0("doc", 1:6))
+  expect_equal(fit$vocab, lda@terms)
+  expect_equal(dim(fit$dtw), c(6L, 2L))
+  expect_equal(dim(fit$tww), c(2L, 6L))
+  expect_equal(colnames(fit$dtw), c("Topic001", "Topic002"))
+  expect_equal(rownames(fit$tww), c("Topic001", "Topic002"))
+  expect_equal(nrow(get_dtw(fit)), 6L)
+  expect_equal(nrow(get_tww(fit)), 2L)
+  expect_equal(unique(get_top_terms(fit, n = 2L)$topic), c("Topic001", "Topic002"))
+  expect_s3_class(plot_dtw(fit), "ggplot")
+
+  topic_summary <- summarize_topics(fit, top_n = 2L, representative_n = 1L)
+  expect_equal(nrow(topic_summary), 2L)
+  expect_true(all(c("topic_id", "top_terms", "prevalence") %in% names(topic_summary)))
+})
+
+test_that("as_nlp_topic_fit converts topicmodels VEM LDA objects", {
+  skip_if_not_installed("topicmodels")
+  skip_if_not_installed("tm")
+
+  lda <- topicmodels::LDA(
+    make_topic_conversion_dtm(),
+    k = 2L,
+    method = "VEM",
+    control = list(seed = 42L)
+  )
+
+  fit <- as_nlp_topic_fit(lda)
+
+  expect_equal(fit$engine, "topicmodels")
+  expect_equal(fit$model, "lda")
+  expect_equal(fit$method, "VEM")
+  expect_equal(dim(fit$dtw), c(6L, 2L))
+  expect_equal(dim(fit$tww), c(2L, 6L))
+  expect_equal(get_topic_hyperparameters(fit)[parameter == "k", value][[1]], 2)
+})
+
+test_that("as_nlp_topic_fit converts topicmodels CTM objects", {
+  skip_if_not_installed("topicmodels")
+  skip_if_not_installed("tm")
+
+  ctm <- topicmodels::CTM(
+    make_topic_conversion_dtm(),
+    k = 2L,
+    control = list(
+      seed = 42L,
+      var = list(iter.max = 20L),
+      em = list(iter.max = 20L)
+    )
+  )
+
+  fit <- as_nlp_topic_fit(ctm)
+
+  expect_equal(fit$engine, "topicmodels")
+  expect_equal(fit$model, "ctm")
+  expect_equal(fit$method, "VEM")
+  expect_equal(dim(fit$dtw), c(6L, 2L))
+  expect_equal(dim(fit$tww), c(2L, 6L))
+})
+
+test_that("as_nlp_topic_fit converts seededlda LDA objects", {
+  skip_if_not_installed("seededlda")
+  skip_if_not_installed("quanteda")
+
+  lda <- seededlda::textmodel_lda(
+    make_seededlda_dfm(),
+    k = 2L,
+    max_iter = 100L,
+    auto_iter = FALSE
+  )
+
+  fit <- as_nlp_topic_fit(lda)
+
+  expect_equal(fit$engine, "seededlda")
+  expect_equal(fit$model, "lda")
+  expect_null(fit$method)
+  expect_equal(fit$doc_ids, paste0("doc", 1:6))
+  expect_equal(dim(fit$dtw), c(6L, 2L))
+  expect_equal(dim(fit$tww), c(2L, quanteda::nfeat(make_seededlda_dfm())))
+  expect_equal(colnames(fit$dtw), c("Topic001", "Topic002"))
+})
+
+test_that("as_nlp_topic_fit detects seededlda seeded models and accepts seqlda override", {
+  skip_if_not_installed("seededlda")
+  skip_if_not_installed("quanteda")
+
+  dfm <- make_seededlda_dfm()
+  dict <- quanteda::dictionary(list(
+    finance = c("market", "revenue", "profit"),
+    risk = c("risk", "loss", "uncertainty")
+  ))
+  seeded <- seededlda::textmodel_seededlda(
+    dfm,
+    dictionary = dict,
+    residual = 0L,
+    max_iter = 100L,
+    auto_iter = FALSE
+  )
+  fit_seeded <- as_nlp_topic_fit(seeded)
+  expect_equal(fit_seeded$model, "seededlda")
+  expect_equal(fit_seeded$engine, "seededlda")
+
+  lda <- seededlda::textmodel_lda(
+    dfm,
+    k = 2L,
+    max_iter = 100L,
+    auto_iter = FALSE
+  )
+  fit_seq <- as_nlp_topic_fit(lda, model = "seqlda")
+  expect_equal(fit_seq$model, "seqlda")
+  expect_error(as_nlp_topic_fit(lda, model = "bad"), "one of")
+})
+
+test_that("raw text2vec WarpLDA objects can be adopted with cached theta", {
+  skip_if_not_installed("text2vec")
+
+  dtm <- methods::as(
+    Matrix::Matrix(
+      matrix(
+        c(2, 1, 0,
+          1, 0, 2,
+          0, 2, 1,
+          1, 1, 1),
+        nrow = 4,
+        byrow = TRUE
+      ),
+      sparse = TRUE
+    ),
+    "dgCMatrix"
+  )
+  rownames(dtm) <- paste0("doc", 1:4)
+  colnames(dtm) <- paste0("term", 1:3)
+
+  lda <- text2vec::LDA$new(n_topics = 2L, doc_topic_prior = 0.1, topic_word_prior = 0.001)
+  theta <- lda$fit_transform(dtm, n_iter = 10L, progressbar = FALSE)
+
+  fit <- as_nlp_topic_fit(lda, theta = theta, vocab = colnames(dtm))
+
+  expect_s3_class(fit, "nlp_topic_fit")
+  expect_equal(fit$engine, "text2vec")
+  expect_equal(fit$model, "lda")
+  expect_equal(dim(fit$dtw), c(4L, 2L))
+  expect_equal(dim(fit$tww), c(2L, 3L))
+  expect_equal(fit$doc_ids, rownames(dtm))
+  expect_equal(fit$vocab, colnames(dtm))
+  expect_equal(nrow(get_dtw(fit)), 4L)
+  expect_equal(nrow(get_tww(fit)), 2L)
+})
+
+test_that("raw text2vec WarpLDA objects can be partially adopted without theta", {
+  skip_if_not_installed("text2vec")
+
+  dtm <- methods::as(
+    Matrix::Matrix(
+      matrix(
+        c(2, 1, 0,
+          1, 0, 2,
+          0, 2, 1,
+          1, 1, 1),
+        nrow = 4,
+        byrow = TRUE
+      ),
+      sparse = TRUE
+    ),
+    "dgCMatrix"
+  )
+  rownames(dtm) <- paste0("doc", 1:4)
+  colnames(dtm) <- paste0("term", 1:3)
+
+  lda <- text2vec::LDA$new(n_topics = 2L, doc_topic_prior = 0.1, topic_word_prior = 0.001)
+  invisible(lda$fit_transform(dtm, n_iter = 10L, progressbar = FALSE))
+
+  expect_warning(
+    fit <- as_nlp_topic_fit(lda, vocab = colnames(dtm)),
+    "do not retain DTW"
+  )
+  expect_null(fit$dtw)
+  expect_equal(dim(fit$tww), c(2L, 3L))
+  expect_error(get_dtw(fit), "does not contain cached DTW")
+  expect_equal(nrow(get_tww(fit)), 2L)
+
+  fit_with_ids <- as_nlp_topic_fit(
+    lda,
+    doc_ids = rownames(dtm),
+    vocab = colnames(dtm),
+    warn_partial = FALSE
+  )
+  expect_equal(fit_with_ids$doc_ids, rownames(dtm))
 })
 
 test_that("legacy theta IDs can be supplied or recovered from rn", {
@@ -172,14 +414,14 @@ test_that("as_nlp_topic_fit validates legacy WarpLDA shapes", {
   no_theta$theta <- NULL
   expect_error(
     as_nlp_topic_fit(no_theta, doc_ids = c("doc1", "doc2", "doc3")),
-    "doc_ids.*only when legacy theta is available"
+    "doc_ids.*only when theta is available"
   )
   no_phi <- make_legacy_warp()
   no_phi$phi <- NULL
   no_phi$lda_object$topic_word_distribution <- NULL
   expect_error(
     as_nlp_topic_fit(no_phi, vocab = c("a", "b", "c")),
-    "vocab.*only when legacy phi is available"
+    "vocab.*only when phi is available"
   )
 })
 

@@ -36,8 +36,9 @@ NLL/perplexity, returned at aggregate level by default — and
 `select_k_topics()` for automated grid search over candidate values of K with
 an optional holdout split. It also adds `assess_topic_stability()` for
 same-specification repeated fits across seeds and `summarize_topics()` for
-export-ready topic interpretation tables. Saved outputs from the removed
-`warp_lda()` wrapper can be migrated into the current API with
+export-ready topic interpretation tables. Existing fitted objects from
+`topicmodels`, `seededlda`, raw `text2vec` WarpLDA/LDA, and saved outputs from
+the removed `warp_lda()` wrapper can be adopted into the current API with
 `as_nlp_topic_fit()`.
 
 The [topic-model API vignette](vignettes/topic-model-api.Rmd) gives the full
@@ -167,9 +168,19 @@ summarize_topics(
 )
 ```
 
-Legacy `warp_lda()` outputs can be adapted without refitting:
+Existing fitted topic models can be adapted without refitting:
 
 ```r
+# topicmodels::LDA() or topicmodels::CTM()
+fit <- as_nlp_topic_fit(existing_topicmodels_fit)
+
+# seededlda::textmodel_lda() or seededlda::textmodel_seededlda()
+fit <- as_nlp_topic_fit(existing_seededlda_fit)
+
+# raw text2vec::LDA() / WarpLDA object; pass theta from fit_transform()
+fit <- as_nlp_topic_fit(raw_text2vec_fit, theta = saved_theta)
+
+# old NLPstudio warp_lda() output
 old <- readRDS("legacy-warp-lda-output.rds")
 fit <- as_nlp_topic_fit(old)
 

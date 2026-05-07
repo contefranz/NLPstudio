@@ -2,11 +2,28 @@ if (getRversion() >= "2.15.1") {
   utils::globalVariables(character())
 }
 
-#' Convert Legacy Topic-Model Objects to `nlp_topic_fit`
+#' Convert Existing Topic-Model Objects to `nlp_topic_fit`
 #'
-#' `as_nlp_topic_fit()` converts supported legacy topic-model outputs into the
-#' current `nlp_topic_fit` class used by [fit_topic_model()]. It is primarily a
-#' migration helper for saved outputs from the removed `warp_lda()` wrapper.
+#' `as_nlp_topic_fit()` converts supported fitted topic-model objects into the
+#' current `nlp_topic_fit` class used by [fit_topic_model()]. It can adopt raw
+#' fits from supported backends and saved outputs from the removed `warp_lda()`
+#' wrapper without refitting models.
+#'
+#' Supported input families are:
+#'
+#' - **topicmodels** S4 fits from [topicmodels::LDA()] and [topicmodels::CTM()]
+#'   (`LDA_Gibbs`, `LDA_VEM`, and `CTM_VEM`);
+#' - **seededlda** `textmodel` fits from `textmodel_lda()` and
+#'   `textmodel_seededlda()`;
+#' - raw **text2vec** WarpLDA/LDA R6 objects, optionally paired with the
+#'   `theta` matrix returned by `fit_transform()`;
+#' - saved list outputs from the removed NLPstudio `warp_lda()` wrapper.
+#'
+#' The conversion is non-refitting. It standardizes cached DTW/TWW matrices,
+#' topic IDs, document IDs, vocabulary, and metadata where those components are
+#' already present on the input object. Raw **text2vec** objects do not retain
+#' document-topic weights internally, so pass `theta` when downstream DTW access
+#' is needed.
 #'
 #' @param x Object to convert.
 #' @param ... Additional arguments forwarded to methods.
@@ -27,10 +44,16 @@ as_nlp_topic_fit.nlp_topic_fit <- function(x, ...) {
 #' @rdname as_nlp_topic_fit
 #' @param k Optional topic count. Usually inferred from `theta`, `phi`, or the
 #'   stored backend object.
+#' @param theta Optional document-topic matrix for raw **text2vec** WarpLDA
+#'   objects. Raw WarpLDA objects do not retain the return value of
+#'   `fit_transform()`, so pass that matrix here when available.
 #' @param doc_ids Optional document IDs used when legacy `theta` does not
 #'   already contain document identifiers.
 #' @param vocab Optional vocabulary used when legacy `phi` does not already
 #'   contain term names.
+#' @param model Optional model family override for raw **seededlda** objects.
+#'   Use `"seqlda"` for sequential LDA fits, which are not reliably
+#'   distinguishable from ordinary seededlda LDA after fitting.
 #' @param docvars Optional document metadata to store on the converted object.
 #' @param doc_data Optional document metadata or text sidecar to store on the
 #'   converted object.
@@ -56,75 +79,158 @@ as_nlp_topic_fit.list <- function(x, k = NULL, doc_ids = NULL, vocab = NULL,
       call. = FALSE
     )
   }
-  if (!is.logical(warn_partial) || length(warn_partial) != 1L || is.na(warn_partial)) {
-    stop("'warn_partial' must be a single TRUE/FALSE value.", call. = FALSE)
-  }
-
-  control <- .normalize_topic_control(control)
-  k <- .validate_legacy_warp_k_arg(k)
-
-  model_object <- x$lda_object
-  model_tww <- .legacy_warp_model_tww(model_object)
-  dtw <- .legacy_warp_dtw_matrix(x$theta, doc_ids = doc_ids)
-  tww_source <- if (!is.null(x$phi)) x$phi else model_tww
-  tww <- .legacy_warp_tww_matrix(tww_source, vocab = vocab)
-
-  inferred_k <- .legacy_warp_infer_k(
+  .as_text2vec_warp_nlp_topic_fit(
+    model_object = x$lda_object,
+    theta = x$theta,
+    phi = x$phi,
     k = k,
-    dtw = dtw,
-    tww = tww,
-    model_object = model_object
+    doc_ids = doc_ids,
+    vocab = vocab,
+    docvars = docvars,
+    doc_data = doc_data,
+    control = control,
+    warn_partial = warn_partial,
+    allow_doc_ids_without_theta = FALSE,
+    missing_theta_message = "Legacy WarpLDA object does not contain theta; converted fit will not contain cached DTW.",
+    missing_phi_message = "Legacy WarpLDA object does not contain recoverable phi; converted fit will not contain cached TWW.",
+    call = match.call()
   )
+}
 
-  if (is.null(dtw) && warn_partial) {
-    warning(
-      "Legacy WarpLDA object does not contain theta; converted fit will not contain cached DTW.",
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.TopicModel <- function(x, docvars = NULL, doc_data = NULL, ...) {
+  if (!isS4(x)) {
+    stop(
+      "TopicModel conversion currently supports S4 objects from the topicmodels package.",
       call. = FALSE
     )
   }
-  if (is.null(tww) && warn_partial) {
-    warning(
-      "Legacy WarpLDA object does not contain recoverable phi; converted fit will not contain cached TWW.",
-      call. = FALSE
-    )
-  }
-
+  model <- .topicmodels_adopt_model_name(x)
+  method <- .topicmodels_adopt_method_name(x)
+  dtw <- .dtw_matrix_from_matrix(x@gamma, doc_ids = .topicmodels_doc_ids(x))
+  tww <- .tww_matrix_from_matrix(x@beta, term_names = x@terms, log_scale = TRUE)
   docvars <- .legacy_warp_docvars_table(docvars, doc_ids = rownames(dtw))
   doc_data <- .normalize_doc_data_table(
     doc_data,
     include_text = TRUE,
     arg_name = "doc_data"
   )
-
-  alpha <- .legacy_warp_control_value(control$model$doc_topic_prior, 0.1)
-  beta <- .legacy_warp_control_value(control$model$topic_word_prior, 0.001)
-
   .new_nlp_topic_fit(
-    engine = "text2vec",
-    model = "lda",
-    method = NULL,
-    model_object = model_object,
+    engine = "topicmodels",
+    model = model,
+    method = method,
+    model_object = x,
     dtw = dtw,
     tww = tww,
-    doc_ids = .legacy_warp_fit_doc_ids(dtw, docvars, doc_data),
-    vocab = .legacy_warp_fit_vocab(tww, vocab),
+    doc_ids = rownames(dtw),
+    vocab = colnames(tww),
+    docvars = docvars,
+    doc_data = doc_data,
+    hyperparameters = .topicmodels_hyperparameters(x, model, x@k, method),
+    backend_control = .topic_backend_control(
+      model = list(),
+      fit = .s4_slots_to_list(x@control),
+      optimizer = list()
+    ),
+    call = match.call()
+  )
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.LDA_Gibbs <- function(x, docvars = NULL, doc_data = NULL, ...) {
+  as_nlp_topic_fit.TopicModel(x, docvars = docvars, doc_data = doc_data, ...)
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.LDA_VEM <- function(x, docvars = NULL, doc_data = NULL, ...) {
+  as_nlp_topic_fit.TopicModel(x, docvars = docvars, doc_data = doc_data, ...)
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.CTM_VEM <- function(x, docvars = NULL, doc_data = NULL, ...) {
+  as_nlp_topic_fit.TopicModel(x, docvars = docvars, doc_data = doc_data, ...)
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.textmodel <- function(x, model = NULL, docvars = NULL,
+                                       doc_data = NULL, ...) {
+  model <- .seededlda_adopt_model_name(x, model)
+  dtw <- .dtw_matrix_from_matrix(x$theta, doc_ids = .seededlda_doc_ids(x))
+  tww <- .tww_matrix_from_matrix(x$phi, term_names = colnames(x$phi))
+  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = rownames(dtw))
+  doc_data <- .normalize_doc_data_table(
+    doc_data,
+    include_text = TRUE,
+    arg_name = "doc_data"
+  )
+  .new_nlp_topic_fit(
+    engine = "seededlda",
+    model = model,
+    method = NULL,
+    model_object = x,
+    dtw = dtw,
+    tww = tww,
+    doc_ids = rownames(dtw),
+    vocab = colnames(tww),
     docvars = docvars,
     doc_data = doc_data,
     hyperparameters = .topic_hyperparameters_table(
-      k = inferred_k,
-      alpha = alpha,
-      beta = beta,
+      k = x$k,
+      alpha = x$alpha,
+      beta = x$beta,
       sources = list(
-        k = list(section = "legacy", name = "as_nlp_topic_fit"),
-        alpha = list(section = "control", name = "model$doc_topic_prior"),
-        beta = list(section = "control", name = "model$topic_word_prior")
+        k = list(section = "model_object", name = "k"),
+        alpha = list(section = "model_object", name = "alpha"),
+        beta = list(section = "model_object", name = "beta")
       )
     ),
     backend_control = .topic_backend_control(
-      model = control$model,
-      fit = control$fit,
-      optimizer = control$optimizer
+      model = list(),
+      fit = .seededlda_adopt_control(x),
+      optimizer = list()
     ),
+    call = match.call()
+  )
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.textmodel_lda <- function(x, model = NULL, docvars = NULL,
+                                           doc_data = NULL, ...) {
+  as_nlp_topic_fit.textmodel(
+    x,
+    model = model,
+    docvars = docvars,
+    doc_data = doc_data,
+    ...
+  )
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.WarpLDA <- function(x, theta = NULL, doc_ids = NULL,
+                                     vocab = NULL, docvars = NULL,
+                                     doc_data = NULL, control = list(),
+                                     warn_partial = TRUE, ...) {
+  .as_text2vec_warp_nlp_topic_fit(
+    model_object = x,
+    theta = theta,
+    phi = NULL,
+    k = NULL,
+    doc_ids = doc_ids,
+    vocab = vocab,
+    docvars = docvars,
+    doc_data = doc_data,
+    control = control,
+    warn_partial = warn_partial,
+    allow_doc_ids_without_theta = TRUE,
+    missing_theta_message = "Raw text2vec WarpLDA objects do not retain DTW; pass the fit_transform() output via 'theta' to cache DTW.",
+    missing_phi_message = "Raw text2vec WarpLDA object does not contain recoverable TWW.",
     call = match.call()
   )
 }
@@ -147,6 +253,156 @@ as_nlp_topic_fit.default <- function(x, ...) {
     inherits(x$lda_object, "WarpLDA")
 }
 
+.as_text2vec_warp_nlp_topic_fit <- function(model_object, theta = NULL,
+                                            phi = NULL, k = NULL,
+                                            doc_ids = NULL, vocab = NULL,
+                                            docvars = NULL, doc_data = NULL,
+                                            control = list(),
+                                            warn_partial = TRUE,
+                                            allow_doc_ids_without_theta = FALSE,
+                                            missing_theta_message,
+                                            missing_phi_message,
+                                            call) {
+  if (!is.logical(warn_partial) || length(warn_partial) != 1L || is.na(warn_partial)) {
+    stop("'warn_partial' must be a single TRUE/FALSE value.", call. = FALSE)
+  }
+  control <- .normalize_topic_control(control)
+  k <- .validate_legacy_warp_k_arg(k)
+
+  explicit_doc_ids <- NULL
+  dtw_doc_ids <- doc_ids
+  if (is.null(theta) && allow_doc_ids_without_theta && !is.null(doc_ids)) {
+    explicit_doc_ids <- as.character(doc_ids)
+    dtw_doc_ids <- NULL
+  }
+
+  model_tww <- .legacy_warp_model_tww(model_object)
+  dtw <- .legacy_warp_dtw_matrix(theta, doc_ids = dtw_doc_ids)
+  tww_source <- if (!is.null(phi)) phi else model_tww
+  tww <- .legacy_warp_tww_matrix(tww_source, vocab = vocab)
+
+  inferred_k <- .legacy_warp_infer_k(
+    k = k,
+    dtw = dtw,
+    tww = tww,
+    model_object = model_object
+  )
+
+  if (is.null(dtw) && warn_partial) {
+    warning(missing_theta_message, call. = FALSE)
+  }
+  if (is.null(tww) && warn_partial) {
+    warning(missing_phi_message, call. = FALSE)
+  }
+
+  docvars <- .legacy_warp_docvars_table(
+    docvars,
+    doc_ids = if (!is.null(dtw)) rownames(dtw) else explicit_doc_ids
+  )
+  doc_data <- .normalize_doc_data_table(
+    doc_data,
+    include_text = TRUE,
+    arg_name = "doc_data"
+  )
+
+  alpha <- .legacy_warp_control_value(control$model$doc_topic_prior, 0.1)
+  beta <- .legacy_warp_control_value(control$model$topic_word_prior, 0.001)
+
+  .new_nlp_topic_fit(
+    engine = "text2vec",
+    model = "lda",
+    method = NULL,
+    model_object = model_object,
+    dtw = dtw,
+    tww = tww,
+    doc_ids = .legacy_warp_fit_doc_ids(dtw, docvars, doc_data, explicit_doc_ids),
+    vocab = .legacy_warp_fit_vocab(tww, vocab),
+    docvars = docvars,
+    doc_data = doc_data,
+    hyperparameters = .topic_hyperparameters_table(
+      k = inferred_k,
+      alpha = alpha,
+      beta = beta,
+      sources = list(
+        k = list(section = "legacy", name = "as_nlp_topic_fit"),
+        alpha = list(section = "control", name = "model$doc_topic_prior"),
+        beta = list(section = "control", name = "model$topic_word_prior")
+      )
+    ),
+    backend_control = .topic_backend_control(
+      model = control$model,
+      fit = control$fit,
+      optimizer = control$optimizer
+    ),
+    call = call
+  )
+}
+
+.topicmodels_adopt_model_name <- function(x) {
+  cls <- class(x)[1L]
+  valid <- c("LDA_Gibbs", "LDA_VEM", "CTM_VEM")
+  if (!cls %in% valid) {
+    stop(
+      sprintf(
+        "Unsupported topicmodels object class '%s'. Supported classes are: %s.",
+        cls,
+        paste(valid, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if (grepl("^CTM", cls)) {
+    return("ctm")
+  }
+  "lda"
+}
+
+.topicmodels_adopt_method_name <- function(x) {
+  cls <- class(x)[1L]
+  if (grepl("Gibbs", cls, fixed = TRUE)) {
+    return("Gibbs")
+  }
+  "VEM"
+}
+
+.seededlda_adopt_model_name <- function(x, model = NULL) {
+  if (is.null(x$theta) || is.null(x$phi)) {
+    stop(
+      "seededlda textmodel objects must contain 'theta' and 'phi' to be converted.",
+      call. = FALSE
+    )
+  }
+  valid <- c("lda", "seqlda", "seededlda")
+  if (!is.null(model)) {
+    if (!is.character(model) || length(model) != 1L || is.na(model) ||
+        !model %in% valid) {
+      stop("'model' must be one of 'lda', 'seqlda', or 'seededlda'.", call. = FALSE)
+    }
+    return(model)
+  }
+
+  call_text <- paste(deparse(x$call), collapse = " ")
+  if (grepl("textmodel_seededlda", call_text, fixed = TRUE)) {
+    return("seededlda")
+  }
+  "lda"
+}
+
+.seededlda_adopt_control <- function(x) {
+  keep <- intersect(
+    c(
+      "max_iter", "last_iter", "auto_iter", "adjust_alpha", "epsilon",
+      "gamma", "batch_size", "concatenator", "version"
+    ),
+    names(x)
+  )
+  out <- x[keep]
+  if ("version" %in% names(out)) {
+    out$version <- as.character(out$version)
+  }
+  out
+}
+
 .validate_legacy_warp_k_arg <- function(k) {
   if (is.null(k)) {
     return(NULL)
@@ -161,7 +417,7 @@ as_nlp_topic_fit.default <- function(x, ...) {
 .legacy_warp_dtw_matrix <- function(theta, doc_ids = NULL) {
   if (is.null(theta)) {
     if (!is.null(doc_ids)) {
-      stop("'doc_ids' can be supplied only when legacy theta is available.", call. = FALSE)
+      stop("'doc_ids' can be supplied only when theta is available.", call. = FALSE)
     }
     return(NULL)
   }
@@ -189,10 +445,10 @@ as_nlp_topic_fit.default <- function(x, ...) {
   )
   topic_dt <- dt[, setdiff(names(dt), drop_cols), with = FALSE]
   if (!ncol(topic_dt)) {
-    stop("Legacy theta must contain topic columns.", call. = FALSE)
+    stop("theta must contain topic columns.", call. = FALSE)
   }
   if (!all(vapply(topic_dt, is.numeric, logical(1L)))) {
-    stop("Legacy theta topic columns must be numeric.", call. = FALSE)
+    stop("theta topic columns must be numeric.", call. = FALSE)
   }
 
   mat <- as.matrix(topic_dt)
@@ -202,7 +458,7 @@ as_nlp_topic_fit.default <- function(x, ...) {
 .legacy_warp_tww_matrix <- function(phi, vocab = NULL) {
   if (is.null(phi)) {
     if (!is.null(vocab)) {
-      stop("'vocab' can be supplied only when legacy phi is available or recoverable.", call. = FALSE)
+      stop("'vocab' can be supplied only when phi is available or recoverable.", call. = FALSE)
     }
     return(NULL)
   }
@@ -213,7 +469,7 @@ as_nlp_topic_fit.default <- function(x, ...) {
     term_dt <- dt[, setdiff(names(dt), topic_id_cols), with = FALSE]
     term_names <- names(term_dt)
     if (!all(vapply(term_dt, is.numeric, logical(1L)))) {
-      stop("Legacy phi term columns must be numeric.", call. = FALSE)
+      stop("phi term columns must be numeric.", call. = FALSE)
     }
     mat <- as.matrix(term_dt)
   } else {
@@ -222,10 +478,10 @@ as_nlp_topic_fit.default <- function(x, ...) {
   }
 
   if (!ncol(mat)) {
-    stop("Legacy phi must contain term columns.", call. = FALSE)
+    stop("phi must contain term columns.", call. = FALSE)
   }
   if (!is.numeric(mat)) {
-    stop("Legacy phi must be numeric.", call. = FALSE)
+    stop("phi must be numeric.", call. = FALSE)
   }
 
   if (!is.null(vocab)) {
@@ -275,13 +531,13 @@ as_nlp_topic_fit.default <- function(x, ...) {
 
   if (!length(candidates)) {
     stop(
-      "Could not infer the topic count from the legacy WarpLDA object; supply 'k'.",
+      "Could not infer the topic count from the text2vec topic model; supply 'k' for legacy list inputs.",
       call. = FALSE
     )
   }
   if (length(unique(candidates)) != 1L) {
     stop(
-      "Legacy WarpLDA components disagree on the number of topics.",
+      "text2vec topic-model components disagree on the number of topics.",
       call. = FALSE
     )
   }
@@ -318,9 +574,12 @@ as_nlp_topic_fit.default <- function(x, ...) {
   out[]
 }
 
-.legacy_warp_fit_doc_ids <- function(dtw, docvars, doc_data) {
+.legacy_warp_fit_doc_ids <- function(dtw, docvars, doc_data, explicit_doc_ids = NULL) {
   if (!is.null(dtw)) {
     return(rownames(dtw))
+  }
+  if (!is.null(explicit_doc_ids)) {
+    return(as.character(explicit_doc_ids))
   }
   if (!is.null(docvars) && "doc_id" %in% names(docvars)) {
     return(as.character(docvars$doc_id))

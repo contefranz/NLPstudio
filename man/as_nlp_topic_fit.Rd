@@ -4,8 +4,15 @@
 \alias{as_nlp_topic_fit}
 \alias{as_nlp_topic_fit.nlp_topic_fit}
 \alias{as_nlp_topic_fit.list}
+\alias{as_nlp_topic_fit.TopicModel}
+\alias{as_nlp_topic_fit.LDA_Gibbs}
+\alias{as_nlp_topic_fit.LDA_VEM}
+\alias{as_nlp_topic_fit.CTM_VEM}
+\alias{as_nlp_topic_fit.textmodel}
+\alias{as_nlp_topic_fit.textmodel_lda}
+\alias{as_nlp_topic_fit.WarpLDA}
 \alias{as_nlp_topic_fit.default}
-\title{Convert Legacy Topic-Model Objects to \code{nlp_topic_fit}}
+\title{Convert Existing Topic-Model Objects to \code{nlp_topic_fit}}
 \usage{
 as_nlp_topic_fit(x, ...)
 
@@ -14,6 +21,30 @@ as_nlp_topic_fit(x, ...)
 \method{as_nlp_topic_fit}{list}(
   x,
   k = NULL,
+  doc_ids = NULL,
+  vocab = NULL,
+  docvars = NULL,
+  doc_data = NULL,
+  control = list(),
+  warn_partial = TRUE,
+  ...
+)
+
+\method{as_nlp_topic_fit}{TopicModel}(x, docvars = NULL, doc_data = NULL, ...)
+
+\method{as_nlp_topic_fit}{LDA_Gibbs}(x, docvars = NULL, doc_data = NULL, ...)
+
+\method{as_nlp_topic_fit}{LDA_VEM}(x, docvars = NULL, doc_data = NULL, ...)
+
+\method{as_nlp_topic_fit}{CTM_VEM}(x, docvars = NULL, doc_data = NULL, ...)
+
+\method{as_nlp_topic_fit}{textmodel}(x, model = NULL, docvars = NULL, doc_data = NULL, ...)
+
+\method{as_nlp_topic_fit}{textmodel_lda}(x, model = NULL, docvars = NULL, doc_data = NULL, ...)
+
+\method{as_nlp_topic_fit}{WarpLDA}(
+  x,
+  theta = NULL,
   doc_ids = NULL,
   vocab = NULL,
   docvars = NULL,
@@ -50,14 +81,41 @@ the old model used non-default WarpLDA priors.}
 
 \item{warn_partial}{Logical. Warn when \code{theta} or \code{phi} cannot be recovered.
 Defaults to \code{TRUE}.}
+
+\item{model}{Optional model family override for raw \strong{seededlda} objects.
+Use \code{"seqlda"} for sequential LDA fits, which are not reliably
+distinguishable from ordinary seededlda LDA after fitting.}
+
+\item{theta}{Optional document-topic matrix for raw \strong{text2vec} WarpLDA
+objects. Raw WarpLDA objects do not retain the return value of
+\code{fit_transform()}, so pass that matrix here when available.}
 }
 \value{
 An object of class \code{c("nlp_topic_fit", "list")}.
 }
 \description{
-\code{as_nlp_topic_fit()} converts supported legacy topic-model outputs into the
-current \code{nlp_topic_fit} class used by \code{\link[=fit_topic_model]{fit_topic_model()}}. It is primarily a
-migration helper for saved outputs from the removed \code{warp_lda()} wrapper.
+\code{as_nlp_topic_fit()} converts supported fitted topic-model objects into the
+current \code{nlp_topic_fit} class used by \code{\link[=fit_topic_model]{fit_topic_model()}}. It can adopt raw
+fits from supported backends and saved outputs from the removed \code{warp_lda()}
+wrapper without refitting models.
+}
+\details{
+Supported input families are:
+\itemize{
+\item \strong{topicmodels} S4 fits from \code{\link[topicmodels:LDA]{topicmodels::LDA()}} and \code{\link[topicmodels:CTM]{topicmodels::CTM()}}
+(\code{LDA_Gibbs}, \code{LDA_VEM}, and \code{CTM_VEM});
+\item \strong{seededlda} \code{textmodel} fits from \code{textmodel_lda()} and
+\code{textmodel_seededlda()};
+\item raw \strong{text2vec} WarpLDA/LDA R6 objects, optionally paired with the
+\code{theta} matrix returned by \code{fit_transform()};
+\item saved list outputs from the removed NLPstudio \code{warp_lda()} wrapper.
+}
+
+The conversion is non-refitting. It standardizes cached DTW/TWW matrices,
+topic IDs, document IDs, vocabulary, and metadata where those components are
+already present on the input object. Raw \strong{text2vec} objects do not retain
+document-topic weights internally, so pass \code{theta} when downstream DTW access
+is needed.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

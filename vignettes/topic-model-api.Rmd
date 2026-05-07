@@ -377,17 +377,41 @@ export_summary[, representative_documents := NULL]
 data.table::fwrite(export_summary, tempfile(fileext = ".csv"))
 ```
 
-## Migrate Legacy WarpLDA Outputs
+## Adopt Existing Topic Models
 
-Earlier versions of NLPstudio exposed `warp_lda()` as a direct wrapper around
-the **text2vec** WarpLDA estimator. That fitting function is no longer part of
-the public API, but saved outputs from old projects can still be brought into
-the current workflow. `as_nlp_topic_fit()` converts the old list structure into
-an `nlp_topic_fit` object without refitting the model.
+You do not have to refit a model just to use the current API. Many projects
+already have topic models saved from earlier analyses, from direct backend
+calls, or from older NLPstudio workflows. `as_nlp_topic_fit()` is the adoption
+path for those objects. It wraps the existing fit, standardizes the cached DTW
+and TWW matrices where available, and keeps the original backend object as
+`model_object`.
 
-Legacy objects usually contain `lda_object`, `theta`, and `phi`. The adapter
-uses `theta` as DTW, `phi` as TWW, and keeps the original WarpLDA backend object
-as `model_object`.
+The conversion is deliberately non-refitting. For **topicmodels** fits, the
+adapter reads the fitted `gamma`, `beta`, terms, document IDs, controls, and
+hyperparameters from the S4 object. For **seededlda**, it uses the stored
+`theta`, `phi`, `k`, `alpha`, and `beta`. For raw **text2vec** WarpLDA/LDA
+objects, the topic-word distribution can be recovered from the model object, but
+the document-topic matrix is not stored by **text2vec** itself; pass the `theta`
+matrix returned by `fit_transform()` when you need DTW access.
+
+```{r adopt-existing-models, eval=FALSE}
+# topicmodels::LDA() or topicmodels::CTM()
+topicmodels_fit <- as_nlp_topic_fit(existing_topicmodels_fit)
+
+# seededlda::textmodel_lda() or seededlda::textmodel_seededlda()
+seededlda_fit <- as_nlp_topic_fit(existing_seededlda_fit)
+
+# raw text2vec::LDA() / WarpLDA object
+text2vec_fit <- as_nlp_topic_fit(raw_text2vec_fit, theta = saved_theta)
+
+# sequential LDA from seededlda is not reliably distinguishable after fitting
+seqlda_fit <- as_nlp_topic_fit(existing_seededlda_fit, model = "seqlda")
+```
+
+Older NLPstudio projects may also contain saved outputs from the removed
+`warp_lda()` wrapper. Those list objects usually contain `lda_object`, `theta`,
+and `phi`. The adapter uses `theta` as DTW, `phi` as TWW, and keeps the original
+WarpLDA backend object.
 
 ```{r legacy-warplda, eval=FALSE}
 old <- readRDS("legacy-warp-lda-output.rds")
@@ -399,10 +423,10 @@ get_top_terms(legacy_fit, n = 10)
 summarize_topics(legacy_fit, training = original_dfm)
 ```
 
-If the old object was saved without `theta` or `phi`, the adapter preserves the
-parts that are available and warns about the missing cache. Functions that need
-the missing component will then fail with the same messages used by current
-partial `nlp_topic_fit` objects.
+If an adopted object is missing DTW or TWW, the adapter preserves the parts that
+are available and warns about the missing cache. Functions that need the missing
+component will then fail with the same messages used by current partial
+`nlp_topic_fit` objects.
 
 ## Backend Portability
 
@@ -501,7 +525,7 @@ workflow:
 | Select K | `select_k_topics()` |
 | Assess seed stability | `assess_topic_stability()` |
 | Build interpretation tables | `summarize_topics()` |
-| Migrate legacy WarpLDA output | `as_nlp_topic_fit()` |
+| Adopt existing topic-model fits | `as_nlp_topic_fit()` |
 | Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |
 
 ## References
