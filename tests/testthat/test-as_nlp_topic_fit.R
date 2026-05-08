@@ -238,6 +238,45 @@ test_that("as_nlp_topic_fit detects seededlda seeded models and accepts seqlda o
   expect_error(as_nlp_topic_fit(lda, model = "bad"), "one of")
 })
 
+test_that("as_nlp_topic_fit covers defensive adapter branches", {
+  expect_error(
+    NLPstudio:::as_nlp_topic_fit.TopicModel(structure(list(), class = "TopicModel")),
+    "supports S4 objects"
+  )
+  expect_error(
+    NLPstudio:::.topicmodels_adopt_model_name(structure(list(), class = "STM_VEM")),
+    "Unsupported topicmodels object class"
+  )
+  expect_error(
+    NLPstudio:::.seededlda_adopt_model_name(
+      structure(list(phi = matrix(1, nrow = 1)), class = c("textmodel_lda", "textmodel", "list"))
+    ),
+    "must contain 'theta' and 'phi'"
+  )
+
+  theta <- matrix(c(0.6, 0.4, 0.2, 0.8), nrow = 2, byrow = TRUE)
+  phi <- matrix(
+    c(0.3, 0.7, 0.6, 0.4),
+    nrow = 2,
+    byrow = TRUE,
+    dimnames = list(NULL, c("alpha", "beta"))
+  )
+  fit <- as_nlp_topic_fit(make_legacy_warp(theta = theta, phi = phi, n_topics = 2L))
+  expect_equal(rownames(fit$dtw), c("1", "2"))
+
+  no_dtw <- make_legacy_warp()
+  no_dtw$theta <- NULL
+  expect_error(
+    as_nlp_topic_fit(no_dtw, docvars = data.table::data.table(year = 1:2), warn_partial = FALSE),
+    "must contain a 'doc_id' column"
+  )
+
+  expect_equal(
+    NLPstudio:::.legacy_warp_fit_vocab(tww = NULL, vocab = c("alpha", "beta")),
+    c("alpha", "beta")
+  )
+})
+
 test_that("raw text2vec WarpLDA objects can be adopted with cached theta", {
   skip_if_not_installed("text2vec")
 
