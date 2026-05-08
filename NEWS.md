@@ -1,5 +1,19 @@
 # NLPstudio News
 
+## NLPstudio 0.9.1  (2026-05-08)
+
+### NEW FEATURES
+
+1. Expanded `as_nlp_topic_fit()` so existing topic-model fits from
+   **topicmodels**, **seededlda**, raw **text2vec** WarpLDA/LDA objects, and
+   saved legacy `warp_lda()` outputs can be adopted as current
+   `nlp_topic_fit` objects without refitting models.
+
+### DOCUMENTATION
+
+1. Expanded adoption and migration notes in the topic-model API documentation
+   and README.
+
 ## NLPstudio 0.9.0  (2026-05-04)
 
 ### NEW FEATURES
