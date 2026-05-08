@@ -137,11 +137,13 @@ dfmat
 quanteda::topfeatures(dfmat, 15)
 ```
 
-Singularization is optional and uses the **pluralize** package. Because
-**pluralize** is archived on CRAN, this vignette shows the call shape but does
-not evaluate the chunk during package checks.
+Singularization is optional, but it is often helpful when the analysis should
+count plural and singular nouns together. `singularize_tokens()` applies
+NLPstudio's internal English singularization rules to the token vocabulary and
+then replaces only the affected token types, so the operation remains fast even
+when the corpus is much larger than this example.
 
-```{r singularize, eval=FALSE}
+```{r singularize}
 singular_toks <- singularize_tokens(toks, ncores = 1, min_char = 4)
 singular_dfm <- quanteda::dfm(singular_toks)
 quanteda::topfeatures(singular_dfm, 15)

@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.1-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v0.9.2-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -92,7 +92,7 @@ torch::torch_is_installed()
 ### Topic-model workflow
 
 This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.1 workflow can be reproduced without external data.
+corpus so the current v0.9.2 workflow can be reproduced without external data.
 
 ```r
 library(NLPstudio)

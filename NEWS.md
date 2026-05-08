@@ -1,5 +1,23 @@
 # NLPstudio News
 
+## NLPstudio 0.9.2  (2026-05-08)
+
+### CHANGES
+
+1. Internalized the singularization backend used by `singularize_tokens()`.
+   The function no longer depends on the archived **pluralize** package while
+   preserving the existing public interface.
+
+### DOCUMENTATION
+
+1. Updated the corpus workflow vignette so singularization is evaluated during
+   vignette builds and described as package-owned functionality.
+
+### CI
+
+1. Removed the GitHub-only **pluralize** installation from the coverage
+   workflow.
+
 ## NLPstudio 0.9.1  (2026-05-08)
 
 ### NEW FEATURES

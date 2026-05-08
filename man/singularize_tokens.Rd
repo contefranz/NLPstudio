@@ -40,20 +40,19 @@ A \link[quanteda:tokens]{quanteda::tokens} object with singularized tokens.
 }
 \description{
 Singularize tokens from a \strong{quanteda} \link[quanteda:tokens]{tokens} object using a parallel
-hashing strategy. Internally relies on the optional pluralize package. Short
+hashing strategy and an internal English singularization rule set. Short
 tokens can optionally be removed.
 }
 \details{
 More details discussing the parallel strategy are given in \code{\link[=tokenize_corpus]{tokenize_corpus()}}.
 }
 \note{
-Requires the \strong{pluralize} package. On Linux/macOS, \code{"FORK"} may be
-faster but can be unstable with quanteda’s C++/OpenMP internals. Use \code{"PSOCK"}
-for maximum stability. On Windows, \code{"FORK"} is not available.
+On Linux/macOS, \code{"FORK"} may be faster but can be unstable with
+quanteda’s C++/OpenMP internals. Use \code{"PSOCK"} for maximum stability. On
+Windows, \code{"FORK"} is not available.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
-# Requires the optional pluralize package installed separately.
 corp <- quanteda::corpus(c(
   doc1 = "Cats chase birds and cars pass houses.",
   doc2 = "Companies file reports and managers review numbers."

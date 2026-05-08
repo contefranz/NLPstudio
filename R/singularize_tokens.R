@@ -4,7 +4,7 @@ if (getRversion() >= "2.15.1") {
 #' Fast Tokens Singularization
 #'
 #' Singularize tokens from a **quanteda** [tokens] object using a parallel
-#' hashing strategy. Internally relies on the optional pluralize package. Short
+#' hashing strategy and an internal English singularization rule set. Short
 #' tokens can optionally be removed.
 #'
 #' @inheritParams tokenize_corpus
@@ -21,12 +21,11 @@ if (getRversion() >= "2.15.1") {
 #'
 #' @returns A [quanteda::tokens] object with singularized tokens.
 #'
-#' @note Requires the **pluralize** package. On Linux/macOS, `"FORK"` may be
-#' faster but can be unstable with quanteda’s C++/OpenMP internals. Use `"PSOCK"`
-#' for maximum stability. On Windows, `"FORK"` is not available.
+#' @note On Linux/macOS, `"FORK"` may be faster but can be unstable with
+#' quanteda’s C++/OpenMP internals. Use `"PSOCK"` for maximum stability. On
+#' Windows, `"FORK"` is not available.
 #'
 #' @examplesIf interactive()
-#' # Requires the optional pluralize package installed separately.
 #' corp <- quanteda::corpus(c(
 #'   doc1 = "Cats chase birds and cars pass houses.",
 #'   doc2 = "Companies file reports and managers review numbers."
@@ -41,10 +40,6 @@ if (getRversion() >= "2.15.1") {
 singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
                                socket = c("PSOCK", "FORK"),
                                remove_numbers = TRUE, min_char = 1) {
-  pkg <- "pluralize"
-  if (!.has_namespace(pkg)) {
-    stop("Package 'pluralize' is required for singularize_tokens(). Please install it.", call. = FALSE)
-  }
   if (!quanteda::is.tokens(x)) stop("x must be a quanteda tokens object")
   
   socket <- match.arg(socket)
@@ -84,7 +79,15 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
     chunks <- lapply(groups, function(ix) hash_vocabulary[ix, ])
     
     big_list <- .run_parallel(chunks, .singularize_chunk, ncores, socket,
-                              export_vars = c(".singularize_chunk", ".singularize", ".get_exported_value"),
+                              export_vars = c(
+                                ".singularize_chunk",
+                                ".singularize",
+                                ".singularize_vector",
+                                ".singularize_word",
+                                ".restore_singular_case",
+                                ".nlp_uncountable_terms",
+                                ".nlp_irregular_singulars"
+                              ),
                               export_env = environment())
     
     hash_vocabulary <- data.table::rbindlist(big_list)
@@ -111,20 +114,124 @@ singularize_tokens <- function(x, ncores = 1, nchunks = ncores,
 #' @keywords internal
 #' @noRd
 .singularize_chunk <- function(current_chunk) {
-  pkg <- "pluralize"
-  singularize_fun <- .get_exported_value(pkg, "singularize")
-  current_chunk[, single := singularize_fun(feature)]
+  current_chunk[, single := .singularize_vector(feature)]
   current_chunk
 }
 
 #' Singularize one token row
 #'
-#' Applies pluralize-backed singularization to one token vector while preserving non-word tokens.
+#' Applies internal singularization to one token vector.
 #'
 #' @keywords internal
 #' @noRd
 .singularize <- function(row) {
-  pkg <- "pluralize"
-  singularize_fun <- .get_exported_value(pkg, "singularize")
-  singularize_fun(row$feature)
+  .singularize_word(row$feature)
+}
+
+#' Singularize a character vector
+#' @keywords internal
+#' @noRd
+.singularize_vector <- function(x) {
+  vapply(x, .singularize_word, character(1), USE.NAMES = FALSE)
+}
+
+#' Common uncountable or already singular terms
+#' @keywords internal
+#' @noRd
+.nlp_uncountable_terms <- c(
+  "aircraft", "bison", "deer", "equipment", "fish", "information",
+  "gas", "moose", "news", "offspring", "rice", "series", "sheep",
+  "software", "species", "staff", "swine"
+)
+
+#' Common irregular plural-to-singular mappings
+#' @keywords internal
+#' @noRd
+.nlp_irregular_singulars <- c(
+  addenda = "addendum",
+  algae = "alga",
+  analyses = "analysis",
+  appendices = "appendix",
+  axes = "axis",
+  bacteria = "bacterium",
+  children = "child",
+  corpora = "corpus",
+  criteria = "criterion",
+  crises = "crisis",
+  diagnoses = "diagnosis",
+  dice = "die",
+  feet = "foot",
+  formulae = "formula",
+  geese = "goose",
+  hypotheses = "hypothesis",
+  indices = "index",
+  matrices = "matrix",
+  media = "medium",
+  men = "man",
+  mice = "mouse",
+  nuclei = "nucleus",
+  oxen = "ox",
+  people = "person",
+  phenomena = "phenomenon",
+  stimuli = "stimulus",
+  synopses = "synopsis",
+  teeth = "tooth",
+  theses = "thesis",
+  vertebrae = "vertebra",
+  vertices = "vertex",
+  women = "woman"
+)
+
+#' Singularize one word
+#' @keywords internal
+#' @noRd
+.singularize_word <- function(word) {
+  if (length(word) == 0L) return(character())
+  if (is.na(word)) return(NA_character_)
+  if (!is.character(word)) word <- as.character(word)
+
+  lower <- tolower(word)
+  if (!nzchar(lower) || nchar(lower) <= 2L || lower %in% .nlp_uncountable_terms) {
+    return(word)
+  }
+
+  if (lower %in% names(.nlp_irregular_singulars)) {
+    return(.restore_singular_case(word, .nlp_irregular_singulars[[lower]]))
+  }
+
+  singular <- lower
+
+  if (grepl("ies$", lower) && nchar(lower) > 4L) {
+    singular <- sub("ies$", "y", lower)
+  } else if (grepl("(shel|wol|lea|loa|cal|hal|el|sel|thie|scar|hoo|dwar|whar|tur)ves$", lower)) {
+    singular <- sub("ves$", "f", lower)
+  } else if (grepl("(li|wi|kni)ves$", lower)) {
+    singular <- sub("ves$", "fe", lower)
+  } else if (grepl("ves$", lower)) {
+    singular <- sub("s$", "", lower)
+  } else if (grepl("(ch|sh|ss|x|z)es$", lower)) {
+    singular <- sub("es$", "", lower)
+  } else if (grepl("oes$", lower)) {
+    singular <- sub("es$", "", lower)
+  } else if (grepl("s$", lower) &&
+             !grepl("(ss|us|is|ous)$", lower) &&
+             !lower %in% c("this", "his")) {
+    singular <- sub("s$", "", lower)
+  }
+
+  .restore_singular_case(word, singular)
+}
+
+#' Restore common case shape after lower-case matching
+#' @keywords internal
+#' @noRd
+.restore_singular_case <- function(original, singular) {
+  if (!nzchar(original) || !nzchar(singular)) return(singular)
+  if (identical(original, toupper(original))) {
+    return(toupper(singular))
+  }
+  if (grepl("^[[:upper:]][[:lower:]]+$", original)) {
+    return(paste0(toupper(substr(singular, 1L, 1L)), substr(singular, 2L, nchar(singular))))
+  }
+  singular
 }
