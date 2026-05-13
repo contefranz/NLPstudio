@@ -428,6 +428,46 @@ are available and warns about the missing cache. Functions that need the missing
 component will then fail with the same messages used by current partial
 `nlp_topic_fit` objects.
 
+## Use OpTop with NLPstudio Fits
+
+Some research workflows use the **OpTop** package to select the number of topics
+with the chi-square testing approach of Lewis and Grossetti (2022). NLPstudio
+does not reimplement that test. Instead, it prepares the exact objects that
+`OpTop::optimal_topic()` expects: an ordered list of raw **topicmodels** LDA VEM
+fits and a DFM weighted to document-level word proportions.
+
+This bridge is intentionally narrow. Current **OpTop** expects `LDA_VEM` objects
+from `topicmodels::LDA()`, so `as_optop_input()` rejects Gibbs LDA, CTM,
+**text2vec**, **seededlda**, and ETM fits. That strictness is useful: it keeps
+the statistical test tied to the model class for which OpTop was written.
+
+```{r optop-bridge, eval=FALSE}
+selection <- select_k_topics(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  method = "VEM",
+  k_grid = 2:5,
+  metrics = c("diversity", "exclusivity"),
+  holdout = 0,
+  return_fits = TRUE,
+  control = list(fit = list(seed = 1))
+)
+
+optop_input <- as_optop_input(
+  selection,
+  weighted_dfm = as_optop_weighted_dfm(dfm)
+)
+
+OpTop::optimal_topic(
+  lda_models = optop_input$lda_models,
+  weighted_dfm = optop_input$weighted_dfm,
+  q = 0.8,
+  alpha = 0.05,
+  do_plot = FALSE
+)
+```
+
 ## Backend Portability
 
 The point of the API is that the workflow above does not belong only to one
@@ -526,6 +566,7 @@ workflow:
 | Assess seed stability | `assess_topic_stability()` |
 | Build interpretation tables | `summarize_topics()` |
 | Adopt existing topic-model fits | `as_nlp_topic_fit()` |
+| Prepare OpTop inputs | `as_optop_weighted_dfm()`, `as_optop_input()` |
 | Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |
 
 ## References

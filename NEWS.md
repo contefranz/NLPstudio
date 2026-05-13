@@ -1,5 +1,18 @@
 # NLPstudio News
 
+## NLPstudio 0.9.3  (2026-05-13)
+
+### NEW FEATURES
+
+1. Added `as_optop_weighted_dfm()` and `as_optop_input()` so NLPstudio
+   `topicmodels` LDA VEM fits can be passed to **OpTop** without refitting or
+   reimplementing OpTop's C++ routines.
+
+### DOCUMENTATION
+
+1. Added OpTop interoperability examples to the topic-model API documentation
+   and README.
+
 ## NLPstudio 0.9.2  (2026-05-08)
 
 ### CHANGES
