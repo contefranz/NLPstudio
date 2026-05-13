@@ -185,6 +185,7 @@ print.nlp_optop_input <- function(x, ...) {
     stop("'weighted_dfm' must have meaningful document IDs for OpTop document matching.", call. = FALSE)
   }
   .optop_validate_weighted_proportions(weighted_dfm)
+  .optop_validate_document_overlap(weighted_dfm, lda_models)
 
   model_terms <- .optop_lda_terms(lda_models[[1L]])
   dfm_terms <- quanteda::featnames(weighted_dfm)
@@ -208,6 +209,25 @@ print.nlp_optop_input <- function(x, ...) {
   if (any(bad)) {
     stop(
       "'weighted_dfm' must contain document-level word proportions. Use as_optop_weighted_dfm() on the fitting dfm.",
+      call. = FALSE
+    )
+  }
+  invisible(weighted_dfm)
+}
+
+.optop_validate_document_overlap <- function(weighted_dfm, lda_models) {
+  weighted_doc_ids <- as.character(quanteda::docid(weighted_dfm))
+  has_overlap <- vapply(
+    lda_models,
+    function(model) {
+      model_doc_ids <- as.character(methods::slot(model, "documents"))
+      length(intersect(weighted_doc_ids, model_doc_ids)) > 0L
+    },
+    logical(1)
+  )
+  if (!all(has_overlap)) {
+    stop(
+      "Each OpTop LDA model must share at least one document ID with 'weighted_dfm'.",
       call. = FALSE
     )
   }

@@ -121,6 +121,10 @@ test_that("as_optop_input validates and aligns weighted DFM vocabulary", {
   out <- as_optop_input(fits, shuffled)
   expect_equal(quanteda::featnames(out$weighted_dfm), out$lda_models[[1]]@terms)
 
+  partial_docs <- weighted[1:3, ]
+  partial_out <- as_optop_input(fits, partial_docs)
+  expect_equal(quanteda::ndoc(partial_out$weighted_dfm), 3L)
+
   missing_term <- weighted
   colnames(missing_term)[1L] <- "not_in_model"
   expect_error(as_optop_input(fits, missing_term), "missing 1 terms")
@@ -138,4 +142,11 @@ test_that("as_optop_input validates and aligns weighted DFM vocabulary", {
   raw_models <- lapply(fits, `[[`, "model_object")
   raw_models[[2L]]@terms <- rev(raw_models[[2L]]@terms)
   expect_error(as_optop_input(raw_models, weighted), "same vocabulary")
+
+  no_overlap_models <- lapply(fits, `[[`, "model_object")
+  no_overlap_models[[2L]]@documents <- paste0("other", seq_along(no_overlap_models[[2L]]@documents))
+  expect_error(
+    as_optop_input(no_overlap_models, weighted),
+    "Each OpTop LDA model must share at least one document ID"
+  )
 })
