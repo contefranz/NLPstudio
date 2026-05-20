@@ -1,6 +1,6 @@
 # NLPstudio News
 
-## NLPstudio 0.9.3  (2026-05-13)
+## NLPstudio 0.9.3  (2026-05-20)
 
 ### NEW FEATURES
 

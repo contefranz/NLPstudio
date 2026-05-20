@@ -63,6 +63,25 @@ test_that("as_optop_input prepares selection fits for OpTop", {
   expect_true(any(grepl("topic counts: 2, 3", printed, fixed = TRUE)))
 })
 
+test_that("as_optop_input output is accepted by OpTop when installed", {
+  skip_if_not_installed("OpTop")
+  dfm <- make_optop_dfm()
+  selection <- make_optop_selection(dfm)
+  optop_input <- as_optop_input(selection, as_optop_weighted_dfm(dfm))
+  optimal_topic <- get("optimal_topic", envir = asNamespace("OpTop"))
+  result <- NULL
+
+  expect_no_error({
+    invisible(utils::capture.output(
+      result <- suppressWarnings(optimal_topic(
+        lda_models = optop_input$lda_models,
+        weighted_dfm = optop_input$weighted_dfm
+      ))
+    ))
+  })
+  expect_false(is.null(result))
+})
+
 test_that("as_optop_input accepts nlp_topic_fit and raw LDA_VEM lists", {
   dfm <- make_optop_dfm()
   selection <- make_optop_selection(dfm)
