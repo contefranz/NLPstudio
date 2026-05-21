@@ -17,6 +17,7 @@ if (getRversion() >= "2.15.1") {
 #'   `textmodel_seededlda()`;
 #' - raw **text2vec** WarpLDA/LDA R6 objects, optionally paired with the
 #'   `theta` matrix returned by `fit_transform()`;
+#' - raw **stm** `STM` objects without content covariates;
 #' - saved list outputs from the removed NLPstudio `warp_lda()` wrapper.
 #'
 #' The conversion is non-refitting. It standardizes cached DTW/TWW matrices,
@@ -67,6 +68,11 @@ as_nlp_topic_fit.nlp_topic_fit <- function(x, ...) {
 #' old <- readRDS("legacy-warp-lda-output.rds")
 #' fit <- as_nlp_topic_fit(old)
 #' get_top_terms(fit)
+#'
+#' @details
+#' Raw **stm** content-covariate models are not converted in `v0.9.4` because
+#' they imply covariate-specific topic-word distributions, while NLPstudio
+#' currently standardizes one TWW matrix per fit.
 #'
 #' @export
 as_nlp_topic_fit.list <- function(x, k = NULL, doc_ids = NULL, vocab = NULL,
@@ -231,6 +237,46 @@ as_nlp_topic_fit.WarpLDA <- function(x, theta = NULL, doc_ids = NULL,
     allow_doc_ids_without_theta = TRUE,
     missing_theta_message = "Raw text2vec WarpLDA objects do not retain DTW; pass the fit_transform() output via 'theta' to cache DTW.",
     missing_phi_message = "Raw text2vec WarpLDA object does not contain recoverable TWW.",
+    call = match.call()
+  )
+}
+
+#' @rdname as_nlp_topic_fit
+#' @export
+as_nlp_topic_fit.STM <- function(x, doc_ids = NULL, docvars = NULL,
+                                 doc_data = NULL, ...) {
+  tww <- .stm_tww_matrix(x)
+  doc_ids <- .stm_doc_ids(x, doc_ids = doc_ids)
+  dtw <- .dtw_matrix_from_matrix(x$theta, doc_ids = doc_ids)
+  tww <- .tww_matrix_from_matrix(tww, term_names = x$vocab)
+  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = rownames(dtw))
+  doc_data <- .normalize_doc_data_table(
+    doc_data,
+    include_text = TRUE,
+    arg_name = "doc_data"
+  )
+  .new_nlp_topic_fit(
+    engine = "stm",
+    model = "stm",
+    method = NULL,
+    model_object = x,
+    dtw = dtw,
+    tww = tww,
+    doc_ids = rownames(dtw),
+    vocab = colnames(tww),
+    docvars = docvars,
+    doc_data = doc_data,
+    hyperparameters = .topic_hyperparameters_table(
+      k = .stm_topic_count(x),
+      alpha = NA_real_,
+      beta = NA_real_,
+      sources = list(k = list(section = "model_object", name = "settings$dim$K"))
+    ),
+    backend_control = .topic_backend_control(
+      model = list(),
+      fit = if (!is.null(x$settings$call)) as.list(x$settings$call)[-1L] else list(),
+      optimizer = list()
+    ),
     call = match.call()
   )
 }

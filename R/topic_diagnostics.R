@@ -37,8 +37,8 @@ if (getRversion() >= "2.15.1") {
 #'   is optional and, when supplied, must match the number of fits.
 #' @param method Fitting method forwarded to [fit_topic_model()].
 #' @param control Backend controls forwarded to [fit_topic_model()]. For
-#'   `engine = "topicmodels"`, each seed is also written to
-#'   `control$fit$seed` before fitting so backend-native seeding is explicit.
+#'   `engine = "topicmodels"` or `engine = "stm"`, each seed is also written
+#'   to `control$fit$seed` before fitting so backend-native seeding is explicit.
 #' @param resampling Optional list with `fraction`, a number in `(0, 1]`. When
 #'   supplied, each seed also draws that fraction of documents without
 #'   replacement before fitting. Defaults to `NULL`, which means no resampling.
@@ -375,7 +375,7 @@ print.nlp_topic_stability <- function(x, ...) {
 
 .stability_control_for_seed <- function(control, engine, seed) {
   control <- .normalize_topic_control(control)
-  if (identical(engine, "topicmodels")) {
+  if (identical(engine, "topicmodels") || identical(engine, "stm")) {
     control$fit$seed <- seed
   }
   control

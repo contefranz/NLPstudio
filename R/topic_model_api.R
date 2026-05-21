@@ -11,7 +11,7 @@ if (getRversion() >= "2.15.1") {
 #' Fit a Topic Model Via a Unified API
 #'
 #' Fit a topic model with a unified API across **text2vec**, **topicmodels**,
-#' **seededlda**, and **topicmodels.etm**. The fitted object stores both the
+#' **seededlda**, **topicmodels.etm**, and **stm**. The fitted object stores both the
 #' raw backend fit and, by default, cached DTW/TWW outputs following the convention of Lewis and
 #' Grossetti (2022):
 #'
@@ -20,7 +20,7 @@ if (getRversion() >= "2.15.1") {
 #'   [dfm][quanteda::dfm], and
 #'   `DocumentTermMatrix`.
 #' @param engine Backend package. One of `"text2vec"`, `"topicmodels"`,
-#'   `"seededlda"`, or `"topicmodels.etm"`.
+#'   `"seededlda"`, `"topicmodels.etm"`, or `"stm"`.
 #' @param model Model family within the selected backend.
 #'   Supported combinations are:
 #'
@@ -28,6 +28,7 @@ if (getRversion() >= "2.15.1") {
 #'   - `engine = "topicmodels"` with `model = "lda"` or `"ctm"`
 #'   - `engine = "seededlda"` with `model = "lda"`, `"seqlda"`, or `"seededlda"`
 #'   - `engine = "topicmodels.etm"` with `model = "etm"`
+#'   - `engine = "stm"` with `model = "stm"`
 #' @param k Number of topics \eqn{K}. Required for all supported models except
 #'   `engine = "seededlda", model = "seededlda"`.
 #' @param method Fitting method within the selected model family.
@@ -37,6 +38,7 @@ if (getRversion() >= "2.15.1") {
 #'   - `text2vec + lda`: `NULL` only
 #'   - `seededlda`: `NULL` only
 #'   - `topicmodels.etm + etm`: `NULL` only
+#'   - `stm + stm`: `NULL` only
 #' @param docvars Should a compact document-variable table be stored alongside
 #'   the fitted model? Defaults to `TRUE`. Stored docvars always include the
 #'   fitted `doc_id` values and, when `x` is a [dfm][quanteda::dfm], any
@@ -66,6 +68,9 @@ if (getRversion() >= "2.15.1") {
 #'     `topicmodels.etm::ETM()`, `control$fit` is forwarded to `$fit(...)`, and
 #'     `control$optimizer` is forwarded to
 #'     `torch::optim_adam(params = model$parameters, ...)`
+#'   - `stm`: `control$fit` is forwarded to [stm::stm()], including
+#'     `prevalence`, `data`, `seed`, `max.em.its`, `init.type`, and `verbose`;
+#'     `control$model` and `control$optimizer` must be empty
 #' @param dictionary Dictionary required for
 #'   `engine = "seededlda", model = "seededlda"`.
 #' @param seedwords Optional `seedwords` argument forwarded only to
@@ -122,6 +127,15 @@ if (getRversion() >= "2.15.1") {
 #' not sufficient by itself on a clean machine; run `torch::install_torch()` and
 #' confirm that `torch::torch_is_installed()` returns `TRUE`.
 #'
+#' STM support in `v0.9.4` covers prevalence covariates but not content
+#' covariates. Pass prevalence formulas and metadata through
+#' `control$fit$prevalence` and `control$fit$data`. If `x` is a
+#' [dfm][quanteda::dfm] with document variables, those docvars are used as STM
+#' metadata when `control$fit$data` is omitted. STM content covariates are not
+#' supported in `v0.9.4` because they imply covariate-specific topic-word
+#' distributions, while NLPstudio currently standardizes one TWW matrix per
+#' fit.
+#'
 #' The API currently covers these model families and fitting algorithms:
 #'
 #' - LDA via **text2vec**, **topicmodels**, and **seededlda**
@@ -130,6 +144,7 @@ if (getRversion() >= "2.15.1") {
 #' - Sequential LDA via **seededlda**
 #' - Seeded LDA via **seededlda**
 #' - Embedded Topic Models via **topicmodels.etm**
+#' - Structural Topic Models with prevalence covariates via **stm**
 #'
 #' @references
 #' Lewis, C. M., & Grossetti, F. (2022).
@@ -179,7 +194,7 @@ if (getRversion() >= "2.15.1") {
 #' _Social Science Computer Review_, 42(1), 224-248.
 #' 
 #' @seealso [topicmodels::LDA()] [topicmodels::CTM()] [text2vec::LDA()] [seededlda::textmodel_seqlda()]
-#' [topicmodels.etm::ETM()]
+#' [stm::stm()] [topicmodels.etm::ETM()]
 #'
 #' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
@@ -308,7 +323,7 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
                             seedwords = NULL, initial_model = NULL) {
 
   call <- match.call()
-  engine <- match.arg(engine, c("text2vec", "topicmodels", "seededlda", "topicmodels.etm"))
+  engine <- match.arg(engine, c("text2vec", "topicmodels", "seededlda", "topicmodels.etm", "stm"))
   model <- .match_topic_model(engine, model)
   method <- .normalize_topic_method(engine, model, method)
   control <- .normalize_topic_control(control)
@@ -365,6 +380,11 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
       x = x,
       k = as.integer(k),
       control = control
+    ),
+    stm = .fit_stm_topic_model(
+      x = x,
+      k = as.integer(k),
+      control = control
     )
   )
 
@@ -411,6 +431,8 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #'   - `topicmodels`: forwarded to `topicmodels::posterior()`
 #'   - `seededlda`: forwarded to the relevant `textmodel_*()` update call
 #'   - `topicmodels.etm`: forwarded to [stats::predict()] with `type = "topics"`
+#'   - `stm`: forwarded to [stm::fitNewDocuments()] for STM fits without
+#'     prevalence covariates
 #' @param docvars Should available docvars from `newdata` be joined onto the
 #'   returned DTW table? Defaults to `FALSE`.
 #' @param doc_data Optional document-data sidecar for metadata or text
@@ -442,6 +464,10 @@ fit_topic_model <- function(x, engine, model, k = NULL, method = NULL,
 #' fitted terms are added as zero columns, columns are reordered to fitted
 #' vocabulary order, and any documents that become empty after alignment are
 #' dropped with a warning.
+#'
+#' STM prediction is supported in `v0.9.4` only for fits without prevalence
+#' covariates. For STM prevalence-covariate fits, `predict_topic_model()` errors
+#' clearly rather than guessing new-document covariate handling.
 #'
 #' @examplesIf requireNamespace("text2vec", quietly = TRUE)
 #' dtm <- methods::as(
