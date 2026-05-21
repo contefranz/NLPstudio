@@ -38,8 +38,8 @@ is optional and, when supplied, must match the number of fits.}
 \item{method}{Fitting method forwarded to \code{\link[=fit_topic_model]{fit_topic_model()}}.}
 
 \item{control}{Backend controls forwarded to \code{\link[=fit_topic_model]{fit_topic_model()}}. For
-\code{engine = "topicmodels"}, each seed is also written to
-\code{control$fit$seed} before fitting so backend-native seeding is explicit.}
+\code{engine = "topicmodels"} or \code{engine = "stm"}, each seed is also written
+to \code{control$fit$seed} before fitting so backend-native seeding is explicit.}
 
 \item{resampling}{Optional list with \code{fraction}, a number in \verb{(0, 1]}. When
 supplied, each seed also draws that fraction of documents without

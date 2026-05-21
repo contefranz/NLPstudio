@@ -11,6 +11,7 @@
 \alias{as_nlp_topic_fit.textmodel}
 \alias{as_nlp_topic_fit.textmodel_lda}
 \alias{as_nlp_topic_fit.WarpLDA}
+\alias{as_nlp_topic_fit.STM}
 \alias{as_nlp_topic_fit.default}
 \title{Convert Existing Topic-Model Objects to \code{nlp_topic_fit}}
 \usage{
@@ -53,6 +54,8 @@ as_nlp_topic_fit(x, ...)
   warn_partial = TRUE,
   ...
 )
+
+\method{as_nlp_topic_fit}{STM}(x, doc_ids = NULL, docvars = NULL, doc_data = NULL, ...)
 
 \method{as_nlp_topic_fit}{default}(x, ...)
 }
@@ -108,6 +111,7 @@ Supported input families are:
 \code{textmodel_seededlda()};
 \item raw \strong{text2vec} WarpLDA/LDA R6 objects, optionally paired with the
 \code{theta} matrix returned by \code{fit_transform()};
+\item raw \strong{stm} \code{STM} objects without content covariates;
 \item saved list outputs from the removed NLPstudio \code{warp_lda()} wrapper.
 }
 
@@ -116,6 +120,10 @@ topic IDs, document IDs, vocabulary, and metadata where those components are
 already present on the input object. Raw \strong{text2vec} objects do not retain
 document-topic weights internally, so pass \code{theta} when downstream DTW access
 is needed.
+
+Raw \strong{stm} content-covariate models are not converted in \code{v0.9.4} because
+they imply covariate-specific topic-word distributions, while NLPstudio
+currently standardizes one TWW matrix per fit.
 }
 \examples{
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}

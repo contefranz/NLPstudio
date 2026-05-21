@@ -107,6 +107,11 @@ dropped with a warning (they carry no information under the fitted model).
 Tokens outside the fitted vocabulary are excluded from the token count,
 matching the convention used by \code{topicmodels::perplexity()}.
 
+For STM fits with prevalence covariates, held-out likelihood metrics are
+marked unsupported in \code{v0.9.4} because new-document covariate handling is not
+inferred by NLPstudio. Coherence, diversity, exclusivity, and training
+likelihood metrics remain available when their required inputs exist.
+
 \code{level} controls only which rows are returned. Metrics are computed in the
 same way regardless of level. Metrics that are naturally corpus-level only
 have no topic-level rows and are omitted when \code{level = "topic"}.

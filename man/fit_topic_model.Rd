@@ -27,7 +27,7 @@ fit_topic_model(
 \code{DocumentTermMatrix}.}
 
 \item{engine}{Backend package. One of \code{"text2vec"}, \code{"topicmodels"},
-\code{"seededlda"}, or \code{"topicmodels.etm"}.}
+\code{"seededlda"}, \code{"topicmodels.etm"}, or \code{"stm"}.}
 
 \item{model}{Model family within the selected backend.
 Supported combinations are:
@@ -36,6 +36,7 @@ Supported combinations are:
 \item \code{engine = "topicmodels"} with \code{model = "lda"} or \code{"ctm"}
 \item \code{engine = "seededlda"} with \code{model = "lda"}, \code{"seqlda"}, or \code{"seededlda"}
 \item \code{engine = "topicmodels.etm"} with \code{model = "etm"}
+\item \code{engine = "stm"} with \code{model = "stm"}
 }}
 
 \item{k}{Number of topics \eqn{K}. Required for all supported models except
@@ -48,6 +49,7 @@ Supported combinations are:
 \item \code{text2vec + lda}: \code{NULL} only
 \item \code{seededlda}: \code{NULL} only
 \item \code{topicmodels.etm + etm}: \code{NULL} only
+\item \code{stm + stm}: \code{NULL} only
 }}
 
 \item{docvars}{Should a compact document-variable table be stored alongside
@@ -82,6 +84,9 @@ empty
 \code{topicmodels.etm::ETM()}, \code{control$fit} is forwarded to \verb{$fit(...)}, and
 \code{control$optimizer} is forwarded to
 \code{torch::optim_adam(params = model$parameters, ...)}
+\item \code{stm}: \code{control$fit} is forwarded to \code{\link[stm:stm]{stm::stm()}}, including
+\code{prevalence}, \code{data}, \code{seed}, \code{max.em.its}, \code{init.type}, and \code{verbose};
+\code{control$model} and \code{control$optimizer} must be empty
 }}
 
 \item{dictionary}{Dictionary required for
@@ -121,7 +126,7 @@ Users access these components with \code{$}, for example \code{fit$dtw} or
 }
 \description{
 Fit a topic model with a unified API across \strong{text2vec}, \strong{topicmodels},
-\strong{seededlda}, and \strong{topicmodels.etm}. The fitted object stores both the
+\strong{seededlda}, \strong{topicmodels.etm}, and \strong{stm}. The fitted object stores both the
 raw backend fit and, by default, cached DTW/TWW outputs following the convention of Lewis and
 Grossetti (2022):
 }
@@ -150,6 +155,15 @@ package and a working \strong{torch} backend. Installing the R \strong{torch} pa
 not sufficient by itself on a clean machine; run \code{torch::install_torch()} and
 confirm that \code{torch::torch_is_installed()} returns \code{TRUE}.
 
+STM support in \code{v0.9.4} covers prevalence covariates but not content
+covariates. Pass prevalence formulas and metadata through
+\code{control$fit$prevalence} and \code{control$fit$data}. If \code{x} is a
+\link[quanteda:dfm]{dfm} with document variables, those docvars are used as STM
+metadata when \code{control$fit$data} is omitted. STM content covariates are not
+supported in \code{v0.9.4} because they imply covariate-specific topic-word
+distributions, while NLPstudio currently standardizes one TWW matrix per
+fit.
+
 The API currently covers these model families and fitting algorithms:
 \itemize{
 \item LDA via \strong{text2vec}, \strong{topicmodels}, and \strong{seededlda}
@@ -158,6 +172,7 @@ The API currently covers these model families and fitting algorithms:
 \item Sequential LDA via \strong{seededlda}
 \item Seeded LDA via \strong{seededlda}
 \item Embedded Topic Models via \strong{topicmodels.etm}
+\item Structural Topic Models with prevalence covariates via \strong{stm}
 }
 }
 \examples{
@@ -329,5 +344,5 @@ DOI: 10.1177/08944393231178605.
 }
 \seealso{
 \code{\link[topicmodels:LDA]{topicmodels::LDA()}} \code{\link[topicmodels:CTM]{topicmodels::CTM()}} \code{\link[text2vec:LDA]{text2vec::LDA()}} \code{\link[seededlda:textmodel_seqlda]{seededlda::textmodel_seqlda()}}
-\code{\link[topicmodels.etm:ETM]{topicmodels.etm::ETM()}}
+\code{\link[stm:stm]{stm::stm()}} \code{\link[topicmodels.etm:ETM]{topicmodels.etm::ETM()}}
 }

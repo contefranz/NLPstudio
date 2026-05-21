@@ -29,6 +29,8 @@ Defaults to \code{list()}.
 \item \code{topicmodels}: forwarded to \code{topicmodels::posterior()}
 \item \code{seededlda}: forwarded to the relevant \verb{textmodel_*()} update call
 \item \code{topicmodels.etm}: forwarded to \code{\link[stats:predict]{stats::predict()}} with \code{type = "topics"}
+\item \code{stm}: forwarded to \code{\link[stm:fitNewDocuments]{stm::fitNewDocuments()}} for STM fits without
+prevalence covariates
 }}
 
 \item{docvars}{Should available docvars from \code{newdata} be joined onto the
@@ -72,6 +74,10 @@ Terms absent from the fitted vocabulary are dropped with a warning, missing
 fitted terms are added as zero columns, columns are reordered to fitted
 vocabulary order, and any documents that become empty after alignment are
 dropped with a warning.
+
+STM prediction is supported in \code{v0.9.4} only for fits without prevalence
+covariates. For STM prevalence-covariate fits, \code{predict_topic_model()} errors
+clearly rather than guessing new-document covariate handling.
 }
 \examples{
 \dontshow{if (requireNamespace("text2vec", quietly = TRUE)) withAutoprint(\{ # examplesIf}

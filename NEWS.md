@@ -1,5 +1,32 @@
 # NLPstudio News
 
+## NLPstudio 0.9.4  (2026-05-21)
+
+### NEW FEATURES
+
+1. Added optional **stm** backend support to `fit_topic_model()` with
+   `engine = "stm"` and `model = "stm"`, including standardized DTW/TWW
+   extraction, top terms, summaries, evaluation, K selection, and stability
+   diagnostics.
+
+2. Added `as_nlp_topic_fit()` support for raw **stm** `STM` objects that use a
+   single topic-word distribution.
+
+### CHANGES
+
+1. STM prevalence covariates can be supplied through `control$fit$prevalence`
+   and `control$fit$data`. When a `quanteda` DFM has document variables,
+   those docvars are used as STM metadata if explicit data are omitted.
+
+2. STM content covariates are explicitly rejected in `v0.9.4` because they
+   imply covariate-specific topic-word distributions, while NLPstudio currently
+   standardizes one TWW matrix per fit.
+
+### DOCUMENTATION
+
+1. Updated manuals, README, and the topic-model API vignette to document STM
+   prevalence support and the deferred content-covariate design.
+
 ## NLPstudio 0.9.3  (2026-05-20)
 
 ### NEW FEATURES
