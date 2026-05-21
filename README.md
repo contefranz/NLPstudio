@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.2-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v0.9.3-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -39,7 +39,8 @@ same-specification repeated fits across seeds and `summarize_topics()` for
 export-ready topic interpretation tables. Existing fitted objects from
 `topicmodels`, `seededlda`, raw `text2vec` WarpLDA/LDA, and saved outputs from
 the removed `warp_lda()` wrapper can be adopted into the current API with
-`as_nlp_topic_fit()`.
+`as_nlp_topic_fit()`. Topicmodels LDA VEM fits can also be prepared for
+external **OpTop** optimal-topic testing with `as_optop_input()`.
 
 The [topic-model API vignette](vignettes/topic-model-api.Rmd) gives the full
 workflow: fit once through a common interface, inspect standardized DTW/TWW
@@ -92,7 +93,7 @@ torch::torch_is_installed()
 ### Topic-model workflow
 
 This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.2 workflow can be reproduced without external data.
+corpus so the current v0.9.3 workflow can be reproduced without external data.
 
 ```r
 library(NLPstudio)
@@ -187,6 +188,36 @@ fit <- as_nlp_topic_fit(old)
 get_dtw(fit)
 get_tww(fit)
 get_top_terms(fit, n = 10)
+```
+
+For **OpTop** workflows, keep the model fitting in NLPstudio and pass the
+prepared inputs to OpTop explicitly:
+
+```r
+selection <- select_k_topics(
+  dfm,
+  engine = "topicmodels",
+  model = "lda",
+  method = "VEM",
+  k_grid = 2:5,
+  metrics = c("diversity", "exclusivity"),
+  holdout = 0,
+  return_fits = TRUE,
+  control = list(fit = list(seed = 1L))
+)
+
+optop_input <- as_optop_input(
+  selection,
+  weighted_dfm = as_optop_weighted_dfm(dfm)
+)
+
+# OpTop::optimal_topic(
+#   lda_models = optop_input$lda_models,
+#   weighted_dfm = optop_input$weighted_dfm,
+#   q = 0.8,
+#   alpha = 0.05,
+#   do_plot = FALSE
+# )
 ```
 
 ---
