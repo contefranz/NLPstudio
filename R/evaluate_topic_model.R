@@ -89,6 +89,11 @@ if (getRversion() >= "2.15.1") {
 #' Tokens outside the fitted vocabulary are excluded from the token count,
 #' matching the convention used by `topicmodels::perplexity()`.
 #'
+#' For STM fits with prevalence covariates, held-out likelihood metrics are
+#' marked unsupported in `v0.9.4` because new-document covariate handling is not
+#' inferred by NLPstudio. Coherence, diversity, exclusivity, and training
+#' likelihood metrics remain available when their required inputs exist.
+#'
 #' `level` controls only which rows are returned. Metrics are computed in the
 #' same way regardless of level. Metrics that are naturally corpus-level only
 #' have no topic-level rows and are omitted when `level = "topic"`.
@@ -250,6 +255,10 @@ evaluate_topic_model <- function(
   )
   if (length(heldout_likelihood_metrics)) {
     if (is.null(newdata)) {
+      for (m in heldout_likelihood_metrics) {
+        results[[m]] <- .eval_unsupported_aggregate(m)
+      }
+    } else if (identical(fit$engine, "stm") && .stm_has_prevalence(fit)) {
       for (m in heldout_likelihood_metrics) {
         results[[m]] <- .eval_unsupported_aggregate(m)
       }

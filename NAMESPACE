@@ -3,6 +3,7 @@
 S3method(as_nlp_topic_fit,CTM_VEM)
 S3method(as_nlp_topic_fit,LDA_Gibbs)
 S3method(as_nlp_topic_fit,LDA_VEM)
+S3method(as_nlp_topic_fit,STM)
 S3method(as_nlp_topic_fit,TopicModel)
 S3method(as_nlp_topic_fit,WarpLDA)
 S3method(as_nlp_topic_fit,default)

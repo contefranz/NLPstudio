@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.3-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v0.9.4-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -25,6 +25,8 @@ reshaping, summarization, and similarity computations, **NLPstudio** includes a
 unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/package=text2vec),
 [**topicmodels**](https://cran.r-project.org/package=topicmodels), and
 [**seededlda**](https://cran.r-project.org/package=seededlda), with optional
+[**stm**](https://cran.r-project.org/package=stm) support for structural topic
+models with prevalence covariates and optional
 [**topicmodels.etm**](https://cran.r-project.org/package=topicmodels.etm)
 support for embedded topic models. The package
 standardizes document-topic weights (DTW), topic-word weights (TWW),
@@ -41,6 +43,9 @@ export-ready topic interpretation tables. Existing fitted objects from
 the removed `warp_lda()` wrapper can be adopted into the current API with
 `as_nlp_topic_fit()`. Topicmodels LDA VEM fits can also be prepared for
 external **OpTop** optimal-topic testing with `as_optop_input()`.
+STM content covariates are intentionally deferred because they imply
+covariate-specific topic-word distributions, while NLPstudio currently
+standardizes one TWW matrix per fit.
 
 The [topic-model API vignette](vignettes/topic-model-api.Rmd) gives the full
 workflow: fit once through a common interface, inspect standardized DTW/TWW
@@ -93,7 +98,7 @@ torch::torch_is_installed()
 ### Topic-model workflow
 
 This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.3 workflow can be reproduced without external data.
+corpus so the current v0.9.4 workflow can be reproduced without external data.
 
 ```r
 library(NLPstudio)
@@ -218,6 +223,36 @@ optop_input <- as_optop_input(
 #   alpha = 0.05,
 #   do_plot = FALSE
 # )
+```
+
+Structural topic models can be fit through the same API when the optional
+**stm** package is installed. Prevalence covariates are supplied through
+`control$fit`; content covariates are not supported in `v0.9.4` because they
+require a content-specific TWW design.
+
+```r
+if (requireNamespace("stm", quietly = TRUE)) {
+  quanteda::docvars(dfm, "group") <- docs$doc_id %in% paste0("doc", 1:3)
+
+  stm_fit <- fit_topic_model(
+    dfm,
+    engine = "stm",
+    model = "stm",
+    k = 2,
+    control = list(
+      fit = list(
+        prevalence = ~ group,
+        seed = 1L,
+        max.em.its = 25L,
+        init.type = "Spectral",
+        verbose = FALSE
+      )
+    )
+  )
+
+  get_top_terms(stm_fit, n = 4)
+  summarize_topics(stm_fit, training = dfm, doc_data = docs)
+}
 ```
 
 ---

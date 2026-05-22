@@ -27,7 +27,8 @@
     text2vec = "lda",
     topicmodels = c("lda", "ctm"),
     seededlda = c("lda", "seqlda", "seededlda"),
-    `topicmodels.etm` = "etm"
+    `topicmodels.etm` = "etm",
+    stm = "stm"
   )
 
   if (!model %in% allowed) {
@@ -185,6 +186,9 @@
   }
   if (engine == "topicmodels.etm" && !is.null(initial_model)) {
     stop("initial_model is not supported for engine = 'topicmodels.etm'.")
+  }
+  if (engine == "stm" && !is.null(initial_model)) {
+    stop("initial_model is not supported for engine = 'stm'.")
   }
 }
 
@@ -696,6 +700,167 @@
   )
 }
 
+#' Fit an STM topic model
+#'
+#' Converts supported inputs to STM documents and fits stm with prevalence-covariate support.
+#'
+#' @keywords internal
+#' @noRd
+.fit_stm_topic_model <- function(x, k, control) {
+  if (!requireNamespace("stm", quietly = TRUE)) {
+    stop("Package 'stm' must be installed to use engine = 'stm'.", call. = FALSE)
+  }
+
+  prep <- .prepare_stm_input(x, control$fit)
+  fit_args <- utils::modifyList(
+    list(
+      documents = prep$documents,
+      vocab = prep$vocab,
+      K = k,
+      init.type = "Spectral",
+      max.em.its = 75L,
+      verbose = TRUE
+    ),
+    prep$fit_control
+  )
+  fit_args$documents <- prep$documents
+  fit_args$vocab <- prep$vocab
+  fit_args$K <- k
+
+  model_object <- do.call(stm::stm, fit_args)
+  tww <- .stm_tww_matrix(model_object)
+
+  list(
+    model_object = model_object,
+    dtw = model_object$theta,
+    tww = tww,
+    doc_ids = prep$doc_ids,
+    term_names = colnames(tww),
+    method = NULL,
+    hyperparameters = .topic_hyperparameters_table(
+      k = .stm_topic_count(model_object),
+      alpha = NA_real_,
+      beta = NA_real_,
+      sources = list(k = list(section = "model_object", name = "settings$dim$K"))
+    ),
+    backend_control = .topic_backend_control(
+      model = list(),
+      fit = fit_args,
+      optimizer = list()
+    )
+  )
+}
+
+.prepare_stm_input <- function(x, fit_control) {
+  x_dfm <- .as_topic_dfm(x)
+  if (!quanteda::nfeat(x_dfm)) {
+    stop("STM input must contain at least one feature.", call. = FALSE)
+  }
+
+  x_sparse <- methods::as(x_dfm, "dgCMatrix")
+  if (!length(x_sparse@x) || any(x_sparse@x < 0) ||
+      any(abs(x_sparse@x - round(x_sparse@x)) > .Machine$double.eps^0.5)) {
+    stop("STM input must contain non-negative integer token counts.", call. = FALSE)
+  }
+  keep_terms <- Matrix::colSums(x_sparse) > 0
+  if (!all(keep_terms)) {
+    x_dfm <- x_dfm[, keep_terms]
+    x_sparse <- methods::as(x_dfm, "dgCMatrix")
+  }
+  keep_docs <- Matrix::rowSums(x_sparse) > 0
+  if (!all(keep_docs)) {
+    stop("STM input must not contain empty documents.", call. = FALSE)
+  }
+
+  converted <- quanteda::convert(x_dfm, to = "stm")
+  doc_ids <- quanteda::docnames(x_dfm)
+  meta <- data.table::as.data.table(converted$meta)
+  meta[, doc_id := doc_ids]
+  data.table::setcolorder(meta, c("doc_id", setdiff(names(meta), "doc_id")))
+
+  list(
+    documents = .stm_documents_from_sparse(x_sparse),
+    vocab = quanteda::featnames(x_dfm),
+    doc_ids = doc_ids,
+    fit_control = .normalize_stm_fit_control(fit_control, meta, doc_ids)
+  )
+}
+
+.normalize_stm_fit_control <- function(fit_control, meta, doc_ids) {
+  fit_control <- if (is.null(fit_control)) list() else as.list(fit_control)
+  locked <- intersect(names(fit_control), c("documents", "vocab", "K"))
+  if (length(locked)) {
+    stop(
+      sprintf(
+        "For STM, control$fit entries are managed by NLPstudio and cannot be supplied: %s.",
+        paste(locked, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  if ("content" %in% names(fit_control) && !is.null(fit_control$content)) {
+    stop(.stm_content_covariate_error(), call. = FALSE)
+  }
+  fit_control$content <- NULL
+
+  if (!is.null(fit_control$prevalence)) {
+    fit_control$data <- .stm_align_metadata(fit_control$data, meta, doc_ids)
+  } else if (!is.null(fit_control$data)) {
+    fit_control$data <- .stm_align_metadata(fit_control$data, meta, doc_ids)
+  }
+  fit_control
+}
+
+.stm_align_metadata <- function(data, meta, doc_ids) {
+  if (is.null(data)) {
+    if (ncol(meta) <= 1L) {
+      return(data.frame(doc_id = doc_ids))
+    }
+    return(as.data.frame(meta))
+  }
+
+  dt <- data.table::as.data.table(data)
+  if ("doc_id" %in% names(dt)) {
+    if (anyDuplicated(dt$doc_id)) {
+      stop("STM control$fit$data must not contain duplicate 'doc_id' values.", call. = FALSE)
+    }
+    idx <- match(doc_ids, as.character(dt$doc_id))
+    if (anyNA(idx)) {
+      stop("STM control$fit$data must contain one row for each input document ID.", call. = FALSE)
+    }
+    dt <- dt[idx]
+    if (!identical(as.character(dt$doc_id), as.character(doc_ids))) {
+      stop("STM control$fit$data could not be aligned to the input document IDs.", call. = FALSE)
+    }
+  } else if (nrow(dt) != length(doc_ids)) {
+    stop(
+      "STM control$fit$data must either have one row per input document in order or contain a 'doc_id' column.",
+      call. = FALSE
+    )
+  }
+  as.data.frame(dt)
+}
+
+.stm_documents_from_sparse <- function(x) {
+  x <- methods::as(x, "dgCMatrix")
+  coo <- Matrix::summary(methods::as(x, "TsparseMatrix"))
+  lapply(seq_len(nrow(x)), function(i) {
+    idx <- which(coo$i == i)
+    if (!length(idx)) {
+      stop("STM input must not contain empty documents.", call. = FALSE)
+    }
+    rbind(as.integer(coo$j[idx]), as.integer(round(coo$x[idx])))
+  })
+}
+
+.stm_content_covariate_error <- function() {
+  paste(
+    "STM content covariates are not supported in v0.9.4 because they imply",
+    "covariate-specific topic-word distributions, while NLPstudio currently",
+    "standardizes one TWW matrix per fit."
+  )
+}
+
 #' Fit an ETM model with drop-safe train/test splits
 #'
 #' Calls `fit_original()` with explicit `drop = FALSE` subsetting so one-row
@@ -824,10 +989,51 @@
       args$newdata <- newdata_aligned$sparse
       args$type <- "topics"
       do.call(stats::predict, args)
-    }
+    },
+    stm = .predict_stm_topic_matrix(
+      fit = fit,
+      newdata_aligned = newdata_aligned,
+      control = control
+    )
   )
 
   .dtw_matrix_from_matrix(out, doc_ids = newdata_aligned$doc_ids)
+}
+
+.predict_stm_topic_matrix <- function(fit, newdata_aligned, control) {
+  if (.stm_has_prevalence(fit)) {
+    stop(
+      "STM prediction for prevalence-covariate fits is not supported in v0.9.4; refit without prevalence or use stm::fitNewDocuments() directly with explicit covariate handling.",
+      call. = FALSE
+    )
+  }
+  if (!requireNamespace("stm", quietly = TRUE)) {
+    stop("Package 'stm' must be installed to predict with engine = 'stm'.", call. = FALSE)
+  }
+  reserved <- intersect(
+    names(control),
+    c("model", "documents", "newData", "origData", "prevalence", "designMatrix", "betaIndex")
+  )
+  if (length(reserved)) {
+    stop(
+      sprintf(
+        "For STM prediction, control entries are managed by NLPstudio and cannot be supplied: %s.",
+        paste(reserved, collapse = ", ")
+      ),
+      call. = FALSE
+    )
+  }
+  args <- utils::modifyList(
+    list(
+      model = fit$model_object,
+      documents = .stm_documents_from_sparse(newdata_aligned$sparse),
+      verbose = FALSE
+    ),
+    control
+  )
+  args$model <- fit$model_object
+  args$documents <- .stm_documents_from_sparse(newdata_aligned$sparse)
+  do.call(stm::fitNewDocuments, args)$theta
 }
 
 #' Predict seededlda document-topic weights
@@ -1079,6 +1285,10 @@
     return(.dtw_dt_from_matrix(x$theta, doc_ids = .seededlda_doc_ids(x)))
   }
 
+  if (.is_stm_object(x)) {
+    return(.dtw_dt_from_matrix(x$theta, doc_ids = .stm_doc_ids(x)))
+  }
+
   if (.is_etm_object(x)) {
     stop(
       "Raw ETM objects do not retain fitted DTW in a stable package interface. Use fit_topic_model(..., return_dtw = TRUE).",
@@ -1120,6 +1330,10 @@
 
   if (inherits(x, "textmodel")) {
     return(.tww_dt_from_matrix(x$phi, term_names = colnames(x$phi)))
+  }
+
+  if (.is_stm_object(x)) {
+    return(.tww_dt_from_matrix(.stm_tww_matrix(x), term_names = x$vocab))
   }
 
   if (.is_etm_object(x)) {
@@ -1868,6 +2082,9 @@
   if (.is_etm_object(x) && !is.null(x$vocab)) {
     return(as.character(x$vocab))
   }
+  if (.is_stm_object(x) && !is.null(x$vocab)) {
+    return(as.character(x$vocab))
+  }
   NULL
 }
 
@@ -1905,8 +2122,55 @@
         name = "k"
       ))
     }
+    if (.is_stm_object(x$model_object)) {
+      return(list(
+        value = .stm_topic_count(x$model_object),
+        section = "model_object",
+        name = "settings$dim$K"
+      ))
+    }
   }
   list(value = NA_real_, section = NA_character_, name = NA_character_)
+}
+
+.is_stm_object <- function(x) {
+  inherits(x, "STM")
+}
+
+.stm_topic_count <- function(x) {
+  k <- x$settings$dim$K
+  if (is.null(k)) {
+    k <- ncol(x$theta)
+  }
+  as.integer(k)
+}
+
+.stm_doc_ids <- function(x, doc_ids = NULL) {
+  if (!is.null(doc_ids)) {
+    return(as.character(doc_ids))
+  }
+  ids <- rownames(x$theta)
+  if (is.null(ids)) {
+    ids <- as.character(seq_len(nrow(x$theta)))
+  }
+  as.character(ids)
+}
+
+.stm_tww_matrix <- function(x) {
+  logbeta <- x$beta$logbeta
+  if (is.null(logbeta) || length(logbeta) != 1L) {
+    stop(.stm_content_covariate_error(), call. = FALSE)
+  }
+  mat <- exp(logbeta[[1L]])
+  if (!is.null(x$vocab)) {
+    colnames(mat) <- as.character(x$vocab)
+  }
+  mat
+}
+
+.stm_has_prevalence <- function(x) {
+  model_object <- if (inherits(x, "nlp_topic_fit")) x$model_object else x
+  !is.null(model_object$settings$covariates$formula)
 }
 
 #' Detect raw ETM objects

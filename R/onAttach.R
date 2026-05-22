@@ -7,8 +7,9 @@
     ), "\n",
     "Core imports: cli, data.table, ggplot2, Matrix, methods, quanteda,\n",
     "              quanteda.textstats\n",
-    "Optional backends: text2vec, topicmodels, seededlda, topicmodels.etm,\n",
-    "                   torch, spacyr, tidytext, RcppSimdJson, uwot\n",
+    "Optional backends: text2vec, topicmodels, seededlda, stm,\n",
+    "                   topicmodels.etm, torch, spacyr, tidytext,\n",
+    "                   RcppSimdJson, uwot\n",
     "Use library(<pkg>) to attach any of these to your session.\n",
     "Optional packages are only needed for the functions that use them."
   )

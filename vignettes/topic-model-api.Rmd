@@ -41,10 +41,11 @@ DTW describes documents in the topic space, while TWW describes topics in the
 vocabulary space.
 
 The package currently supports topic models from **text2vec**, **topicmodels**,
-**seededlda**, and optionally **topicmodels.etm**. To keep this vignette fast and
-reliable during package checks, only the **topicmodels** examples are evaluated.
-The other backend sections are included as non-evaluated templates so you can see
-the same API shape without requiring every optional backend on your machine.
+**seededlda**, optionally **stm**, and optionally **topicmodels.etm**. To keep
+this vignette fast and reliable during package checks, only the **topicmodels**
+examples are evaluated. The other backend sections are included as non-evaluated
+templates so you can see the same API shape without requiring every optional
+backend on your machine.
 
 ## Prepare Data Once
 
@@ -406,6 +407,9 @@ text2vec_fit <- as_nlp_topic_fit(raw_text2vec_fit, theta = saved_theta)
 
 # sequential LDA from seededlda is not reliably distinguishable after fitting
 seqlda_fit <- as_nlp_topic_fit(existing_seededlda_fit, model = "seqlda")
+
+# stm::stm() without content covariates
+stm_fit <- as_nlp_topic_fit(existing_stm_fit, doc_ids = existing_doc_ids)
 ```
 
 Older NLPstudio projects may also contain saved outputs from the removed
@@ -523,6 +527,43 @@ fit_seeded <- fit_topic_model(
 summarize_topics(fit_seeded, doc_data = docs)
 ```
 
+Structural topic models are available through the optional **stm** backend. STM
+prevalence covariates model how document metadata shifts topic proportions. That
+fits the standard NLPstudio representation well because DTW changes across
+documents while each topic still has one TWW row.
+
+STM content covariates are different: they allow the word distribution within a
+topic to change by covariate level. Those models are not supported in `v0.9.4`
+because they imply covariate-specific topic-word distributions, while NLPstudio
+currently standardizes one TWW matrix per fit. This limitation is explicit so
+users do not accidentally treat content-specific topics as ordinary single-row
+topics.
+
+```{r stm-backend, eval=FALSE}
+dfm_stm <- dfm
+quanteda::docvars(dfm_stm, "group") <- docs$group
+
+fit_stm <- fit_topic_model(
+  dfm_stm,
+  engine = "stm",
+  model = "stm",
+  k = 2,
+  control = list(
+    fit = list(
+      prevalence = ~ group,
+      seed = 1L,
+      max.em.its = 25L,
+      init.type = "Spectral",
+      verbose = FALSE
+    )
+  )
+)
+
+get_dtw(fit_stm, docvars = TRUE)
+get_top_terms(fit_stm, n = 5)
+summarize_topics(fit_stm, training = dfm_stm, doc_data = docs)
+```
+
 ## Optional ETM Extensions
 
 Embedded topic models are an optional advanced path. They are available when
@@ -557,6 +598,7 @@ workflow:
 | Task | Primary function |
 |---|---|
 | Fit one model | `fit_topic_model()` |
+| Fit STM prevalence models | `fit_topic_model(engine = "stm", model = "stm")` |
 | Extract DTW/TWW | `get_dtw()`, `get_tww()` |
 | Interpret terms and documents | `get_top_terms()`, `get_representative_candidates()` |
 | Plot standardized outputs | `plot_top_terms()`, `plot_dtw()` |
