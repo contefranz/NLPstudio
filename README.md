@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.4-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v0.9.5-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -38,7 +38,9 @@ NLL/perplexity, returned at aggregate level by default — and
 `select_k_topics()` for automated grid search over candidate values of K with
 an optional holdout split. It also adds `assess_topic_stability()` for
 same-specification repeated fits across seeds and `summarize_topics()` for
-export-ready topic interpretation tables. Existing fitted objects from
+export-ready topic interpretation tables. `summarize_k_selection()` turns
+model-selection output into a wide reporting table that can include optional
+OpTop statistics. Existing fitted objects from
 `topicmodels`, `seededlda`, raw `text2vec` WarpLDA/LDA, and saved outputs from
 the removed `warp_lda()` wrapper can be adopted into the current API with
 `as_nlp_topic_fit()`. Topicmodels LDA VEM fits can also be prepared for
@@ -98,7 +100,7 @@ torch::torch_is_installed()
 ### Topic-model workflow
 
 This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.4 workflow can be reproduced without external data.
+corpus so the current v0.9.5 workflow can be reproduced without external data.
 
 ```r
 library(NLPstudio)
@@ -223,6 +225,16 @@ optop_input <- as_optop_input(
 #   alpha = 0.05,
 #   do_plot = FALSE
 # )
+
+# If you run OpTop externally, merge the result back into the selection table:
+# optop_result <- OpTop::optimal_topic(
+#   lda_models = optop_input$lda_models,
+#   weighted_dfm = optop_input$weighted_dfm,
+#   q = 0.8,
+#   alpha = 0.05,
+#   do_plot = FALSE
+# )
+# summarize_k_selection(selection, optop = optop_result)
 ```
 
 Structural topic models can be fit through the same API when the optional

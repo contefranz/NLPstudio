@@ -58,6 +58,9 @@
 #'   `predict_topic_model()`, `get_top_terms()`, `plot_top_terms()`,
 #'   `plot_dtw()`, and `get_representative_candidates()` work with the
 #'   standardized DTW/TWW representation regardless of the fitting backend.
+#'   Model-selection helpers evaluate candidate topic counts, summarize
+#'   selection evidence, assess seed stability, and prepare compatible inputs for
+#'   external OpTop workflows.
 #'   For embedded topic models, `get_topic_embeddings()`,
 #'   `get_term_embeddings()`, and `plot_topic_embeddings()` expose the
 #'   embedding-space structure that is specific to ETM.

@@ -1,5 +1,22 @@
 # NLPstudio News
 
+## NLPstudio 0.9.5  (2026-05-22)
+
+### NEW FEATURES
+
+1. Added `summarize_k_selection()` to convert `select_k_topics()` output into
+   a wide, export-ready table with one row per candidate topic count.
+
+2. Added optional OpTop result parsing so externally computed
+   `OpTop::optimal_topic()` statistics can be merged back into NLPstudio
+   selection summaries without making OpTop a package dependency.
+
+### DOCUMENTATION
+
+1. Updated the README and topic-model API vignette with a reporting workflow
+   that combines NLPstudio selection metrics, stability rows, and optional
+   OpTop statistics for paper-ready model-selection tables.
+
 ## NLPstudio 0.9.4  (2026-05-21)
 
 ### NEW FEATURES

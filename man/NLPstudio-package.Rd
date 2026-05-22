@@ -61,6 +61,9 @@ statistics built on \code{quanteda.textstats}.
 \code{predict_topic_model()}, \code{get_top_terms()}, \code{plot_top_terms()},
 \code{plot_dtw()}, and \code{get_representative_candidates()} work with the
 standardized DTW/TWW representation regardless of the fitting backend.
+Model-selection helpers evaluate candidate topic counts, summarize
+selection evidence, assess seed stability, and prepare compatible inputs for
+external OpTop workflows.
 For embedded topic models, \code{get_topic_embeddings()},
 \code{get_term_embeddings()}, and \code{plot_topic_embeddings()} expose the
 embedding-space structure that is specific to ETM.

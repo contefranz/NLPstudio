@@ -80,6 +80,11 @@ test_that("as_optop_input output is accepted by OpTop when installed", {
     ))
   })
   expect_false(is.null(result))
+
+  summary <- summarize_k_selection(selection, optop = result)
+  expect_s3_class(summary, "nlp_k_selection_summary")
+  expect_true(all(c("optop", "optop_pval") %in% names(summary)))
+  expect_equal(summary$k, optop_input$k)
 })
 
 test_that("as_optop_input accepts nlp_topic_fit and raw LDA_VEM lists", {
