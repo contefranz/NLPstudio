@@ -296,6 +296,16 @@ k_selection
 attr(k_selection, "stability")$k2
 ```
 
+For reporting, the long selection table is often too detailed. A paper or
+appendix usually needs one row per candidate `k`, with the aggregate evidence
+side by side. `summarize_k_selection()` creates that table and preserves
+topic-level rows as an attribute when they are present.
+
+```{r selection-summary}
+k_report <- summarize_k_selection(k_selection)
+k_report
+```
+
 ## Assess Stability Directly
 
 Topic models can move when the random seed changes. That does not necessarily
@@ -472,6 +482,24 @@ OpTop::optimal_topic(
 )
 ```
 
+If you run **OpTop** externally, pass the returned table back to
+`summarize_k_selection()` to build one export-ready selection report. NLPstudio
+parses the common **OpTop** output columns `topic`, `OpTop`, and `pval`, then
+merges them by `k`.
+
+```{r optop-summary, eval=FALSE}
+optop_result <- OpTop::optimal_topic(
+  lda_models = optop_input$lda_models,
+  weighted_dfm = optop_input$weighted_dfm,
+  q = 0.8,
+  alpha = 0.05,
+  do_plot = FALSE
+)
+
+k_report <- summarize_k_selection(selection, optop = optop_result)
+data.table::fwrite(k_report, tempfile(fileext = ".csv"))
+```
+
 ## Backend Portability
 
 The point of the API is that the workflow above does not belong only to one
@@ -605,6 +633,7 @@ workflow:
 | Predict new documents | `predict_topic_model()` |
 | Evaluate quality | `evaluate_topic_model()` |
 | Select K | `select_k_topics()` |
+| Report K-selection evidence | `summarize_k_selection()` |
 | Assess seed stability | `assess_topic_stability()` |
 | Build interpretation tables | `summarize_topics()` |
 | Adopt existing topic-model fits | `as_nlp_topic_fit()` |
