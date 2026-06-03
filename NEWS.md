@@ -1,5 +1,26 @@
 # NLPstudio News
 
+## NLPstudio 0.9.6  (2026-06-03)
+
+### NEW FEATURES
+
+1. Added `get_stm_topic_labels()` to expose STM-native probability, FREX,
+   lift, score, and optional SAGE topic labels as standardized long tables with
+   NLPstudio `Topic###` identifiers.
+
+2. Added `summarize_stm_topics()` to extend `summarize_topics()` with collapsed
+   STM-native label columns for interpretation and export workflows.
+
+3. Added `estimate_stm_topic_effects()` to wrap `stm::estimateEffect()` and
+   return tidy prevalence-effect coefficient tables while preserving the raw
+   STM effect object as an attribute.
+
+### DOCUMENTATION
+
+1. Updated README, manuals, and the topic-model API vignette with STM
+   interpretation examples and clearer guidance that STM content covariates
+   remain unsupported in `v0.9.6`.
+
 ## NLPstudio 0.9.5  (2026-05-22)
 
 ### NEW FEATURES
