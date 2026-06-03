@@ -561,7 +561,7 @@ fits the standard NLPstudio representation well because DTW changes across
 documents while each topic still has one TWW row.
 
 STM content covariates are different: they allow the word distribution within a
-topic to change by covariate level. Those models are not supported in `v0.9.4`
+topic to change by covariate level. Those models are not supported in `v0.9.6`
 because they imply covariate-specific topic-word distributions, while NLPstudio
 currently standardizes one TWW matrix per fit. This limitation is explicit so
 users do not accidentally treat content-specific topics as ordinary single-row
@@ -576,6 +576,7 @@ fit_stm <- fit_topic_model(
   engine = "stm",
   model = "stm",
   k = 2,
+  docvars = TRUE,
   control = list(
     fit = list(
       prevalence = ~ group,
@@ -590,7 +591,20 @@ fit_stm <- fit_topic_model(
 get_dtw(fit_stm, docvars = TRUE)
 get_top_terms(fit_stm, n = 5)
 summarize_topics(fit_stm, training = dfm_stm, doc_data = docs)
+summarize_stm_topics(fit_stm, training = dfm_stm, doc_data = docs)
+get_stm_topic_labels(fit_stm, n = 5)
+estimate_stm_topic_effects(fit_stm, nsims = 25)
 ```
+
+The STM-specific helpers are deliberately interpretation-oriented.
+`get_stm_topic_labels()` exposes STM's probability, FREX, lift, score, and
+optional SAGE labels in a long table with `Topic###` identifiers.
+`summarize_stm_topics()` adds those labels to the ordinary NLPstudio topic
+summary, which is useful when the interpretation table is headed to a report or
+appendix. `estimate_stm_topic_effects()` wraps `stm::estimateEffect()` and
+returns tidy coefficient rows for prevalence covariates. It uses stored docvars
+when the model was fit with `docvars = TRUE`, or explicit metadata supplied by
+the user.
 
 ## Optional ETM Extensions
 
@@ -628,14 +642,15 @@ workflow:
 | Fit one model | `fit_topic_model()` |
 | Fit STM prevalence models | `fit_topic_model(engine = "stm", model = "stm")` |
 | Extract DTW/TWW | `get_dtw()`, `get_tww()` |
-| Interpret terms and documents | `get_top_terms()`, `get_representative_candidates()` |
+| Interpret terms and documents | `get_top_terms()`, `get_stm_topic_labels()`, `get_representative_candidates()` |
 | Plot standardized outputs | `plot_top_terms()`, `plot_dtw()` |
 | Predict new documents | `predict_topic_model()` |
 | Evaluate quality | `evaluate_topic_model()` |
 | Select K | `select_k_topics()` |
 | Report K-selection evidence | `summarize_k_selection()` |
 | Assess seed stability | `assess_topic_stability()` |
-| Build interpretation tables | `summarize_topics()` |
+| Build interpretation tables | `summarize_topics()`, `summarize_stm_topics()` |
+| Report STM prevalence effects | `estimate_stm_topic_effects()` |
 | Adopt existing topic-model fits | `as_nlp_topic_fit()` |
 | Prepare OpTop inputs | `as_optop_weighted_dfm()`, `as_optop_input()` |
 | Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |

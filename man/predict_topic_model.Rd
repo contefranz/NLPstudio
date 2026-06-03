@@ -75,7 +75,7 @@ fitted terms are added as zero columns, columns are reordered to fitted
 vocabulary order, and any documents that become empty after alignment are
 dropped with a warning.
 
-STM prediction is supported in \code{v0.9.4} only for fits without prevalence
+STM prediction is supported in \code{v0.9.6} only for fits without prevalence
 covariates. For STM prevalence-covariate fits, \code{predict_topic_model()} errors
 clearly rather than guessing new-document covariate handling.
 }
