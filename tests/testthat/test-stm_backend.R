@@ -58,7 +58,7 @@ test_that("fit_topic_model validates STM backend arguments", {
       k = 3,
       control = list(fit = list(content = ~sector))
     ),
-    "STM content covariates are not supported in v0.9.6"
+    "STM content covariates are not supported"
   )
   expect_error(
     fit_topic_model(
@@ -140,7 +140,7 @@ test_that("STM prevalence fits use aligned metadata and limit prediction", {
   expect_false(is.null(fit$model_object$settings$covariates$formula))
   expect_error(
     predict_topic_model(fit, dfm[1:2, ]),
-    "STM prediction for prevalence-covariate fits is not supported in v0.9.6"
+    "STM prediction for prevalence-covariate fits is not supported"
   )
 
   eval <- evaluate_topic_model(

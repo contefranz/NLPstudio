@@ -69,7 +69,10 @@ if (getRversion() >= "2.15.1") {
 #'     \item{`k`}{Topic count \eqn{K}.}
 #'     \item{`metric`}{Metric name.}
 #'     \item{`level`}{`"aggregate"` or `"topic"`.}
-#'     \item{`topic_id`}{`Topic###` or `NA` (see [evaluate_topic_model()]).}
+#'     \item{`topic_id`}{`Topic###` for topic-level rows or `NA` for
+#'       aggregate rows. The column is retained even when only aggregate
+#'       metrics are requested so selection tables keep a stable long-format
+#'       schema.}
 #'     \item{`value`}{Numeric metric value.}
 #'     \item{`supported`}{Logical; `TRUE` when the metric was computed.}
 #'   }

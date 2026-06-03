@@ -34,7 +34,7 @@ if (getRversion() >= "2.15.1") {
 #' [get_top_terms()] accessor when users want labels based on STM's own
 #' probability, FREX, lift, score, and optional SAGE calculations.
 #'
-#' STM content-covariate models are not supported in `v0.9.6` because they imply
+#' STM content-covariate models are not supported because they imply
 #' covariate-specific topic-word distributions, while NLPstudio currently
 #' standardizes one TWW matrix per fit.
 #'
@@ -228,8 +228,7 @@ summarize_stm_topics <- function(fit, training = NULL, doc_data = NULL,
 #'
 #' @details
 #' This helper reports prevalence effects for STM fits. It does not add new STM
-#' prediction behavior, and it does not support content-covariate STM models in
-#' `v0.9.6`.
+#' prediction behavior, and it does not support content-covariate STM models.
 #'
 #' @examplesIf requireNamespace("stm", quietly = TRUE)
 #' texts <- c(

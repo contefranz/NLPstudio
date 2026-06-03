@@ -155,12 +155,12 @@ package and a working \strong{torch} backend. Installing the R \strong{torch} pa
 not sufficient by itself on a clean machine; run \code{torch::install_torch()} and
 confirm that \code{torch::torch_is_installed()} returns \code{TRUE}.
 
-STM support in \code{v0.9.6} covers prevalence covariates but not content
+STM support covers prevalence covariates but not content
 covariates. Pass prevalence formulas and metadata through
 \code{control$fit$prevalence} and \code{control$fit$data}. If \code{x} is a
 \link[quanteda:dfm]{dfm} with document variables, those docvars are used as STM
 metadata when \code{control$fit$data} is omitted. STM content covariates are not
-supported in \code{v0.9.6} because they imply covariate-specific topic-word
+supported because they imply covariate-specific topic-word
 distributions, while NLPstudio currently standardizes one TWW matrix per
 fit. For STM interpretation after fitting, use \code{\link[=get_stm_topic_labels]{get_stm_topic_labels()}},
 \code{\link[=summarize_stm_topics]{summarize_stm_topics()}}, and \code{\link[=estimate_stm_topic_effects]{estimate_stm_topic_effects()}}.

@@ -2,7 +2,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.6-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v0.9.7-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
@@ -61,6 +61,19 @@ non-topic-model workflow from bundled SEC-style JSON examples to a `quanteda`
 corpus, tokens, dictionary lookups, readability, similarity and distance
 measures, and export-ready tables.
 
+### Public API Stability
+
+The `v0.9.7` release starts the pre-`v1.0.0` API-freeze pass. The stable
+topic-model surfaces are the structure of `nlp_topic_fit`, the long-format
+evaluation and K-selection tables, `nlp_topic_stability`, topic-summary tables,
+and STM interpretation/effect tables. Evaluation and selection outputs retain
+the standard columns `metric`, `level`, `topic_id`, `value`, and `supported`
+even when only aggregate rows are returned; aggregate rows use `topic_id = NA`.
+
+Use final metric names in new code. In particular, request
+`held_out_perplexity` explicitly; the older `metrics = "perplexity"` alias has
+been removed during the API-freeze pass.
+
 Embedded topic models are available through the optional **topicmodels.etm** and
 **torch** packages when those backends are installed locally.
 When ETM support is available, **NLPstudio** also exposes ETM-specific topic and
@@ -102,7 +115,7 @@ torch::torch_is_installed()
 ### Topic-model workflow
 
 This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.6 workflow can be reproduced without external data.
+corpus so the current v0.9.7 workflow can be reproduced without external data.
 
 ```r
 library(NLPstudio)
@@ -241,7 +254,7 @@ optop_input <- as_optop_input(
 
 Structural topic models can be fit through the same API when the optional
 **stm** package is installed. Prevalence covariates are supplied through
-`control$fit`; content covariates are not supported in `v0.9.6` because they
+`control$fit`; content covariates are not supported because they
 require a content-specific TWW design.
 
 ```r

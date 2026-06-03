@@ -45,7 +45,7 @@ This function is STM-specific. It is meant to complement the engine-agnostic
 \code{\link[=get_top_terms]{get_top_terms()}} accessor when users want labels based on STM's own
 probability, FREX, lift, score, and optional SAGE calculations.
 
-STM content-covariate models are not supported in \code{v0.9.6} because they imply
+STM content-covariate models are not supported because they imply
 covariate-specific topic-word distributions, while NLPstudio currently
 standardizes one TWW matrix per fit.
 }
