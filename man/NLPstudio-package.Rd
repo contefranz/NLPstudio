@@ -25,11 +25,16 @@ topic-modeling API spanning
 \strong{\href{https://cran.r-project.org/package=text2vec}{text2vec}},
 \strong{\href{https://cran.r-project.org/package=topicmodels}{topicmodels}}, and
 \strong{\href{https://cran.r-project.org/package=seededlda}{seededlda}}, with
+optional \strong{\href{https://cran.r-project.org/package=stm}{stm}} support for
+structural topic models with prevalence covariates and
 optional \strong{\href{https://cran.r-project.org/package=topicmodels.etm}{topicmodels.etm}}
 support for embedded topic models. Utility
 functions standardize document-topic weights (DTW), topic-word weights
 (TWW), generic topic prediction for new documents, top-term extraction,
-representative-candidate retrieval, and visualization across those engines.
+representative-candidate retrieval, interpretation tables, and visualization
+across those engines.
+STM-specific helpers expose STM-native topic labels and prevalence-effect
+reports while preserving the standardized NLPstudio topic identifiers.
 When \strong{topicmodels.etm} is available, the package also exposes ETM-specific
 topic and term embeddings plus a dedicated topic-embedding plot.
 
@@ -57,13 +62,16 @@ statistics built on \code{quanteda.textstats}.
 \item \strong{Topic modeling:}
 \code{fit_topic_model()} provides a common fitting interface across
 \strong{text2vec}, \strong{topicmodels}, \strong{seededlda}, and optional
-\strong{topicmodels.etm}. Downstream helpers such as \code{get_dtw()}, \code{get_tww()},
+\strong{stm} and \strong{topicmodels.etm}. Downstream helpers such as \code{get_dtw()}, \code{get_tww()},
 \code{predict_topic_model()}, \code{get_top_terms()}, \code{plot_top_terms()},
-\code{plot_dtw()}, and \code{get_representative_candidates()} work with the
-standardized DTW/TWW representation regardless of the fitting backend.
+\code{plot_dtw()}, \code{summarize_topics()}, and
+\code{get_representative_candidates()} work with the standardized DTW/TWW
+representation regardless of the fitting backend.
 Model-selection helpers evaluate candidate topic counts, summarize
 selection evidence, assess seed stability, and prepare compatible inputs for
 external OpTop workflows.
+STM-specific interpretation helpers include \code{get_stm_topic_labels()},
+\code{summarize_stm_topics()}, and \code{estimate_stm_topic_effects()}.
 For embedded topic models, \code{get_topic_embeddings()},
 \code{get_term_embeddings()}, and \code{plot_topic_embeddings()} expose the
 embedding-space structure that is specific to ETM.

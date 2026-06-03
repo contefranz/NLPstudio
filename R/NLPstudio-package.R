@@ -20,11 +20,16 @@
 #' **[text2vec](https://cran.r-project.org/package=text2vec)**,
 #' **[topicmodels](https://cran.r-project.org/package=topicmodels)**, and
 #' **[seededlda](https://cran.r-project.org/package=seededlda)**, with
+#' optional **[stm](https://cran.r-project.org/package=stm)** support for
+#' structural topic models with prevalence covariates and
 #' optional **[topicmodels.etm](https://cran.r-project.org/package=topicmodels.etm)**
 #' support for embedded topic models. Utility
 #' functions standardize document-topic weights (DTW), topic-word weights
 #' (TWW), generic topic prediction for new documents, top-term extraction,
-#' representative-candidate retrieval, and visualization across those engines.
+#' representative-candidate retrieval, interpretation tables, and visualization
+#' across those engines.
+#' STM-specific helpers expose STM-native topic labels and prevalence-effect
+#' reports while preserving the standardized NLPstudio topic identifiers.
 #' When **topicmodels.etm** is available, the package also exposes ETM-specific
 #' topic and term embeddings plus a dedicated topic-embedding plot.
 #'
@@ -54,13 +59,16 @@
 #' - **Topic modeling:**  
 #'   `fit_topic_model()` provides a common fitting interface across
 #'   **text2vec**, **topicmodels**, **seededlda**, and optional
-#'   **topicmodels.etm**. Downstream helpers such as `get_dtw()`, `get_tww()`,
+#'   **stm** and **topicmodels.etm**. Downstream helpers such as `get_dtw()`, `get_tww()`,
 #'   `predict_topic_model()`, `get_top_terms()`, `plot_top_terms()`,
-#'   `plot_dtw()`, and `get_representative_candidates()` work with the
-#'   standardized DTW/TWW representation regardless of the fitting backend.
+#'   `plot_dtw()`, `summarize_topics()`, and
+#'   `get_representative_candidates()` work with the standardized DTW/TWW
+#'   representation regardless of the fitting backend.
 #'   Model-selection helpers evaluate candidate topic counts, summarize
 #'   selection evidence, assess seed stability, and prepare compatible inputs for
 #'   external OpTop workflows.
+#'   STM-specific interpretation helpers include `get_stm_topic_labels()`,
+#'   `summarize_stm_topics()`, and `estimate_stm_topic_effects()`.
 #'   For embedded topic models, `get_topic_embeddings()`,
 #'   `get_term_embeddings()`, and `plot_topic_embeddings()` expose the
 #'   embedding-space structure that is specific to ETM.

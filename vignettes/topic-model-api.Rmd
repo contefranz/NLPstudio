@@ -555,17 +555,26 @@ fit_seeded <- fit_topic_model(
 summarize_topics(fit_seeded, doc_data = docs)
 ```
 
-Structural topic models are available through the optional **stm** backend. STM
-prevalence covariates model how document metadata shifts topic proportions. That
-fits the standard NLPstudio representation well because DTW changes across
-documents while each topic still has one TWW row.
+## Structural Topic Models: Prevalence and Interpretation
 
-STM content covariates are different: they allow the word distribution within a
-topic to change by covariate level. Those models are not supported in `v0.9.4`
-because they imply covariate-specific topic-word distributions, while NLPstudio
-currently standardizes one TWW matrix per fit. This limitation is explicit so
-users do not accidentally treat content-specific topics as ordinary single-row
-topics.
+Structural topic models are available through the optional **stm** backend. In
+NLPstudio, STM is treated as an extension of the same topic-model API rather
+than as a separate workflow. That means the fitted object still has standardized
+DTW and TWW outputs, stable `Topic###` identifiers, generic top-term accessors,
+and the same topic-summary surface used by the other backends.
+
+The important difference is the role of document metadata. With ordinary LDA
+fits, metadata can be attached after fitting so tables are easier to read. With
+STM prevalence models, metadata enters the model itself: the prevalence formula
+describes how document-level variables are associated with topic proportions.
+That association is estimated by the STM backend and is later reported by
+`estimate_stm_topic_effects()`.
+
+The example below uses a document variable named `group`. The call keeps
+`docvars = TRUE` so NLPstudio stores the fitted document metadata and can reuse
+it when estimating topic effects. Users can instead pass explicit metadata to
+`control$fit$data` at fitting time, and to `estimate_stm_topic_effects()` when
+reporting effects.
 
 ```{r stm-backend, eval=FALSE}
 dfm_stm <- dfm
@@ -576,6 +585,7 @@ fit_stm <- fit_topic_model(
   engine = "stm",
   model = "stm",
   k = 2,
+  docvars = TRUE,
   control = list(
     fit = list(
       prevalence = ~ group,
@@ -586,11 +596,71 @@ fit_stm <- fit_topic_model(
     )
   )
 )
+```
 
+Once the model is fit, start with the same standardized outputs used elsewhere
+in this vignette. `get_dtw()` gives document-topic weights and can include
+stored docvars. `get_top_terms()` reports probability-ranked terms from the
+standardized TWW matrix. `summarize_topics()` remains the backend-agnostic
+interpretation table.
+
+```{r stm-standardized-output, eval=FALSE}
 get_dtw(fit_stm, docvars = TRUE)
 get_top_terms(fit_stm, n = 5)
 summarize_topics(fit_stm, training = dfm_stm, doc_data = docs)
 ```
+
+STM also has label families that are useful for interpretation but are not the
+same object as the standardized TWW matrix. `get_stm_topic_labels()` exposes
+those STM-native labels in long format. Probability labels are useful for
+checking the highest-probability words. FREX, lift, and score labels emphasize
+different balances between frequency and distinctiveness. NLPstudio does not
+replace one with another; it returns the label family explicitly so the choice
+is visible in downstream tables.
+
+`summarize_stm_topics()` is the report-oriented version. It starts from
+`summarize_topics()` and adds collapsed STM label columns so each `Topic###` row
+can be reviewed alongside prevalence, generic metrics, and representative
+documents.
+
+```{r stm-native-labels, eval=FALSE}
+get_stm_topic_labels(
+  fit_stm,
+  n = 5,
+  label_types = c("prob", "frex", "lift", "score")
+)
+
+summarize_stm_topics(fit_stm, training = dfm_stm, doc_data = docs)
+```
+
+For prevalence models, the natural final question is not only "what are the
+topics?" but also "how do document variables relate to topic prevalence?"
+`estimate_stm_topic_effects()` answers that question by calling the STM backend
+and returning coefficient rows in a tidy table. The estimates should be read as
+model-based associations under the fitted STM specification and the user's
+covariate coding. NLPstudio keeps the raw STM effect object attached as an
+attribute for users who need backend-native follow-up analysis, but the main
+return value is designed for tables and reproducible reporting.
+
+```{r stm-topic-effects, eval=FALSE}
+stm_effects <- estimate_stm_topic_effects(
+  fit_stm,
+  topics = c("Topic001", "Topic002"),
+  nsims = 25
+)
+
+stm_effects
+```
+
+This STM support is intentionally bounded. STM prevalence covariates are
+supported because each topic still has one topic-word distribution and the
+standardized TWW contract remains valid. STM content covariates are not
+supported in `v0.9.6`: they allow word distributions to vary by covariate level,
+which means a single ordinary TWW row per topic would hide part of the fitted
+model. Prediction for STM prevalence fits is also not inferred automatically,
+because new-document prediction would need explicit new-document covariate
+handling. In those cases, NLPstudio returns a clear error rather than silently
+guessing.
 
 ## Optional ETM Extensions
 
@@ -628,14 +698,15 @@ workflow:
 | Fit one model | `fit_topic_model()` |
 | Fit STM prevalence models | `fit_topic_model(engine = "stm", model = "stm")` |
 | Extract DTW/TWW | `get_dtw()`, `get_tww()` |
-| Interpret terms and documents | `get_top_terms()`, `get_representative_candidates()` |
+| Interpret terms and documents | `get_top_terms()`, `get_stm_topic_labels()`, `get_representative_candidates()` |
 | Plot standardized outputs | `plot_top_terms()`, `plot_dtw()` |
 | Predict new documents | `predict_topic_model()` |
 | Evaluate quality | `evaluate_topic_model()` |
 | Select K | `select_k_topics()` |
 | Report K-selection evidence | `summarize_k_selection()` |
 | Assess seed stability | `assess_topic_stability()` |
-| Build interpretation tables | `summarize_topics()` |
+| Build interpretation tables | `summarize_topics()`, `summarize_stm_topics()` |
+| Report STM prevalence effects | `estimate_stm_topic_effects()` |
 | Adopt existing topic-model fits | `as_nlp_topic_fit()` |
 | Prepare OpTop inputs | `as_optop_weighted_dfm()`, `as_optop_input()` |
 | Use ETM embeddings | `get_topic_embeddings()`, `get_term_embeddings()`, `plot_topic_embeddings()` |

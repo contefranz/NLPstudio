@@ -121,7 +121,7 @@ already present on the input object. Raw \strong{text2vec} objects do not retain
 document-topic weights internally, so pass \code{theta} when downstream DTW access
 is needed.
 
-Raw \strong{stm} content-covariate models are not converted in \code{v0.9.4} because
+Raw \strong{stm} content-covariate models are not converted in \code{v0.9.6} because
 they imply covariate-specific topic-word distributions, while NLPstudio
 currently standardizes one TWW matrix per fit.
 }

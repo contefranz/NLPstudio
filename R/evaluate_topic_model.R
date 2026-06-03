@@ -90,7 +90,7 @@ if (getRversion() >= "2.15.1") {
 #' matching the convention used by `topicmodels::perplexity()`.
 #'
 #' For STM fits with prevalence covariates, held-out likelihood metrics are
-#' marked unsupported in `v0.9.4` because new-document covariate handling is not
+#' marked unsupported in `v0.9.6` because new-document covariate handling is not
 #' inferred by NLPstudio. Coherence, diversity, exclusivity, and training
 #' likelihood metrics remain available when their required inputs exist.
 #'
