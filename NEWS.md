@@ -1,5 +1,33 @@
 # NLPstudio News
 
+## NLPstudio 0.9.7  (2026-06-03)
+
+### CHANGES
+
+1. Started the pre-`v1.0.0` API-freeze pass with explicit output-contract
+   tests for `nlp_topic_fit`, `nlp_k_selection`, `nlp_k_selection_summary`,
+   `nlp_topic_stability`, `summarize_topics()`, `summarize_stm_topics()`, and
+   `estimate_stm_topic_effects()`.
+
+2. Resolved issue #17 by retaining standard evaluation and selection columns
+   after post-evaluation workflows. Long-format outputs keep `metric`, `level`,
+   `topic_id`, `value`, and `supported`; aggregate rows retain `topic_id` with
+   `NA` values instead of dropping the column.
+
+3. Removed the deprecated `metrics = "perplexity"` alias from
+   `evaluate_topic_model()` and `select_k_topics()` validation. Use the final
+   metric name `held_out_perplexity` instead.
+
+4. Triaged issue #14 as a real sequential chunked corpus-construction
+   enhancement. It is intentionally left for a focused `v0.9.8` release rather
+   than mixed into this topic-model API-freeze groundwork.
+
+### DOCUMENTATION
+
+1. Added public API stability guidance to the README and topic-model API
+   vignette, including the stable output surfaces expected to carry into
+   `v1.0.0`.
+
 ## NLPstudio 0.9.6  (2026-06-03)
 
 ### NEW FEATURES
