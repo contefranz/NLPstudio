@@ -29,7 +29,8 @@ metrics (\code{"held_out_nll"}, \code{"held_out_perplexity"}). Accepted classes 
 the same as \code{training}. Defaults to \code{NULL}.}
 
 \item{metrics}{Character vector of metrics to compute. Defaults to all eight
-supported metrics (alphabetical):
+supported metrics (alphabetical). Use the canonical metric names below;
+the deprecated \code{"perplexity"} alias was removed in \code{v0.9.7}.
 \describe{
 \item{\code{"coherence_npmi"}}{Normalized Pointwise Mutual Information
 coherence per topic (Aletras & Stevenson, 2013). Requires \code{training}.}
@@ -66,7 +67,9 @@ A \link[data.table:data.table]{data.table} with columns:
 \item{\code{level}}{\code{"aggregate"} for corpus-level scalars, \code{"topic"} for
 topic-level values.}
 \item{\code{topic_id}}{\code{Topic###} identifier for \code{"topic"} rows;
-\code{NA} for \code{"aggregate"} rows.}
+\code{NA} for \code{"aggregate"} rows. This column is retained for all
+evaluation outputs so aggregate-only and topic-level results share a
+stable schema.}
 \item{\code{value}}{Numeric metric value. \code{NA} when \code{supported = FALSE}.}
 \item{\code{supported}}{\code{TRUE} when the metric was computed; \code{FALSE} when
 the required data is missing or the metric is unsupported for the
@@ -108,9 +111,9 @@ Tokens outside the fitted vocabulary are excluded from the token count,
 matching the convention used by \code{topicmodels::perplexity()}.
 
 For STM fits with prevalence covariates, held-out likelihood metrics are
-marked unsupported in \code{v0.9.6} because new-document covariate handling is not
-inferred by NLPstudio. Coherence, diversity, exclusivity, and training
-likelihood metrics remain available when their required inputs exist.
+marked unsupported because new-document covariate handling is not inferred by
+NLPstudio. Coherence, diversity, exclusivity, and training likelihood metrics
+remain available when their required inputs exist.
 
 \code{level} controls only which rows are returned. Metrics are computed in the
 same way regardless of level. Metrics that are naturally corpus-level only

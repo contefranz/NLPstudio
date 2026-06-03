@@ -86,7 +86,17 @@ test_that("summarize_stm_topics adds collapsed STM label columns", {
   expect_s3_class(out, "data.table")
   expect_equal(nrow(out), 2L)
   expect_true(all(c(
+    "topic_id",
+    "topic_int",
     "top_terms",
+    "top_term_probabilities",
+    "prevalence",
+    "coherence_npmi",
+    "coherence_umass",
+    "diversity",
+    "exclusivity",
+    "representative_doc_ids",
+    "representative_documents",
     "stm_prob_terms",
     "stm_frex_terms",
     "stm_lift_terms",
@@ -107,6 +117,15 @@ test_that("estimate_stm_topic_effects uses stored docvars and returns tidy rows"
   out <- estimate_stm_topic_effects(fit, topics = "Topic001", nsims = 5)
   expect_s3_class(out, "nlp_stm_topic_effects")
   expect_s3_class(attr(out, "estimate_effect"), "estimateEffect")
+  expect_named(
+    out,
+    c(
+      "topic_id", "topic_int", "term", "estimate", "std_error",
+      "statistic", "p_value", "conf_low", "conf_high",
+      "uncertainty", "nsims"
+    ),
+    ignore.order = FALSE
+  )
   expect_equal(unique(out$topic_id), "Topic001")
   expect_true(all(c(
     "term", "estimate", "std_error", "statistic", "p_value",

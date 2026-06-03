@@ -105,7 +105,10 @@ columns:
 \item{\code{k}}{Topic count \eqn{K}.}
 \item{\code{metric}}{Metric name.}
 \item{\code{level}}{\code{"aggregate"} or \code{"topic"}.}
-\item{\code{topic_id}}{\code{Topic###} or \code{NA} (see \code{\link[=evaluate_topic_model]{evaluate_topic_model()}}).}
+\item{\code{topic_id}}{\code{Topic###} for topic-level rows or \code{NA} for
+aggregate rows. The column is retained even when only aggregate
+metrics are requested so selection tables keep a stable long-format
+schema.}
 \item{\code{value}}{Numeric metric value.}
 \item{\code{supported}}{Logical; \code{TRUE} when the metric was computed.}
 }

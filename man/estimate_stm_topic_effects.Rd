@@ -50,8 +50,7 @@ Estimate and tidy STM prevalence effects for fitted topics.
 }
 \details{
 This helper reports prevalence effects for STM fits. It does not add new STM
-prediction behavior, and it does not support content-covariate STM models in
-\code{v0.9.6}.
+prediction behavior, and it does not support content-covariate STM models.
 }
 \examples{
 \dontshow{if (requireNamespace("stm", quietly = TRUE)) withAutoprint(\{ # examplesIf}

@@ -47,6 +47,24 @@ examples are evaluated. The other backend sections are included as non-evaluated
 templates so you can see the same API shape without requiring every optional
 backend on your machine.
 
+## Public API Stability
+
+The `v0.9.7` release begins the API-freeze pass that leads to `v1.0.0`. From
+this point, the core output shapes are treated as public contracts: an
+`nlp_topic_fit` stores the standardized model pieces, `evaluate_topic_model()`
+and `select_k_topics()` return long tables with stable metric columns,
+`assess_topic_stability()` returns matched-topic stability rows, and the topic
+summary helpers return one row per topic.
+
+One practical consequence is that evaluation and selection tables retain the
+same standard columns even when a result is aggregate-only. The columns
+`metric`, `level`, `topic_id`, `value`, and `supported` stay present; aggregate
+rows use `topic_id = NA` rather than dropping the column. This makes joins,
+plots, exports, and downstream summaries predictable.
+
+New code should also use only the final metric names. For example, request
+`held_out_perplexity` explicitly rather than the removed `"perplexity"` alias.
+
 ## Prepare Data Once
 
 The workflow starts with ordinary data: one row per document, one text column,
@@ -655,7 +673,7 @@ stm_effects
 This STM support is intentionally bounded. STM prevalence covariates are
 supported because each topic still has one topic-word distribution and the
 standardized TWW contract remains valid. STM content covariates are not
-supported in `v0.9.6`: they allow word distributions to vary by covariate level,
+supported: they allow word distributions to vary by covariate level,
 which means a single ordinary TWW row per topic would hide part of the fitted
 model. Prediction for STM prevalence fits is also not inferred automatically,
 because new-document prediction would need explicit new-document covariate

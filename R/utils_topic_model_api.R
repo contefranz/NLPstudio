@@ -855,7 +855,7 @@
 
 .stm_content_covariate_error <- function() {
   paste(
-    "STM content covariates are not supported in v0.9.6 because they imply",
+    "STM content covariates are not supported because they imply",
     "covariate-specific topic-word distributions, while NLPstudio currently",
     "standardizes one TWW matrix per fit."
   )
@@ -1003,7 +1003,7 @@
 .predict_stm_topic_matrix <- function(fit, newdata_aligned, control) {
   if (.stm_has_prevalence(fit)) {
     stop(
-      "STM prediction for prevalence-covariate fits is not supported in v0.9.6; refit without prevalence or use stm::fitNewDocuments() directly with explicit covariate handling.",
+      "STM prediction for prevalence-covariate fits is not supported; refit without prevalence or use stm::fitNewDocuments() directly with explicit covariate handling.",
       call. = FALSE
     )
   }
