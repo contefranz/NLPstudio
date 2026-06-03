@@ -425,17 +425,14 @@ test_that("held_out_nll is unsupported (with warning) when newdata is NULL", {
   expect_true(is.na(result$value))
 })
 
-test_that("perplexity is a deprecated alias for held_out_perplexity", {
+test_that("perplexity alias is no longer accepted", {
   skip_if_not_installed("text2vec")
-  fit     <- make_eval_fit()
-  newdata <- make_eval_newdata()
-  expect_warning(
-    result <- evaluate_topic_model(fit, newdata = newdata, metrics = "perplexity"),
-    "deprecated"
+  fit <- make_eval_fit()
+
+  expect_error(
+    evaluate_topic_model(fit, metrics = "perplexity"),
+    "Unknown metric.*perplexity"
   )
-  expect_equal(result$metric, "held_out_perplexity")
-  expect_true(result$supported)
-  expect_true(is.finite(result$value))
 })
 
 # ---- Mixed: all metrics together -------------------------------------------

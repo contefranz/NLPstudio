@@ -19,7 +19,8 @@ if (getRversion() >= "2.15.1") {
 #'   metrics (`"held_out_nll"`, `"held_out_perplexity"`). Accepted classes are
 #'   the same as `training`. Defaults to `NULL`.
 #' @param metrics Character vector of metrics to compute. Defaults to all eight
-#'   supported metrics (alphabetical):
+#'   supported metrics (alphabetical). Use the canonical metric names below;
+#'   the deprecated `"perplexity"` alias was removed in `v0.9.7`.
 #'   \describe{
 #'     \item{`"coherence_npmi"`}{Normalized Pointwise Mutual Information
 #'       coherence per topic (Aletras & Stevenson, 2013). Requires `training`.}
@@ -54,7 +55,9 @@ if (getRversion() >= "2.15.1") {
 #'     \item{`level`}{`"aggregate"` for corpus-level scalars, `"topic"` for
 #'       topic-level values.}
 #'     \item{`topic_id`}{`Topic###` identifier for `"topic"` rows;
-#'       `NA` for `"aggregate"` rows.}
+#'       `NA` for `"aggregate"` rows. This column is retained for all
+#'       evaluation outputs so aggregate-only and topic-level results share a
+#'       stable schema.}
 #'     \item{`value`}{Numeric metric value. `NA` when `supported = FALSE`.}
 #'     \item{`supported`}{`TRUE` when the metric was computed; `FALSE` when
 #'       the required data is missing or the metric is unsupported for the
@@ -90,9 +93,9 @@ if (getRversion() >= "2.15.1") {
 #' matching the convention used by `topicmodels::perplexity()`.
 #'
 #' For STM fits with prevalence covariates, held-out likelihood metrics are
-#' marked unsupported in `v0.9.6` because new-document covariate handling is not
-#' inferred by NLPstudio. Coherence, diversity, exclusivity, and training
-#' likelihood metrics remain available when their required inputs exist.
+#' marked unsupported because new-document covariate handling is not inferred by
+#' NLPstudio. Coherence, diversity, exclusivity, and training likelihood metrics
+#' remain available when their required inputs exist.
 #'
 #' `level` controls only which rows are returned. Metrics are computed in the
 #' same way regardless of level. Metrics that are naturally corpus-level only
@@ -298,7 +301,7 @@ evaluate_topic_model <- function(
 
 #' Validate topic-evaluation metric names
 #'
-#' Checks metric input and expands aliases before evaluation starts.
+#' Checks metric input before evaluation starts.
 #'
 #' @keywords internal
 #' @noRd
@@ -309,14 +312,6 @@ evaluate_topic_model <- function(
       anyNA(metrics) || any(!nzchar(metrics))) {
     stop("'metrics' must be a non-empty character vector of valid metric names.",
          call. = FALSE)
-  }
-
-  if ("perplexity" %in% metrics) {
-    warning(
-      "'perplexity' is deprecated; use 'held_out_perplexity' instead.",
-      call. = FALSE
-    )
-    metrics[metrics == "perplexity"] <- "held_out_perplexity"
   }
 
   metrics <- unique(metrics)
