@@ -1,0 +1,11 @@
+bibentry(
+  bibtype = "Manual",
+  title = "NLPstudio: Parallel NLP Tools for Processing SEC Filings, Corpus Management, Topic Modeling, and Other Perks",
+  author = person("Francesco", "Grossetti"),
+  year = "2026",
+  note = paste(
+    "R package version",
+    utils::packageDescription("NLPstudio")$Version
+  ),
+  url = "https://contefranz.github.io/NLPstudio/"
+)
