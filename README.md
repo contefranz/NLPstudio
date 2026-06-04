@@ -1,15 +1,16 @@
-[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-maturing.svg)](https://lifecycle.r-lib.org/)
+[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-stable.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![pre-release](https://img.shields.io/badge/pre--release-v1.0.0--rc1-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
 
 **NLPstudio** is an R package for scalable text analysis in research workflows.
 It is built around **quanteda**, **data.table**, and portable parallel backends,
-with particular attention to financial disclosures, regulatory filings, and
-other structured document collections.
+with particular attention to reproducible social science workflows, including
+financial disclosures, regulatory filings, and other structured document
+collections.
 
 The package has two main workflows:
 
@@ -25,10 +26,10 @@ The detailed reference manual and vignettes are published at
 
 ## Release Status
 
-This branch prepares the `v1.0.0-rc1` release candidate. It is a pre-release,
-not the final public launch. The final `v1.0.0` release will be the stable
-public release and the point at which the repository should be archived with
-Zenodo for a DOI.
+NLPstudio `v1.0.0` is the first stable public release. The package is intended
+for reproducible social science text-analysis workflows, with stable output
+schemas for the core corpus and topic-model APIs. Repository archiving and DOI
+minting through Zenodo are handled from the public GitHub release.
 
 The topic-model output schemas are frozen for `v1.0.0`: `nlp_topic_fit`,
 `nlp_k_selection`, `nlp_k_selection_summary`, `nlp_topic_stability`, topic
@@ -38,7 +39,7 @@ selection outputs retain the standard columns `metric`, `level`, `topic_id`,
 
 ## Installation
 
-Install the development version from GitHub with **pak**:
+Install NLPstudio from GitHub with **pak**:
 
 ```r
 install.packages("pak")
@@ -93,8 +94,8 @@ evaluate_topic_model(
 
 For complete workflows, see:
 
-- [Topic Model API and Usage](https://contefranz.github.io/NLPstudio/articles/topic-model-api.html)
 - [Corpus Preparation and Text Analysis](https://contefranz.github.io/NLPstudio/articles/corpus-workflow.html)
+- [Topic Model API and Usage](https://contefranz.github.io/NLPstudio/articles/topic-model-api.html)
 
 ## Citation
 

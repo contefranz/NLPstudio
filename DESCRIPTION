@@ -1,23 +1,26 @@
 Package: NLPstudio
-Title: Parallel NLP Tools for Processing SEC Filings, Corpus Management, Topic Modeling, and Other Perks
-Version: 0.99.0
+Title: Tools for Social Science Text Analysis, Corpus Management, and Topic Modeling
+Version: 1.0.0
 Authors@R: c(
     person("Francesco", "Grossetti", , "francesco.grossetti@unibocconi.it", 
     role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-5130-7745")))
-Description: NLPstudio provides a streamlined and high-performance workflow for working with
-  structured and unstructured textual data, particularly SEC EDGAR filings. The package supports
-  corpus creation from JSON, tokenization, parsing, singularization, and document-level summarization
-  via quanteda, all with parallel backend support through the parallel package. In addition,
-  NLPstudio includes tools for computing readability, similarity, and distance measures using
-  quanteda.textstats. The package also provides a unified topic-modeling API across text2vec,
-  topicmodels, seededlda, stm, and topicmodels.etm, with standardized document-topic weights (DTW),
-  topic-word weights (TWW), representative-candidate extraction, generic prediction for new documents,
-  and visualization helpers. A model-evaluation and selection layer provides engine-agnostic quality
-  metrics, topic-stability diagnostics, topic summaries, and automated grid search over candidate
-  topic counts. NLPstudio supports export-ready wide
-  and long formats and includes curated domain dictionaries for financial text analysis.
-  Built on data.table, quanteda, and parallel, NLPstudio is intended for scalable text analysis in an
-  academic context with a particular focus on accounting and finance research domains.
+Description: NLPstudio provides a streamlined and high-performance workflow for
+  social science text analysis with structured and unstructured corpora. The
+  package supports corpus creation from JSON, tokenization, parsing,
+  singularization, and document-level summarization via quanteda, all with
+  parallel backend support through the parallel package. It also includes tools
+  for computing readability, similarity, and distance measures using
+  quanteda.textstats. NLPstudio provides a unified topic-modeling API across
+  text2vec, topicmodels, seededlda, stm, and topicmodels.etm, with standardized
+  document-topic weights (DTW), topic-word weights (TWW), representative-candidate
+  extraction, generic prediction for new documents, and visualization helpers.
+  A model-evaluation and selection layer provides engine-agnostic quality
+  metrics, topic-stability diagnostics, topic summaries, and automated grid
+  search over candidate topic counts. NLPstudio supports export-ready wide and
+  long formats and includes curated domain dictionaries for financial text
+  analysis. SEC EDGAR filings are supported as an important applied workflow,
+  but the package is intended as a general toolkit for scalable text analysis in
+  social science research.
 License: GPL (>= 3)
 URL: https://github.com/contefranz/NLPstudio, https://contefranz.github.io/NLPstudio/
 BugReports: https://github.com/contefranz/NLPstudio/issues

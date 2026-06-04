@@ -1,6 +1,6 @@
 bibentry(
   bibtype = "Manual",
-  title = "NLPstudio: Parallel NLP Tools for Processing SEC Filings, Corpus Management, Topic Modeling, and Other Perks",
+  title = "NLPstudio: Tools for Social Science Text Analysis, Corpus Management, and Topic Modeling",
   author = person("Francesco", "Grossetti"),
   year = "2026",
   note = paste(

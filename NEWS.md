@@ -1,3 +1,23 @@
+# NLPstudio 1.0.0  (2026-06-04)
+
+## PUBLIC RELEASE
+
+1. Released NLPstudio as a stable public toolkit for social science text
+   analysis, corpus management, and topic modeling.
+
+2. Finalized the public API-stability commitment for the core topic-model
+   output surfaces, including `nlp_topic_fit`, `nlp_k_selection`,
+   `nlp_k_selection_summary`, `nlp_topic_stability`, topic summaries, STM topic
+   summaries, and STM topic-effect tables.
+
+3. Updated package metadata, README release language, and vignette stability
+   wording from the `v1.0.0-rc1` release candidate to the final `v1.0.0`
+   public release.
+
+4. Confirmed the pkgdown site and citation metadata as part of the public
+   documentation surface. DOI minting remains tied to the GitHub release and
+   Zenodo archive workflow.
+
 # NLPstudio 0.99.0  (2026-06-04)
 
 ## RELEASE CANDIDATE
