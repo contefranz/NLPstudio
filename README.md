@@ -1,121 +1,55 @@
-
-[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-experimental.svg)](https://lifecycle.r-lib.org/)
+[![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-maturing.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v0.9.7-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![pre-release](https://img.shields.io/badge/pre--release-v1.0.0--rc1-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 
 # NLPstudio <img src="man/figures/logo.png" align="right" height="139" />
 
-## Overview
+**NLPstudio** is an R package for scalable text analysis in research workflows.
+It is built around **quanteda**, **data.table**, and portable parallel backends,
+with particular attention to financial disclosures, regulatory filings, and
+other structured document collections.
 
-**NLPstudio** is an R package that provides a high-performance, research-oriented
-framework for large-scale natural language processing (NLP) on text data, 
-with particular support for financial disclosures such as SEC EDGAR filings.
+The package has two main workflows:
 
-Built on the [**quanteda**](https://quanteda.io/) ecosystem and powered by
-[**data.table**](https://rdatatable.gitlab.io/data.table/) for efficient memory
-management, the package implements multicore parallelism PSOCK (portable, dynamically load-balanced) 
-and FORK (Linux/macOS) backends from base R's
-[**parallel**](https://stat.ethz.ch/R-manual/R-devel/library/parallel/html/00Index.html)
-package.
+- Corpus preparation and document-level text analysis, from SEC-style JSON files
+  to `quanteda` corpora, tokens, dictionaries, readability, similarity, and
+  export-ready tables.
+- A consistent topic-model API for fitting, adopting, evaluating, selecting,
+  diagnosing, summarizing, and exporting topic models across supported R
+  backends.
 
-In addition to preprocessing tasks such as tokenization, singularization,
-reshaping, summarization, and similarity computations, **NLPstudio** includes a
-unified topic-modeling API spanning [**text2vec**](https://cran.r-project.org/package=text2vec),
-[**topicmodels**](https://cran.r-project.org/package=topicmodels), and
-[**seededlda**](https://cran.r-project.org/package=seededlda), with optional
-[**stm**](https://cran.r-project.org/package=stm) support for structural topic
-models with prevalence covariates and optional
-[**topicmodels.etm**](https://cran.r-project.org/package=topicmodels.etm)
-support for embedded topic models. The package
-standardizes document-topic weights (DTW), topic-word weights (TWW),
-representative-candidate extraction, generic topic prediction for new
-documents, and downstream visualization across those engines. v0.9.x includes a
-model-evaluation layer — `evaluate_topic_model()` for coherence (UMass, NPMI),
-diversity, exclusivity, training NLL/perplexity, and held-out
-NLL/perplexity, returned at aggregate level by default — and
-`select_k_topics()` for automated grid search over candidate values of K with
-an optional holdout split. It also adds `assess_topic_stability()` for
-same-specification repeated fits across seeds and `summarize_topics()` for
-export-ready topic interpretation tables. `summarize_k_selection()` turns
-model-selection output into a wide reporting table that can include optional
-OpTop statistics. STM fits can also use `get_stm_topic_labels()`,
-`summarize_stm_topics()`, and `estimate_stm_topic_effects()` for STM-native
-topic labels and prevalence-effect reporting. Existing fitted objects from
-`topicmodels`, `seededlda`, raw `text2vec` WarpLDA/LDA, and saved outputs from
-the removed `warp_lda()` wrapper can be adopted into the current API with
-`as_nlp_topic_fit()`. Topicmodels LDA VEM fits can also be prepared for
-external **OpTop** optimal-topic testing with `as_optop_input()`.
-STM content covariates are intentionally deferred because they imply
-covariate-specific topic-word distributions, while NLPstudio currently
-standardizes one TWW matrix per fit.
+The detailed reference manual and vignettes are published at
+[contefranz.github.io/NLPstudio](https://contefranz.github.io/NLPstudio/).
 
-The [topic-model API vignette](vignettes/topic-model-api.Rmd) gives the full
-workflow: fit once through a common interface, inspect standardized DTW/TWW
-outputs, interpret topics, predict new documents, evaluate model quality,
-select K, assess stability, summarize topics, and export tables.
+## Release Status
 
-The [corpus workflow vignette](vignettes/corpus-workflow.Rmd) covers the
-non-topic-model workflow from bundled SEC-style JSON examples to a `quanteda`
-corpus, tokens, dictionary lookups, readability, similarity and distance
-measures, and export-ready tables.
+This branch prepares the `v1.0.0-rc1` release candidate. It is a pre-release,
+not the final public launch. The final `v1.0.0` release will be the stable
+public release and the point at which the repository should be archived with
+Zenodo for a DOI.
 
-### Public API Stability
+The topic-model output schemas are frozen for `v1.0.0`: `nlp_topic_fit`,
+`nlp_k_selection`, `nlp_k_selection_summary`, `nlp_topic_stability`, topic
+summaries, STM topic summaries, and STM topic-effect tables. Evaluation and
+selection outputs retain the standard columns `metric`, `level`, `topic_id`,
+`value`, and `supported`; aggregate rows use `topic_id = NA`.
 
-The `v0.9.7` release starts the pre-`v1.0.0` API-freeze pass. The stable
-topic-model surfaces are the structure of `nlp_topic_fit`, the long-format
-evaluation and K-selection tables, `nlp_topic_stability`, topic-summary tables,
-and STM interpretation/effect tables. Evaluation and selection outputs retain
-the standard columns `metric`, `level`, `topic_id`, `value`, and `supported`
-even when only aggregate rows are returned; aggregate rows use `topic_id = NA`.
+## Installation
 
-Use final metric names in new code. In particular, request
-`held_out_perplexity` explicitly; the older `metrics = "perplexity"` alias has
-been removed during the API-freeze pass.
-
-Embedded topic models are available through the optional **topicmodels.etm** and
-**torch** packages when those backends are installed locally.
-When ETM support is available, **NLPstudio** also exposes ETM-specific topic and
-term embeddings plus a two-dimensional topic-embedding plot built on the ETM
-backend UMAP summary path.
-
-The package also provides curated **quanteda** dictionaries tailored to
-financial and regulatory text, including forward-looking statements, firm
-complexity, corporate social responsibility, and sustainable development themes.
-
-Whether analyzing regulatory filings, academic corpora, or policy documents,
-**NLPstudio** offers a fast and user-friendly pipeline for researchers in the
-social sciences, finance, and accounting domains.
-
-### Installation
-
-You can install **NLPstudio** using either **devtools** or **remotes**:
+Install the development version from GitHub with **pak**:
 
 ```r
-# with devtools
-install.packages("devtools")
-devtools::install_github("contefranz/NLPstudio")
-
-# or with remotes (a lighter dependency)
-install.packages("remotes")
-remotes::install_github("contefranz/NLPstudio")
+install.packages("pak")
+pak::pkg_install("contefranz/NLPstudio")
 ```
 
-Optional ETM backend support requires both **topicmodels.etm** and a working
-**torch** backend. On a clean machine, install both optional R packages and
-then install the torch backend before fitting ETM models:
+Some modeling backends are optional. Install backend packages only when you need
+them; for example, STM support requires **stm**, and embedded topic models
+require both **topicmodels.etm** and a working **torch** backend.
 
-```r
-install.packages(c("topicmodels.etm", "torch"))
-torch::install_torch()
-torch::torch_is_installed()
-```
-
-### Topic-model workflow
-
-This example uses the optional **topicmodels** backend and a small in-memory
-corpus so the current v0.9.7 workflow can be reproduced without external data.
+## Quick Example
 
 ```r
 library(NLPstudio)
@@ -143,156 +77,38 @@ fit <- fit_topic_model(
   dfm,
   engine = "topicmodels",
   model = "lda",
-  k = 2,
   method = "Gibbs",
+  k = 2,
   control = list(fit = list(seed = 1L, iter = 50L, burnin = 0L, thin = 1L))
 )
 
-tww <- get_tww(fit)
-get_top_terms(tww, n = 4)
-
+get_top_terms(fit, n = 4)
 evaluate_topic_model(
   fit,
   training = dfm,
   metrics = c("diversity", "exclusivity", "coherence_umass"),
   top_n = 4L
 )
-
-select_k_topics(
-  dfm,
-  engine = "topicmodels",
-  model = "lda",
-  method = "Gibbs",
-  k_grid = 2:3,
-  metrics = c("diversity", "exclusivity"),
-  top_n = 4L,
-  holdout = 0,
-  seed = 1L,
-  control = list(fit = list(iter = 50L, burnin = 0L, thin = 1L))
-)
-
-assess_topic_stability(
-  dfm,
-  engine = "topicmodels",
-  model = "lda",
-  method = "Gibbs",
-  k = 2,
-  seeds = 1:3,
-  control = list(fit = list(iter = 50L, burnin = 0L, thin = 1L))
-)
-
-summarize_topics(
-  fit,
-  training = dfm,
-  doc_data = docs,
-  top_n = 4L,
-  representative_n = 2L,
-  include_text = TRUE
-)
 ```
 
-Existing fitted topic models can be adapted without refitting:
+For complete workflows, see:
+
+- [Topic Model API and Usage](https://contefranz.github.io/NLPstudio/articles/topic-model-api.html)
+- [Corpus Preparation and Text Analysis](https://contefranz.github.io/NLPstudio/articles/corpus-workflow.html)
+
+## Citation
+
+If you use **NLPstudio** in academic work, please cite the package. Citation
+metadata is available from R:
 
 ```r
-# topicmodels::LDA() or topicmodels::CTM()
-fit <- as_nlp_topic_fit(existing_topicmodels_fit)
-
-# seededlda::textmodel_lda() or seededlda::textmodel_seededlda()
-fit <- as_nlp_topic_fit(existing_seededlda_fit)
-
-# raw text2vec::LDA() / WarpLDA object; pass theta from fit_transform()
-fit <- as_nlp_topic_fit(raw_text2vec_fit, theta = saved_theta)
-
-# old NLPstudio warp_lda() output
-old <- readRDS("legacy-warp-lda-output.rds")
-fit <- as_nlp_topic_fit(old)
-
-get_dtw(fit)
-get_tww(fit)
-get_top_terms(fit, n = 10)
+citation("NLPstudio")
 ```
 
-For **OpTop** workflows, keep the model fitting in NLPstudio and pass the
-prepared inputs to OpTop explicitly:
+## Author
 
-```r
-selection <- select_k_topics(
-  dfm,
-  engine = "topicmodels",
-  model = "lda",
-  method = "VEM",
-  k_grid = 2:5,
-  metrics = c("diversity", "exclusivity"),
-  holdout = 0,
-  return_fits = TRUE,
-  control = list(fit = list(seed = 1L))
-)
-
-optop_input <- as_optop_input(
-  selection,
-  weighted_dfm = as_optop_weighted_dfm(dfm)
-)
-
-# OpTop::optimal_topic(
-#   lda_models = optop_input$lda_models,
-#   weighted_dfm = optop_input$weighted_dfm,
-#   q = 0.8,
-#   alpha = 0.05,
-#   do_plot = FALSE
-# )
-
-# If you run OpTop externally, merge the result back into the selection table:
-# optop_result <- OpTop::optimal_topic(
-#   lda_models = optop_input$lda_models,
-#   weighted_dfm = optop_input$weighted_dfm,
-#   q = 0.8,
-#   alpha = 0.05,
-#   do_plot = FALSE
-# )
-# summarize_k_selection(selection, optop = optop_result)
-```
-
-Structural topic models can be fit through the same API when the optional
-**stm** package is installed. Prevalence covariates are supplied through
-`control$fit`; content covariates are not supported because they
-require a content-specific TWW design.
-
-```r
-if (requireNamespace("stm", quietly = TRUE)) {
-  quanteda::docvars(dfm, "group") <- docs$doc_id %in% paste0("doc", 1:3)
-
-  stm_fit <- fit_topic_model(
-    dfm,
-    engine = "stm",
-    model = "stm",
-    k = 2,
-    docvars = TRUE,
-    control = list(
-      fit = list(
-        prevalence = ~ group,
-        seed = 1L,
-        max.em.its = 25L,
-        init.type = "Spectral",
-        verbose = FALSE
-      )
-    )
-  )
-
-  get_top_terms(stm_fit, n = 4)
-  summarize_topics(stm_fit, training = dfm, doc_data = docs)
-  summarize_stm_topics(stm_fit, training = dfm, doc_data = docs)
-  get_stm_topic_labels(stm_fit, n = 4)
-  estimate_stm_topic_effects(stm_fit, nsims = 25)
-}
-```
-
----
-
-#### Author
-
-[Francesco Grossetti](https://accounting.unibocconi.eu/faculty/francesco-grossetti)
-
-_Assistant Professor of Accounting Analytics and Data Science_<br>
+[Francesco Grossetti](https://accounting.unibocconi.eu/faculty/francesco-grossetti)<br>
+Assistant Professor of Accounting Analytics and Data Science<br>
 Department of Accounting, Bocconi University<br>
 Fellow at Bocconi Institute for Data Science and Analytics ([BIDSA](https://bidsa.unibocconi.eu/))<br>
 Contact: francesco.grossetti@unibocconi.it
