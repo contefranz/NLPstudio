@@ -1,8 +1,25 @@
-# NLPstudio News
+# NLPstudio 0.99.0  (2026-06-04)
 
-## NLPstudio 0.9.7  (2026-06-03)
+## RELEASE CANDIDATE
 
-### CHANGES
+1. Prepared the `v1.0.0-rc1` pre-release branch. This is not the final public
+   launch; DOI minting and broad release announcements remain reserved for
+   `v1.0.0`.
+
+2. Added pkgdown site configuration and a GitHub Pages workflow so the public
+   documentation site can be built and deployed from `main`.
+
+3. Rewrote the README as a shorter landing page that points readers to the
+   pkgdown reference and workflow vignettes for function-level detail.
+
+4. Updated GitHub installation instructions to use **pak** with
+   `pak::pkg_install("contefranz/NLPstudio")`.
+
+5. Added package citation metadata for `citation("NLPstudio")`.
+
+# NLPstudio 0.9.7  (2026-06-03)
+
+## CHANGES
 
 1. Started the pre-`v1.0.0` API-freeze pass with explicit output-contract
    tests for `nlp_topic_fit`, `nlp_k_selection`, `nlp_k_selection_summary`,
@@ -18,19 +35,18 @@
    `evaluate_topic_model()` and `select_k_topics()` validation. Use the final
    metric name `held_out_perplexity` instead.
 
-4. Triaged issue #14 as a real sequential chunked corpus-construction
-   enhancement. It is intentionally left for a focused `v0.9.8` release rather
-   than mixed into this topic-model API-freeze groundwork.
+4. Triaged issue #14 as a sequential chunked corpus-construction enhancement
+   and closed it as non-blocking for the public API freeze.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Added public API stability guidance to the README and topic-model API
    vignette, including the stable output surfaces expected to carry into
    `v1.0.0`.
 
-## NLPstudio 0.9.6  (2026-06-03)
+# NLPstudio 0.9.6  (2026-06-03)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `get_stm_topic_labels()` to expose STM-native probability, FREX,
    lift, score, and optional SAGE topic labels as standardized long tables with
@@ -43,15 +59,15 @@
    return tidy prevalence-effect coefficient tables while preserving the raw
    STM effect object as an attribute.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Updated README, manuals, and the topic-model API vignette with STM
    interpretation examples and clearer guidance that STM content covariates
    remain unsupported in `v0.9.6`.
 
-## NLPstudio 0.9.5  (2026-05-22)
+# NLPstudio 0.9.5  (2026-05-22)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `summarize_k_selection()` to convert `select_k_topics()` output into
    a wide, export-ready table with one row per candidate topic count.
@@ -60,15 +76,15 @@
    `OpTop::optimal_topic()` statistics can be merged back into NLPstudio
    selection summaries without making OpTop a package dependency.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Updated the README and topic-model API vignette with a reporting workflow
    that combines NLPstudio selection metrics, stability rows, and optional
    OpTop statistics for paper-ready model-selection tables.
 
-## NLPstudio 0.9.4  (2026-05-21)
+# NLPstudio 0.9.4  (2026-05-21)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added optional **stm** backend support to `fit_topic_model()` with
    `engine = "stm"` and `model = "stm"`, including standardized DTW/TWW
@@ -78,7 +94,7 @@
 2. Added `as_nlp_topic_fit()` support for raw **stm** `STM` objects that use a
    single topic-word distribution.
 
-### CHANGES
+## CHANGES
 
 1. STM prevalence covariates can be supplied through `control$fit$prevalence`
    and `control$fit$data`. When a `quanteda` DFM has document variables,
@@ -88,59 +104,59 @@
    imply covariate-specific topic-word distributions, while NLPstudio currently
    standardizes one TWW matrix per fit.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Updated manuals, README, and the topic-model API vignette to document STM
    prevalence support and the deferred content-covariate design.
 
-## NLPstudio 0.9.3  (2026-05-20)
+# NLPstudio 0.9.3  (2026-05-20)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `as_optop_weighted_dfm()` and `as_optop_input()` so NLPstudio
    `topicmodels` LDA VEM fits can be passed to **OpTop** without refitting or
    reimplementing OpTop's C++ routines.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Added OpTop interoperability examples to the topic-model API documentation
    and README.
 
-## NLPstudio 0.9.2  (2026-05-08)
+# NLPstudio 0.9.2  (2026-05-08)
 
-### CHANGES
+## CHANGES
 
 1. Internalized the singularization backend used by `singularize_tokens()`.
    The function no longer depends on the archived **pluralize** package while
    preserving the existing public interface.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Updated the corpus workflow vignette so singularization is evaluated during
    vignette builds and described as package-owned functionality.
 
-### CI
+## CI
 
 1. Removed the GitHub-only **pluralize** installation from the coverage
    workflow.
 
-## NLPstudio 0.9.1  (2026-05-08)
+# NLPstudio 0.9.1  (2026-05-08)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Expanded `as_nlp_topic_fit()` so existing topic-model fits from
    **topicmodels**, **seededlda**, raw **text2vec** WarpLDA/LDA objects, and
    saved legacy `warp_lda()` outputs can be adopted as current
    `nlp_topic_fit` objects without refitting models.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Expanded adoption and migration notes in the topic-model API documentation
    and README.
 
-## NLPstudio 0.9.0  (2026-05-04)
+# NLPstudio 0.9.0  (2026-05-04)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `assess_topic_stability()`, a transparent repeated-fit wrapper around
    `fit_topic_model()` for scoring topic stability under the same model
@@ -155,7 +171,7 @@
    are unchanged; when seeds are supplied, aggregate stability rows are added
    and full stability details are attached as an attribute.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Added a comprehensive topic-model API vignette covering backend portability,
    standardized DTW/TWW extraction, prediction, evaluation, K selection,
@@ -171,14 +187,14 @@
 4. Updated visible README release references and the topic-model workflow for
    `v0.9.0`.
 
-### CI
+## CI
 
 1. Removed the dedicated URL-check workflow because external link and DNS
    failures made it too fragile for merge gating.
 
-## NLPstudio 0.8.4  (2026-05-04)
+# NLPstudio 0.8.4  (2026-05-04)
 
-### CI
+## CI
 
 1. Expanded R CMD check coverage to include Ubuntu `oldrel-1`, `release`, and
    `devel`, while keeping Windows and macOS on release R.
@@ -188,7 +204,7 @@
 
 3. Added a strict URL check workflow for README, package, and Rd links.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Refreshed the README release badge to `v0.8.4` and linked it to the generic
    releases page until the release tag exists.
@@ -199,9 +215,9 @@
 3. Normalized several documentation references to stable article URLs or plain
    DOI citations so automated URL checks can run consistently.
 
-## NLPstudio 0.8.3  (2026-05-04)
+# NLPstudio 0.8.3  (2026-05-04)
 
-### TESTS
+## TESTS
 
 1. Raised local line coverage above 95% with focused regression coverage for
    topic-model internals, JSON ingestion edge cases, tokenizer branching,
@@ -211,25 +227,25 @@
    helper behavior without requiring the optional `topicmodels.etm` or `torch`
    backends in CI.
 
-### CI
+## CI
 
 1. Enforced a 95% Codecov project coverage target with a 1% tolerance while
    keeping patch coverage informational.
 
-### DOCUMENTATION
+## DOCUMENTATION
 
 1. Added developer coverage instructions so local tests and coverage can be
    reproduced before pushing.
 
-### BUG FIXES
+## BUG FIXES
 
 1. `calculate_similarity()` and `calculate_distance()` now preserve backend
    default `method` and `margin` metadata when callers rely on default
    quanteda.textstats arguments.
 
-## NLPstudio 0.8.2  (2026-04-29)
+# NLPstudio 0.8.2  (2026-04-29)
 
-### TESTS
+## TESTS
 
 1. Expanded topic API stability coverage for vocabulary alignment, ETM pruning,
    public topic selectors, legacy DTW/TWW coercion, and unsupported backend
@@ -238,22 +254,22 @@
 2. Added regression coverage for user-facing topic-model warnings and errors
    while keeping this release behavior-preserving.
 
-## NLPstudio 0.8.1  (2026-04-29)
+# NLPstudio 0.8.1  (2026-04-29)
 
-### BREAKING CHANGES
+## BREAKING CHANGES
 
 1. Removed the deprecated `set_ff_industries()` API. Fama-French industry
    mapping is outside the current package scope and should be performed
    upstream before corpus analysis.
 
-### TESTS
+## TESTS
 
 1. Added focused coverage for under-tested public helpers and compact internal
    contracts supporting topic-model output handling.
 
-## NLPstudio 0.8.0  (2026-04-28)
+# NLPstudio 0.8.0  (2026-04-28)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `evaluate_topic_model()`, a unified interface for evaluating fitted
    topic models across engines. It reports aggregate and optional topic-level
@@ -269,9 +285,9 @@
    (`k`), `alpha`, and `beta` with backend-native source metadata, while
    sanitized backend controls remain available on the fit object.
 
-## NLPstudio 0.7.0  (2026-04-24)
+# NLPstudio 0.7.0  (2026-04-24)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `predict_topic_model()`, a generic post-fit prediction interface that
    aligns new data to the fitted vocabulary and returns standardized DTW tables
@@ -305,7 +321,7 @@
 7. Document-level topic-model outputs now include `topic_max_int`, the integer
    topic number corresponding to `topic_max_id`.
 
-### CHANGES
+## CHANGES
 
 1. `stringr` has been removed from `Imports`. The three internal call sites in
    `define_corpus()` and `singularize_tokens()` have been rewritten in base R
@@ -321,9 +337,9 @@
    `install.packages("text2vec")`. The startup message now lists `text2vec`
    under optional backends.
 
-## NLPstudio 0.6.1  (2026-04-23)
+# NLPstudio 0.6.1  (2026-04-23)
 
-### CHANGES
+## CHANGES
 
 1. `fit_topic_model()` now uses a single
    `control = list(model = ..., fit = ..., optimizer = ...)` argument instead
@@ -347,13 +363,13 @@
    `engine = "topicmodels.etm", model = "etm"`, with ETM controls routed
    through `control$model`, `control$fit`, and `control$optimizer`.
 
-## NLPstudio 0.6.0  (2026-04-22)
+# NLPstudio 0.6.0  (2026-04-22)
 
-### BREAKING CHANGES
+## BREAKING CHANGES
 
 1. `warpLDA()` has been removed from the public API.
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. Added `fit_topic_model()`, a unified topic-model fitting interface across
    **text2vec**, **topicmodels**, and **seededlda**.
@@ -365,7 +381,7 @@
    candidates and band them within topic using quantile or deterministic
    rank-based fallback rules.
 
-### CHANGES
+## CHANGES
 
 1. `get_top_terms()` and `plot_dtw()` now route through the standardized
    DTW/TWW extractor layer instead of backend-specific logic.
@@ -376,9 +392,9 @@
 3. Package documentation now uses DTW/TWW terminology following Lewis and
    Grossetti (2022) and documents the returned `nlp_topic_fit` S3 wrapper.
 
-## NLPstudio 0.5.1  (2026-04-22)
+# NLPstudio 0.5.1  (2026-04-22)
 
-### NOTES
+## NOTES
 
 1. Added guarded copy-paste examples for the remaining exported, supported
    functions that previously lacked them. The new examples are written with
@@ -388,9 +404,9 @@
 2. The examples release intentionally excludes deprecated
    `set_ff_industries()` and does not revisit APIs removed in v0.5.0.
 
-## NLPstudio 0.5.0  (2026-04-21)
+# NLPstudio 0.5.0  (2026-04-21)
 
-### BREAKING CHANGES
+## BREAKING CHANGES
 
 1. `get_json_files()` has been removed. Users should now discover JSON inputs
    directly with `list.files(..., pattern = "\\.json$", recursive = TRUE,
@@ -401,21 +417,21 @@
    considered outside the current `NLPstudio` scope and should be handled
    upstream before the data enters the package workflow.
 
-### DEPRECATIONS
+## DEPRECATIONS
 
 1. `set_ff_industries()` is now soft-deprecated. The function remains exported
    and functional in v0.5.0, but it emits a deprecation warning and is planned
    for removal in a future release. Fama-French industry mapping is now treated
    as an upstream preprocessing step rather than part of the core package API.
 
-### NOTES
+## NOTES
 
 1. This release intentionally does not include the examples expansion planned
    for a follow-up documentation-focused release.
 
-## NLPstudio 0.4.1  (2026-04-21)
+# NLPstudio 0.4.1  (2026-04-21)
 
-### BREAKING CHANGES
+## BREAKING CHANGES
 
 1. `library(NLPstudio)` no longer attaches `quanteda`, `quanteda.textstats`,
    `data.table`, `text2vec`, or `stringr` to the search path. Those packages
@@ -451,13 +467,13 @@
    `.Rprofile`. Nothing changes for code that already calls those packages
    explicitly.
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `define_corpus()` gains a `default` S3 method that produces an informative
    error when the input is not a `data.table`, replacing the opaque
    "no applicable method" dispatch failure.
 
-### BUG FIXES
+## BUG FIXES
 
 1. GitHub Actions `R-CMD-check` now passes reliably across the supported CI
    environments. Internal PSOCK execution now falls back to sequential
@@ -470,7 +486,7 @@
    `set_ff_industries()` continue to emit explicit runtime errors when those
    packages are not installed by the user.
 
-### NOTES
+## NOTES
 
 1. **Golden tests** added for all parallel functions: `tokenize_corpus()`,
    `calculate_readability()`, `summarize_corpus()`, and `reshape_corpus()` now
@@ -496,9 +512,9 @@
    form where appropriate (for example `\eqn{}`).
 
 
-## NLPstudio 0.3.3  (2026-04-18)
+# NLPstudio 0.3.3  (2026-04-18)
 
-### NOTES
+## NOTES
   
   1. Every external function call is now fully namespace-qualified (`pkg::function()`) throughout all source files. No bare unqualified calls remain for any imported package. This makes dependency resolution unambiguous and removes the need for `@importFrom` roxygen tags.
 
@@ -508,9 +524,9 @@
 
 ---
   
-## NLPstudio 0.3.2  (2026-04-17)
+# NLPstudio 0.3.2  (2026-04-17)
 
-### BUG FIXES
+## BUG FIXES
   
 1. `calculate_similarity()` / `calculate_distance()`: `quanteda_options("threads")` returns a scalar, not a named list — accessing it as `$threads` raised an error on every call.
 
@@ -522,11 +538,11 @@
 
 5. `from_json_to_df()`: `setcolorder(..., after = "filing_type")` would error when `filing_type` was absent.
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `from_json_to_df()`: `max_chunk_size` promoted from a hidden `...` argument to a proper named parameter.
 
-### NOTES
+## NOTES
 
 1. Dead code removed: `%||%` operator and `is.textstat_simil_symm()` from `R/utils.R`.
 2. Stale `globalVariables("doc_id")` removed from `R/tokenize_corpus.R`.
@@ -534,17 +550,17 @@
 
 ---
   
-## NLPstudio 0.3.1  (2026-04-16)
+# NLPstudio 0.3.1  (2026-04-16)
 
-### BUG FIXES
+## BUG FIXES
   
 1. `summarize_corpus()`: sequential path returned column `document` while parallel path returned `doc_id`. Both paths now rename consistently.
 
 ---
   
-## NLPstudio 0.3.0  (2026-04-15)
+# NLPstudio 0.3.0  (2026-04-15)
 
-### NEW FEATURES
+## NEW FEATURES
   
 1. **Unified parallel backend.** `.run_parallel()` and `.validate_parallel_args()` (in `R/utils.R`) encapsulate all PSOCK/FORK branching, eliminating ~120 lines of duplicated boilerplate across every parallel function.
 
@@ -556,13 +572,13 @@
 
 5. `warp_lda()` (snake_case) introduced as canonical name; `warpLDA()` retained as a deprecated alias.
 
-### BUG FIXES
+## BUG FIXES
 
 1. `calculate_similarity()` / `calculate_distance()`: `temp_matrix` undefined when `y` provided.
 2. `get_sec_master_files()`: `uniqueN()` called on a list instead of the bound data.table.
 3. `parse_corpus()`: `on.exit(spacy_finalize)` registered too late — moved to immediately after acquiring the function reference.
 
-### NOTES
+## NOTES
 
 1. **Breaking:** `future` and `future.apply` removed from `Imports`; `parallel` (base R) used instead.
 2. `glue` removed from `Imports`.
@@ -570,94 +586,94 @@
 
 ---
 
-## NLPstudio 0.2.0  (2025-10-01)
+# NLPstudio 0.2.0  (2025-10-01)
 
-### NOTES
+## NOTES
 
 1. Dependency overhaul: `topicmodels` moved to `Suggests`; `Imports` entries sorted alphabetically.
 2. Package logo updated.
 
 ---
 
-## NLPstudio 0.1.5  (2025-09-30)
+# NLPstudio 0.1.5  (2025-09-30)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `from_json_to_df()` refactored with internal helpers; JSON parsing switched from `jsonlite` to `RcppSimdJson::fload()`.
 2. Dynamic PSOCK scheduling via `clusterApplyLB()` across all four corpus-parallel functions.
 
-### NOTES
+## NOTES
 
 1. `foreach` removed from `Imports`.
 
 ---
 
-## NLPstudio 0.1.0  (2025-07-31)
+# NLPstudio 0.1.0  (2025-07-31)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `get_top_terms()` — extracts top-_n_ terms from φ in long or wide format.
 2. `plot_top_terms()` — faceted bar chart of per-topic top terms.
 
 ---
 
-## NLPstudio 0.0.7  (2025-07-29)
+# NLPstudio 0.0.7  (2025-07-29)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `warpLDA()` — WarpLDA topic model via **text2vec**; returns θ, φ, and the model object.
 2. `plot_dtw()` — faceted histogram of document-topic weight distributions.
 
 ---
 
-## NLPstudio 0.0.6  (2025-02-23)
+# NLPstudio 0.0.6  (2025-02-23)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `get_sec_master_files()` — reads and normalises SEC EDGAR master CSV files.
 
-### NOTES
+## NOTES
 
 1. Documentation switched to roxygen2 Markdown rendering.
 
 ---
 
-## NLPstudio 0.0.5  (2024-04-19)
+# NLPstudio 0.0.5  (2024-04-19)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `summarize_corpus()` — parallel corpus summarisation via `textstat_summary()`.
 
 ---
 
-## NLPstudio 0.0.4  (2024-04-18)
+# NLPstudio 0.0.4  (2024-04-18)
 
-### NEW FEATURES
+## NEW FEATURES
 
 1. `singularize_tokens()` — parallel plural-to-singular token conversion via **pluralize**.
 2. Package hex logo added.
 
 ---
 
-## NLPstudio 0.0.3  (2024-04-13)
+# NLPstudio 0.0.3  (2024-04-13)
 
-### NOTES
+## NOTES
 
 1. Structured console output via **cli** added across all functions.
 
 ---
 
-## NLPstudio 0.0.2  (2024-04-09)
+# NLPstudio 0.0.2  (2024-04-09)
 
-### NOTES
+## NOTES
 
 1. Minimum **quanteda** version raised to `>= 4.0.1`.
 
 ---
 
-## NLPstudio 0.0.1  (2024-04-08)
+# NLPstudio 0.0.1  (2024-04-08)
 
-### NEW FEATURES
+## NEW FEATURES
 
 First public release. Core functions: `from_json_to_df()`, `define_corpus()`, `tokenize_corpus()`, `reshape_corpus()`, `lookup_tokens()`, `parse_corpus()`, `calculate_readability()`, `calculate_similarity()`, `calculate_distance()`, `set_ff_industries()`, `get_json_files()` (deprecated v0.1.3). Bundled financial text dictionaries.
 

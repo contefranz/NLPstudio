@@ -8,6 +8,7 @@ NLPstudio.Rproj$
 ^cran-comments\.md$
 ^data-raw$
 ^pkgdown$
+^docs$
 ^_pkgdown\.yml$
 ^\.github$
 ^codecov\.yml$

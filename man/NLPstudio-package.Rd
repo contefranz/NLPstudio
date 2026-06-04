@@ -90,6 +90,15 @@ text analysis in the social sciences. While originally designed for SEC filing
 data, the framework generalizes to any structured document corpus within the
 \strong{quanteda} environment.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/contefranz/NLPstudio}
+  \item \url{https://contefranz.github.io/NLPstudio/}
+  \item Report bugs at \url{https://github.com/contefranz/NLPstudio/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Francesco Grossetti \email{francesco.grossetti@unibocconi.it} (\href{https://orcid.org/0000-0002-5130-7745}{ORCID}) [copyright holder]
 

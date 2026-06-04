@@ -49,8 +49,9 @@ backend on your machine.
 
 ## Public API Stability
 
-The `v0.9.7` release begins the API-freeze pass that leads to `v1.0.0`. From
-this point, the core output shapes are treated as public contracts: an
+The `v1.0.0-rc1` release candidate freezes the core topic-model output shapes
+for the public `v1.0.0` release. From this point, these shapes are treated as
+public contracts: an
 `nlp_topic_fit` stores the standardized model pieces, `evaluate_topic_model()`
 and `select_k_topics()` return long tables with stable metric columns,
 `assess_topic_stability()` returns matched-topic stability rows, and the topic

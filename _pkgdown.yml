@@ -1,0 +1,91 @@
+url: https://contefranz.github.io/NLPstudio/
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [github]
+
+home:
+  title: NLPstudio
+  description: Scalable text analysis and topic-model workflows for research in R.
+  sidebar: false
+
+articles:
+  - title: Workflows
+    navbar: Workflows
+    contents:
+      - topic-model-api
+      - corpus-workflow
+
+news:
+  cran_dates: false
+
+reference:
+  - title: Corpus Preparation
+    contents:
+      - from_json_to_df
+      - define_corpus
+      - tokenize_corpus
+      - singularize_tokens
+      - reshape_corpus
+      - lookup_tokens
+
+  - title: Document-Level Analysis
+    contents:
+      - summarize_corpus
+      - calculate_readability
+      - calculate_similarity
+      - calculate_distance
+      - parse_corpus
+
+  - title: Built-In Dictionaries
+    contents:
+      - data_dictionary_BozanicRoulstoneVanBuskirk_FLS
+      - data_dictionary_Cannon_Ling_Wang_Watanabe
+      - data_dictionary_Li_FLS
+      - data_dictionary_LoughranMcDonald_Complexity
+      - data_dictionary_SDG
+
+  - title: Topic Model API
+    contents:
+      - fit_topic_model
+      - as_nlp_topic_fit
+      - get_dtw
+      - get_tww
+      - get_top_terms
+      - predict_topic_model
+      - evaluate_topic_model
+      - select_k_topics
+      - summarize_k_selection
+      - assess_topic_stability
+      - summarize_topics
+      - get_representative_candidates
+
+  - title: Topic Model Plots and Backends
+    contents:
+      - plot_top_terms
+      - plot_dtw
+      - get_stm_topic_labels
+      - summarize_stm_topics
+      - estimate_stm_topic_effects
+      - get_topic_hyperparameters
+      - get_topic_embeddings
+      - get_term_embeddings
+      - plot_topic_embeddings
+
+  - title: OpTop Interoperability
+    contents:
+      - as_optop_weighted_dfm
+      - as_optop_input
+
+  - title: S3 Methods
+    contents:
+      - plot.nlp_k_selection
+      - print.nlp_k_selection
+      - print.nlp_k_selection_summary
+      - print.nlp_optop_input
+      - print.nlp_topic_fit
+      - print.nlp_topic_stability
