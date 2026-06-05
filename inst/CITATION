@@ -7,5 +7,6 @@ bibentry(
     "R package version",
     utils::packageDescription("NLPstudio")$Version
   ),
-  url = "https://contefranz.github.io/NLPstudio/"
+  url = "https://contefranz.github.io/NLPstudio/",
+  doi = "10.5281/zenodo.20556350"
 )
