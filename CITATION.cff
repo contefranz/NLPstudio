@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use NLPstudio in academic work, please cite it as below."
+type: software
+title: "NLPstudio: Tools for Social Science Text Analysis, Corpus Management, and Topic Modeling"
+abstract: >-
+  NLPstudio provides a streamlined and high-performance workflow for social
+  science text analysis with structured and unstructured corpora, including
+  corpus creation from JSON, tokenization, parsing, readability and similarity
+  measures, and a unified topic-modeling API across text2vec, topicmodels,
+  seededlda, stm, and topicmodels.etm.
+authors:
+  - given-names: Francesco
+    family-names: Grossetti
+    email: francesco.grossetti@unibocconi.it
+    orcid: "https://orcid.org/0000-0002-5130-7745"
+    affiliation: "Bocconi University"
+version: 1.0.1
+date-released: "2026-06-05"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/contefranz/NLPstudio"
+url: "https://contefranz.github.io/NLPstudio/"
+keywords:
+  - text-analysis
+  - topic-modeling
+  - natural-language-processing
+  - corpus
+  - quanteda
+  - r
