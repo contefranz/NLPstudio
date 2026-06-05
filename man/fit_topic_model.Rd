@@ -73,7 +73,8 @@ contains text or when it is supplied as a corpus.}
 arguments, \code{control$fit} for fitting arguments, and \code{control$optimizer}
 for ETM optimizer arguments.
 \itemize{
-\item \code{text2vec}: \code{control$model} is forwarded to LDA$initialize()\code{and}control$fit\verb{is forwarded to}LDA$fit_transform()\verb{; }control$optimizer`
+\item \code{text2vec}: \code{control$model} is forwarded to \code{LDA$initialize()} and
+\code{control$fit} is forwarded to \code{LDA$fit_transform()}; \code{control$optimizer}
 must be empty
 \item \code{topicmodels}: \code{control$model} must be empty and \code{control$fit} is passed
 as backend \verb{control =}; \code{control$optimizer} must be empty

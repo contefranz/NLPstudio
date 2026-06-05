@@ -1,3 +1,16 @@
+# NLPstudio 1.0.1  (2026-06-05)
+
+## DOCUMENTATION
+
+1. Audited and corrected inline code formatting across the documentation so that
+   code-like tokens (function calls, argument names, argument values, class
+   names, and column/field names) render as inline code, while narrative prose
+   and conceptual abbreviations are left as regular text. This improves
+   readability of the pkgdown site, particularly on mobile.
+
+2. Applied the pass consistently to roxygen documentation, the
+   `corpus-workflow` and `topic-model-api` vignettes, and the README.
+
 # NLPstudio 1.0.0  (2026-06-04)
 
 ## PUBLIC RELEASE

@@ -56,7 +56,7 @@ if (getRversion() >= "2.15.1") {
 #'   arguments, `control$fit` for fitting arguments, and `control$optimizer`
 #'   for ETM optimizer arguments.
 #'
-#'   - `text2vec`: `control$model` is forwarded to LDA$initialize()` and
+#'   - `text2vec`: `control$model` is forwarded to `LDA$initialize()` and
 #'     `control$fit` is forwarded to `LDA$fit_transform()`; `control$optimizer`
 #'     must be empty
 #'   - `topicmodels`: `control$model` must be empty and `control$fit` is passed
