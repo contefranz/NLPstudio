@@ -17,8 +17,9 @@ articles:
   - title: Workflows
     navbar: Workflows
     contents:
-      - topic-model-api
       - corpus-workflow
+      - topic-model-api
+      - choosing-k
 
 news:
   cran_dates: false

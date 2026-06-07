@@ -1,0 +1,335 @@
+---
+title: "Choosing the Number of Topics"
+subtitle: "Model Selection, Evaluation, and Stability"
+author: "by Francesco Grossetti"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Choosing the Number of Topics}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+has_topicmodels <- requireNamespace("topicmodels", quietly = TRUE)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = has_topicmodels
+)
+```
+
+Choosing the number of topics, `k`, is the hardest decision in applied topic
+modeling. It is a modeling choice, not a software argument: too few topics blur
+distinct themes together, too many split a single theme into near-duplicates, and
+there is no single oracle metric that settles the question on its own. The honest
+workflow is to fit a grid of candidate models, look at several complementary
+pieces of evidence, and check that the chosen model is stable enough to support
+the interpretation you intend to publish.
+
+This vignette shows how NLPstudio supports that workflow end to end. It assumes
+you have already read the [Topic Model API and Usage](topic-model-api.html)
+article, which introduces `fit_topic_model()`, the standardized DTW/TWW outputs,
+and the evaluation verbs. Here we focus specifically on selecting `k`: fitting a
+candidate grid, reading the selection evidence, evaluating a chosen model in
+depth, assessing seed stability, and running a formal statistical test for the
+optimal topic count.
+
+For a principled statistical answer to the question, NLPstudio is built to
+interoperate with the **OpTop** package and the chi-square optimal-topic test of
+Lewis and Grossetti (2022), published in the *Journal of Machine Learning
+Research*. That test is treated as a first-class part of the selection toolkit
+and is covered in its own section below.
+
+To keep package checks fast and reliable, only the **topicmodels** examples are
+evaluated. The OpTop section is shown as a non-evaluated template because OpTop is
+an external package.
+
+## A Real Corpus: Presidential Inaugural Addresses
+
+The examples use a real, public corpus that ships with **quanteda**:
+US presidential inaugural addresses. We restrict attention to the modern
+presidency (1933 onward) so the grid fits quickly while still giving the model
+enough material to find recognizable themes such as economic policy, national
+security, and civic values.
+
+Corpus preparation is covered in detail in the
+[Corpus Preparation and Text Analysis](corpus-workflow.html) article, so here we
+keep it compact: tokenize, lowercase, drop stopwords and very short tokens, and
+trim rare features so the vocabulary is stable across the candidate models.
+
+```{r corpus}
+library(NLPstudio)
+library(quanteda)
+library(data.table)
+
+inaugural <- corpus_subset(data_corpus_inaugural, Year >= 1933)
+
+toks <- tokens(
+  inaugural,
+  remove_punct = TRUE,
+  remove_numbers = TRUE,
+  remove_symbols = TRUE
+)
+toks <- tokens_tolower(toks)
+toks <- tokens_remove(toks, pattern = stopwords("en"))
+toks <- tokens_select(toks, min_nchar = 3)
+
+dfmat <- dfm(toks)
+dfmat <- dfm_trim(dfmat, min_termfreq = 5, min_docfreq = 2)
+
+dfmat
+```
+
+## What "Choosing K" Means
+
+Model-selection evidence for topic models comes from a few families of metrics,
+and each one captures a different facet of quality:
+
+- **Coherence** (`coherence_umass`, `coherence_npmi`) rewards models whose top
+  terms co-occur in the corpus. Higher coherence usually means more readable
+  topics.
+- **Exclusivity** rewards top terms that are distinctive to one topic rather than
+  shared across many. It guards against the failure mode where every topic is
+  dominated by the same generic words.
+- **Diversity** measures how much the top-term sets overlap across topics. Low
+  diversity is a warning sign of redundant topics, which often appears when `k`
+  is too large.
+- **Held-out perplexity** (`held_out_perplexity`) measures predictive fit on
+  documents the model did not see during training. It is a likelihood-based view
+  and frequently disagrees with the interpretability metrics, which is exactly
+  why it is worth looking at several at once.
+
+No single number is decisive. Coherence and predictive fit can point in opposite
+directions, and the right `k` is the one that best serves the research question.
+For a formal decision rule rather than a visual judgment call, the chi-square
+test of Lewis and Grossetti (2022) provides a statistical criterion for the
+optimal topic count; see the OpTop section below.
+
+## Fit a Grid of Candidate Models
+
+`select_k_topics()` fits one model per value of `k_grid` and returns the
+requested metrics in a single long-format selection table. We hold out a portion
+of the corpus so that `held_out_perplexity` is available alongside the
+interpretability metrics. This teaching corpus is deliberately small, so the
+held-out shard is small too; `select_k_topics()` warns about this, and the
+predictive numbers below should be read as indicative rather than precise. On a
+research-scale corpus the held-out metrics become far more stable.
+
+```{r select-k, warning=FALSE}
+k_selection <- select_k_topics(
+  dfmat,
+  engine  = "topicmodels",
+  model   = "lda",
+  method  = "Gibbs",
+  k_grid  = 4:8,
+  metrics = c("coherence_umass", "diversity", "exclusivity",
+              "held_out_perplexity"),
+  top_n   = 10L,
+  holdout = 0.2,
+  seed    = 42L,
+  control = list(fit = list(iter = 400L, burnin = 100L, thin = 1L))
+)
+
+k_selection
+```
+
+## Read the Selection Evidence
+
+The selection table follows the package-standard long schema. Every row carries
+the same columns regardless of which metric or engine produced it:
+
+- `metric` -- the metric name.
+- `level` -- `aggregate` for whole-model metrics, `topic` for per-topic metrics.
+- `topic_id` -- the standardized topic identifier, or `NA` for aggregate rows.
+- `value` -- the metric value.
+- `supported` -- whether the metric is available for this engine and model.
+
+Aggregate rows use `topic_id = NA` rather than dropping the column, which keeps
+joins, plots, and exports predictable. The `k` column identifies the candidate
+model.
+
+For a paper or appendix you usually want one row per candidate `k` with the
+aggregate evidence side by side. `summarize_k_selection()` builds that wide
+report and preserves the topic-level rows as an attribute when they are present.
+
+```{r selection-summary}
+k_report <- summarize_k_selection(k_selection)
+k_report
+```
+
+## Visualize the Trade-offs
+
+A plot often makes the trade-offs easier to read than a table. The `plot()`
+method for the selection object draws each aggregate metric against `k`, faceted
+by metric, so you can see where coherence peaks, where diversity starts to fall,
+and how predictive fit moves.
+
+```{r plot-selection, fig.width=7, fig.height=4.5}
+plot(k_selection)
+```
+
+Read these panels together rather than optimizing any one of them. A common
+pattern is that coherence and exclusivity favor a moderate `k` while perplexity
+keeps improving as `k` grows; the interpretable choice is usually the smallest
+`k` that captures the distinct themes without splitting them into redundant
+near-duplicates.
+
+## Evaluate a Chosen Model in Depth
+
+Once the grid points you toward a candidate, refit that single model and inspect
+it more closely. `evaluate_topic_model()` returns the same metrics as the grid,
+but with `level = "all"` it also reports the per-topic values, which is where you
+can spot a single incoherent or non-exclusive topic that an aggregate number
+would hide.
+
+```{r evaluate}
+fit <- fit_topic_model(
+  dfmat,
+  engine  = "topicmodels",
+  model   = "lda",
+  method  = "Gibbs",
+  k       = 6,
+  control = list(fit = list(seed = 42L, iter = 400L, burnin = 100L, thin = 1L))
+)
+
+evaluation <- evaluate_topic_model(
+  fit,
+  training = dfmat,
+  metrics  = c("coherence_umass", "diversity", "exclusivity"),
+  top_n    = 10L,
+  level    = "all"
+)
+
+evaluation
+```
+
+It also helps to read the topics themselves. `get_top_terms()` turns the chosen
+model into a compact, human-readable view that you can sanity-check against the
+metrics.
+
+```{r top-terms}
+get_top_terms(fit, n = 8, format = "wide")
+```
+
+## Assess Stability Across Seeds
+
+A model that changes substantially when you change the random seed is hard to
+defend as a stable research object. `assess_topic_stability()` makes that check
+explicit: it refits the same specification across several seeds, aligns
+vocabularies, matches topics across runs, and reports matched-topic cosine
+similarities. Because topic labels are arbitrary across runs, the matching step
+is what makes the comparison meaningful.
+
+```{r stability}
+stability <- assess_topic_stability(
+  dfmat,
+  engine  = "topicmodels",
+  model   = "lda",
+  method  = "Gibbs",
+  k       = 6,
+  seeds   = 1:4,
+  control = list(fit = list(iter = 400L, burnin = 100L, thin = 1L))
+)
+
+stability
+```
+
+Higher matched similarities mean the topic structure is reproducible across
+seeds. If stability is low at your preferred `k`, that is useful evidence: it may
+argue for a smaller `k`, more iterations, or a more constrained model before the
+topics are treated as fixed findings.
+
+## A Statistical Test for K: OpTop
+
+The metrics and stability checks above are diagnostic, but they still leave the
+final call to judgment. For a formal decision rule, the **OpTop** package
+implements the chi-square optimal-topic test of Lewis and Grossetti (2022). The
+test compares fitted LDA models against the document-level word distribution and
+returns a statistical criterion for the optimal number of topics, rather than a
+metric to eyeball.
+
+NLPstudio does not reimplement the test. Instead it prepares the exact objects
+OpTop expects and folds the result back into the same selection report. The
+bridge is intentionally narrow: OpTop is written for `LDA_VEM` objects from
+`topicmodels::LDA()`, so `as_optop_input()` requires a VEM grid fit with
+`return_fits = TRUE` and rejects other model classes.
+
+```{r optop-bridge, eval=FALSE}
+selection_vem <- select_k_topics(
+  dfmat,
+  engine      = "topicmodels",
+  model       = "lda",
+  method      = "VEM",
+  k_grid      = 4:8,
+  metrics     = c("diversity", "exclusivity"),
+  holdout     = 0,
+  return_fits = TRUE,
+  control     = list(fit = list(seed = 42L))
+)
+
+optop_input <- as_optop_input(
+  selection_vem,
+  weighted_dfm = as_optop_weighted_dfm(dfmat)
+)
+
+optop_result <- OpTop::optimal_topic(
+  lda_models   = optop_input$lda_models,
+  weighted_dfm = optop_input$weighted_dfm,
+  q     = 0.8,
+  alpha = 0.05,
+  do_plot = FALSE
+)
+```
+
+Passing the OpTop output back to `summarize_k_selection()` merges its columns
+into the selection report by `k`, so the statistical test and the
+interpretability metrics sit in one export-ready table.
+
+```{r optop-summary, eval=FALSE}
+k_report_optop <- summarize_k_selection(selection_vem, optop = optop_result)
+data.table::fwrite(k_report_optop, tempfile(fileext = ".csv"))
+```
+
+## Choosing a Final K
+
+There is no formula that turns this evidence into a single answer, but a
+defensible workflow looks like this:
+
+1. Use `select_k_topics()` to scan a grid and `plot()` the aggregate metrics to
+   find the region where coherence and exclusivity are strong and diversity has
+   not yet collapsed.
+2. Refit the leading candidates and read their per-topic metrics and top terms
+   with `evaluate_topic_model(level = "all")` and `get_top_terms()`.
+3. Confirm with `assess_topic_stability()` that the structure survives a change
+   of seed.
+4. Where a formal criterion is needed, run the OpTop chi-square test and report
+   it alongside the metrics via `summarize_k_selection()`.
+
+The goal is convergent evidence: a `k` that is coherent, exclusive, non-redundant,
+stable, and -- where you use it -- consistent with the statistical test.
+
+## API Map
+
+| Task | Primary function |
+|---|---|
+| Fit a grid of candidate models | `select_k_topics()` |
+| Report selection evidence | `summarize_k_selection()` |
+| Plot metrics against K | `plot()` on the selection object |
+| Evaluate a chosen model | `evaluate_topic_model()` |
+| Read topic top terms | `get_top_terms()` |
+| Assess seed stability | `assess_topic_stability()` |
+| Prepare OpTop inputs | `as_optop_weighted_dfm()`, `as_optop_input()` |
+
+## References
+
+Aletras, N., & Stevenson, M. (2013). Evaluating topic coherence using
+distributional semantics. _Proceedings of the 14th Conference of the European
+Chapter of the Association for Computational Linguistics_, 13-22.
+
+Lewis, C. M., & Grossetti, F. (2022).
+[A statistical approach for optimal topic model identification](https://www.jmlr.org/papers/volume23/19-297/19-297.pdf).
+_Journal of Machine Learning Research_, 23(58), 1-20.
+
+Mimno, D., Wallach, H., Talley, E., Leenders, M., & McCallum, A. (2011).
+Optimizing semantic coherence in topic models. _Proceedings of the 2011
+Conference on Empirical Methods in Natural Language Processing_, 262-272.

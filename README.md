@@ -1,7 +1,7 @@
 [![lifecycle](https://lifecycle.r-lib.org/articles/figures/lifecycle-stable.svg)](https://lifecycle.r-lib.org/)
 [![R-CMD-check](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/contefranz/NLPstudio/actions/workflows/R-CMD-check.yaml)
 [![codecov](https://codecov.io/gh/contefranz/NLPstudio/graph/badge.svg?token=P8P9KYGZ5F)](https://app.codecov.io/gh/contefranz/NLPstudio)
-[![release](https://img.shields.io/badge/release-v1.0.1-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
+[![release](https://img.shields.io/badge/release-v1.0.2-blue.svg)](https://github.com/contefranz/NLPstudio/releases)
 [![license](https://img.shields.io/badge/license-GPL--3-blue.svg)](https://en.wikipedia.org/wiki/GNU_General_Public_License)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20556350.svg)](https://doi.org/10.5281/zenodo.20556350)
 
@@ -27,16 +27,15 @@ The detailed reference manual and vignettes are published at
 
 ## Release Status
 
-NLPstudio `v1.0.0` is the first stable public release. The package is intended
-for reproducible social science text-analysis workflows, with stable output
-schemas for the core corpus and topic-model APIs. Repository archiving and DOI
-minting through Zenodo are handled from the public GitHub release.
+NLPstudio is a stable public release intended for reproducible social science
+text-analysis workflows, with frozen output schemas for the core corpus and
+topic-model APIs. Repository archiving and DOI minting through Zenodo are handled
+from each public GitHub release.
 
-The topic-model output schemas are frozen for `v1.0.0`: `nlp_topic_fit`,
-`nlp_k_selection`, `nlp_k_selection_summary`, `nlp_topic_stability`, topic
-summaries, STM topic summaries, and STM topic-effect tables. Evaluation and
-selection outputs retain the standard columns `metric`, `level`, `topic_id`,
-`value`, and `supported`; aggregate rows use `topic_id = NA`.
+The full output-schema contract for the topic-model API — the frozen result
+classes and the standardized evaluation/selection columns — is documented in the
+[Topic Model API](https://contefranz.github.io/NLPstudio/articles/topic-model-api.html)
+vignette under *Public API Stability*.
 
 ## Installation
 

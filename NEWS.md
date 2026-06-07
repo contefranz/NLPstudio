@@ -1,3 +1,32 @@
+# NLPstudio 1.0.2  (2026-06-07)
+
+## DOCUMENTATION
+
+1. Added a new vignette, `choosing-k` ("Choosing the Number of Topics"): a
+   dedicated guide to selecting the number of topics, covering `select_k_topics()`,
+   `summarize_k_selection()`, the selection `plot()` method, in-depth
+   `evaluate_topic_model()`, `assess_topic_stability()`, and the OpTop chi-square
+   test of Lewis and Grossetti (2022). It is worked end-to-end on a real corpus
+   (US presidential inaugural addresses).
+
+2. Fixed the rendered order of the pkgdown articles so that corpus preparation
+   precedes the topic-model API, followed by the new model-selection vignette.
+
+3. Trimmed the README so the release-status section no longer duplicates the
+   topic-model output-schema contract already documented in the `topic-model-api`
+   vignette and in `NEWS`.
+
+4. Consolidated the OpTop section of the `topic-model-api` vignette into a pointer
+   to the new `choosing-k` vignette, removing the duplicated worked example, and
+   aligned the package-level description wording with `DESCRIPTION`.
+
+## NOTES
+
+1. Added `CITATION.cff` to `.Rbuildignore` so the GitHub/Zenodo citation file is
+   excluded from the build, clearing the two `R CMD check` NOTEs about a
+   non-standard top-level CITATION file. R's `citation()` continues to use
+   `inst/CITATION`.
+
 # NLPstudio 1.0.1  (2026-06-05)
 
 ## DOCUMENTATION
