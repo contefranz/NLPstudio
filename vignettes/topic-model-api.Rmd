@@ -289,6 +289,12 @@ argument. `select_k_topics()` makes that decision easier to inspect by fitting a
 grid of candidate topic counts and returning the requested metrics in one
 selection table.
 
+This section is a short tour of the verb. The dedicated
+[Choosing the Number of Topics](choosing-k.html) article covers the full
+selection workflow on a real corpus: reading the evidence, plotting the
+trade-offs, evaluating a chosen model in depth, assessing seed stability, and
+running the OpTop statistical test for `k`.
+
 The default behavior remains the simple path: fit each value of `k` once and
 evaluate it. When `stability_seeds` is supplied, each candidate `k` is also
 refit across those seeds. The selection table then includes aggregate stability,
@@ -462,61 +468,22 @@ component will then fail with the same messages used by current partial
 
 ## Use OpTop with NLPstudio Fits
 
-Some research workflows use the **OpTop** package to select the number of topics
-with the chi-square testing approach of Lewis and Grossetti (2022). NLPstudio
-does not reimplement that test. Instead, it prepares the exact objects that
-`OpTop::optimal_topic()` expects: an ordered list of raw **topicmodels** LDA VEM
-fits and a DFM weighted to document-level word proportions.
+Some research workflows select the number of topics with the chi-square test of
+Lewis and Grossetti (2022), implemented in the **OpTop** package. NLPstudio does
+not reimplement that test; it prepares the exact objects `OpTop::optimal_topic()`
+expects through `as_optop_weighted_dfm()` and `as_optop_input()`, and folds the
+result back into `summarize_k_selection()`.
 
-This bridge is intentionally narrow. Current **OpTop** expects `LDA_VEM` objects
-from `topicmodels::LDA()`, so `as_optop_input()` rejects Gibbs LDA, CTM,
-**text2vec**, **seededlda**, and ETM fits. That strictness is useful: it keeps
-the statistical test tied to the model class for which OpTop was written.
+The bridge is intentionally narrow. **OpTop** expects `LDA_VEM` objects from
+`topicmodels::LDA()`, so `as_optop_input()` requires a VEM grid fit with
+`return_fits = TRUE` and rejects Gibbs LDA, CTM, **text2vec**, **seededlda**, and
+ETM fits. That strictness keeps the statistical test tied to the model class for
+which OpTop was written.
 
-```{r optop-bridge, eval=FALSE}
-selection <- select_k_topics(
-  dfm,
-  engine = "topicmodels",
-  model = "lda",
-  method = "VEM",
-  k_grid = 2:5,
-  metrics = c("diversity", "exclusivity"),
-  holdout = 0,
-  return_fits = TRUE,
-  control = list(fit = list(seed = 1))
-)
-
-optop_input <- as_optop_input(
-  selection,
-  weighted_dfm = as_optop_weighted_dfm(dfm)
-)
-
-OpTop::optimal_topic(
-  lda_models = optop_input$lda_models,
-  weighted_dfm = optop_input$weighted_dfm,
-  q = 0.8,
-  alpha = 0.05,
-  do_plot = FALSE
-)
-```
-
-If you run **OpTop** externally, pass the returned table back to
-`summarize_k_selection()` to build one export-ready selection report. NLPstudio
-parses the common **OpTop** output columns `topic`, `OpTop`, and `pval`, then
-merges them by `k`.
-
-```{r optop-summary, eval=FALSE}
-optop_result <- OpTop::optimal_topic(
-  lda_models = optop_input$lda_models,
-  weighted_dfm = optop_input$weighted_dfm,
-  q = 0.8,
-  alpha = 0.05,
-  do_plot = FALSE
-)
-
-k_report <- summarize_k_selection(selection, optop = optop_result)
-data.table::fwrite(k_report, tempfile(fileext = ".csv"))
-```
+A complete, runnable OpTop example — including how its output merges into the
+selection report — lives in the
+[Choosing the Number of Topics](choosing-k.html) article, the dedicated guide to
+selecting `k`.
 
 ## Backend Portability
 

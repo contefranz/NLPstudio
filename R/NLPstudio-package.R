@@ -3,8 +3,9 @@
 #' @description
 #' **NLPstudio** is an R package that provides a modular and high-performance
 #' framework for conducting scalable natural language processing (NLP) on both
-#' structured and unstructured corpora, with particular support for financial
-#' disclosures such as SEC EDGAR filings.
+#' structured and unstructured corpora. It is intended as a general toolkit for
+#' social science text analysis; SEC EDGAR filings are supported as an important
+#' applied workflow rather than the package's only target.
 #' 
 #' Built around the **[quanteda](https://quanteda.io/)** ecosystem,
 #' the package includes parallelized workflows for transforming raw text into
