@@ -639,15 +639,24 @@ stm_effects <- estimate_stm_topic_effects(
 stm_effects
 ```
 
-This STM support is intentionally bounded. STM prevalence covariates are
-supported because each topic still has one topic-word distribution and the
-standardized TWW contract remains valid. STM content covariates are not
-supported: they allow word distributions to vary by covariate level,
-which means a single ordinary TWW row per topic would hide part of the fitted
-model. Prediction for STM prevalence fits is also not inferred automatically,
-because new-document prediction would need explicit new-document covariate
-handling. In those cases, NLPstudio returns a clear error rather than silently
-guessing.
+### STM limitations
+
+STM support is intentionally bounded so the standardized outputs stay honest.
+Two limitations are worth stating explicitly:
+
+- **Prevalence covariates: supported.** Each topic still has a single
+  topic-word distribution, so the standardized TWW contract remains valid and
+  `estimate_stm_topic_effects()` reports prevalence effects.
+- **Content covariates: not supported.** They let word distributions vary by
+  covariate level, so a single ordinary TWW row per topic would hide part of the
+  fitted model. NLPstudio rejects content covariates rather than returning a TWW
+  that misrepresents the fit.
+- **Prediction for prevalence fits: not inferred automatically.** New-document
+  prediction would need explicit new-document covariate handling, so NLPstudio
+  returns a clear error instead of silently guessing; use
+  `stm::fitNewDocuments()` directly when you need it.
+
+These are deliberate design choices for the current release, not defects.
 
 ## Optional ETM Extensions
 

@@ -171,6 +171,65 @@ The same pattern works with the other bundled dictionaries, including firm
 complexity, corporate social responsibility, sustainable development goals, and
 the Feng Li forward-looking statement dictionary.
 
+## Preprocessing the Tokens
+
+Beyond singularization, NLPstudio wraps the most common token-preprocessing
+steps so the workflow stays in one place and keeps the same parallel controls
+(`ncores`, `nchunks`, `socket`).
+
+`ngram_tokens()` builds n-grams (and skip-grams) from a tokens object.
+
+```{r ngrams}
+bigrams <- ngram_tokens(toks, n = 2, ncores = 1)
+quanteda::topfeatures(quanteda::dfm(bigrams), 8)
+```
+
+Rather than fixing phrases by hand, `detect_collocations()` scores candidate
+multiword expressions, and `compound_tokens()` binds the ones you keep into
+single tokens. The two functions compose directly.
+
+```{r collocations}
+colls <- detect_collocations(toks, size = 2, min_count = 3)
+head(colls, 5)
+
+toks_comp <- compound_tokens(toks, pattern = head(colls, 10), ncores = 1)
+```
+
+`stem_tokens()` applies the Snowball stemmer (many languages), reducing related
+word forms to a common stem.
+
+```{r stem}
+stemmed <- stem_tokens(toks, ncores = 1)
+quanteda::topfeatures(quanteda::dfm(stemmed), 8)
+```
+
+`lemmatize_tokens()` maps tokens to lemmas. The dependency-free `"lookup"` engine
+applies a user-supplied lemma map; the optional `"spacy"` engine derives lemmas
+with **spacyr** (see [parse_corpus()]).
+
+```{r lemmatize-lookup}
+lemma_map <- data.frame(
+  token = c("companies", "risks", "costs", "controls"),
+  lemma = c("company", "risk", "cost", "control")
+)
+lemmatized <- lemmatize_tokens(toks, engine = "lookup", lemma = lemma_map)
+quanteda::topfeatures(quanteda::dfm(lemmatized), 8)
+```
+
+```{r lemmatize-spacy, eval=FALSE}
+# Requires a working spaCy installation; see parse_corpus().
+spacyr::spacy_initialize(model = "en_core_web_sm")
+lemmatize_tokens(toks, engine = "spacy")
+```
+
+Finally, `weight_dfm()` exposes TF-IDF and the other quanteda weighting schemes
+on a dfm.
+
+```{r weight}
+tfidf <- weight_dfm(dfmat, scheme = "tfidf")
+tfidf
+```
+
 ## Reshape and Summarize the Corpus
 
 `reshape_corpus()` changes the document unit. For example, item-level documents
@@ -279,6 +338,12 @@ The non-topic-model API is designed to be composable:
 | Tokenize text | `tokenize_corpus()` |
 | Singularize tokens | `singularize_tokens()` |
 | Apply dictionaries | `lookup_tokens()` |
+| Build n-grams | `ngram_tokens()` |
+| Detect collocations | `detect_collocations()` |
+| Compound phrases | `compound_tokens()` |
+| Stem tokens | `stem_tokens()` |
+| Lemmatize tokens | `lemmatize_tokens()` |
+| Weight a dfm | `weight_dfm()` |
 | Reshape documents | `reshape_corpus()` |
 | Summarize corpus | `summarize_corpus()` |
 | Compute readability | `calculate_readability()` |

@@ -34,6 +34,15 @@ reference:
       - reshape_corpus
       - lookup_tokens
 
+  - title: Token Preprocessing
+    contents:
+      - ngram_tokens
+      - detect_collocations
+      - compound_tokens
+      - stem_tokens
+      - lemmatize_tokens
+      - weight_dfm
+
   - title: Document-Level Analysis
     contents:
       - summarize_corpus
