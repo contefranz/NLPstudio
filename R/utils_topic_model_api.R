@@ -1453,11 +1453,30 @@
 #'
 #' @keywords internal
 #' @noRd
+#' Validate a single TRUE/FALSE cache flag
+#'
+#' Shared validator for `return_dtw`/`return_tww` arguments on the adopt methods,
+#' matching the checks used by `fit_topic_model()`.
+#'
+#' @keywords internal
+#' @noRd
+.validate_topic_cache_flag <- function(value, name) {
+  if (!is.logical(value) || length(value) != 1L || is.na(value)) {
+    stop(sprintf("%s must be a single TRUE/FALSE value.", name), call. = FALSE)
+  }
+  invisible(value)
+}
+
 .dtw_matrix_from_matrix <- function(x, doc_ids = NULL) {
   mat <- as.matrix(x)
-  rownames(mat) <- .matrix_doc_ids(mat, fallback = doc_ids)
-  colnames(mat) <- .topic_ids(ncol(mat))
-  storage.mode(mat) <- "double"
+  # Compute names before mutating; then set dimnames in a single copy-on-modify
+  # step and coerce storage only when needed, to avoid duplicating large matrices.
+  row_ids <- .matrix_doc_ids(mat, fallback = doc_ids)
+  col_ids <- .topic_ids(ncol(mat))
+  if (!is.double(mat)) {
+    storage.mode(mat) <- "double"
+  }
+  dimnames(mat) <- list(row_ids, col_ids)
   mat
 }
 
@@ -1479,9 +1498,13 @@
     term_names <- paste0("term", seq_len(ncol(mat)))
   }
 
-  rownames(mat) <- .topic_ids(nrow(mat))
-  colnames(mat) <- term_names
-  storage.mode(mat) <- "double"
+  # Set names in a single copy-on-modify step and coerce storage only when
+  # needed, to avoid duplicating large topic-word matrices (e.g. bigram models).
+  row_ids <- .topic_ids(nrow(mat))
+  if (!is.double(mat)) {
+    storage.mode(mat) <- "double"
+  }
+  dimnames(mat) <- list(row_ids, term_names)
   mat
 }
 
@@ -1494,7 +1517,6 @@
 #' @noRd
 .etm_beta_tww <- function(model_object, term_names = NULL) {
   beta <- as.matrix(model_object, type = "beta")
-  beta <- as.matrix(beta)
 
   if (is.null(term_names)) {
     term_names <- rownames(beta)
