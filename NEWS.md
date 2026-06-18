@@ -1,3 +1,30 @@
+# NLPstudio 1.1.0  (2026-06-18)
+
+## NEW FEATURES
+
+1. Added a token-preprocessing layer so common steps stay inside the NLPstudio
+   API instead of dropping down to raw **quanteda**. All helpers are
+   parallel-aware and follow the package's `ncores`/`nchunks`/`socket`
+   conventions:
+   - `ngram_tokens()` builds n-grams and skip-grams.
+   - `detect_collocations()` scores candidate multiword expressions and returns
+     an export-ready table.
+   - `compound_tokens()` binds phrases or detected collocations into single
+     tokens, and composes with `detect_collocations()`.
+   - `stem_tokens()` applies the Snowball stemmer, with multilingual support.
+   - `lemmatize_tokens()` maps tokens to lemmas through a dependency-free lookup
+     map or the optional **spacyr** backend.
+   - `weight_dfm()` applies TF-IDF and the other **quanteda** weighting schemes.
+
+## DOCUMENTATION
+
+1. Extended the `corpus-workflow` vignette with a "Preprocessing the Tokens"
+   section demonstrating the new helpers end to end.
+
+2. Clarified the structural topic model (STM) limitations in the
+   `topic-model-api` vignette: prevalence covariates are supported, while content
+   covariates and automatic prediction for prevalence fits are intentionally not.
+
 # NLPstudio 1.0.2  (2026-06-07)
 
 ## DOCUMENTATION
