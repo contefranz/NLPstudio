@@ -528,7 +528,7 @@ test_that("backend-control sanitizer summarizes additional object families", {
 test_that("representative candidates and topic fit printing cover fallback branches", {
   empty_dtw <- data.table::data.table(doc_id = character(), Topic001 = numeric())
   empty <- get_representative_candidates(empty_dtw)
-  expect_named(empty, c("doc_id", "Topic001", "topic_max_id", "topic_max_int",
+  expect_named(empty, c("doc_id", "topic_max_id", "topic_max_int",
                         "topic_max_value", "candidate_band", "topic_rank"))
 
   fit <- structure(
