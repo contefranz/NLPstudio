@@ -1789,6 +1789,94 @@
   x[]
 }
 
+#' Obtain the DTW matrix without building the wide table
+#'
+#' Returns the standardized D x K document-topic matrix (`Topic###` colnames,
+#' document rownames) for memory-light dominant-topic computation. A cached
+#' `nlp_topic_fit` DTW is returned as-is (no copy); otherwise the matrix is
+#' reconstructed from the backend model object. Mirrors the dispatch of
+#' `.extract_dtw_table()` but avoids materializing the wide data.table.
+#'
+#' @keywords internal
+#' @noRd
+.fit_dtw_matrix <- function(x) {
+  if (inherits(x, "nlp_topic_fit")) {
+    if (!is.null(x$dtw)) {
+      return(x$dtw)
+    }
+    if (identical(x$engine, "text2vec")) {
+      stop(
+        "This text2vec fit does not contain cached DTW. Refit with return_dtw = TRUE.",
+        call. = FALSE
+      )
+    }
+    if (identical(x$engine, "topicmodels.etm")) {
+      stop(
+        "This ETM fit does not contain cached DTW. Refit with return_dtw = TRUE.",
+        call. = FALSE
+      )
+    }
+    return(.fit_dtw_matrix(x$model_object))
+  }
+
+  if (methods::is(x, "TopicModel")) {
+    return(.dtw_matrix_from_matrix(x@gamma, doc_ids = .topicmodels_doc_ids(x)))
+  }
+  if (inherits(x, "textmodel")) {
+    return(.dtw_matrix_from_matrix(x$theta, doc_ids = .seededlda_doc_ids(x)))
+  }
+  if (.is_stm_object(x)) {
+    return(.dtw_matrix_from_matrix(x$theta, doc_ids = .stm_doc_ids(x)))
+  }
+
+  # Fallback for an existing DTW table or other supported input: matrixize once.
+  dt <- .extract_dtw_table(x)
+  topic_cols <- .find_topic_columns(dt, id_col = "doc_id")
+  mat <- as.matrix(dt[, topic_cols, with = FALSE])
+  rownames(mat) <- as.character(dt$doc_id)
+  mat
+}
+
+#' Compact dominant-topic table for representative candidates
+#'
+#' Computes each document's dominant topic and weight directly from the DTW
+#' matrix in O(D) memory, without materializing the wide DTW data.table or its
+#' transient copies.
+#'
+#' @keywords internal
+#' @noRd
+.representative_candidates_base <- function(x) {
+  mat <- .fit_dtw_matrix(x)
+
+  topic_cols <- colnames(mat)
+  if (is.null(topic_cols)) {
+    topic_cols <- .topic_ids(ncol(mat))
+  }
+  topic_ints <- as.integer(sub("^Topic", "", topic_cols))
+
+  doc_ids <- rownames(mat)
+  if (is.null(doc_ids)) {
+    doc_ids <- as.character(seq_len(nrow(mat)))
+  }
+
+  if (nrow(mat) == 0L) {
+    return(data.table::data.table(
+      doc_id = character(),
+      topic_max_id = character(),
+      topic_max_int = integer(),
+      topic_max_value = numeric()
+    ))
+  }
+
+  max_idx <- max.col(mat, ties.method = "first")
+  data.table::data.table(
+    doc_id = as.character(doc_ids),
+    topic_max_id = topic_cols[max_idx],
+    topic_max_int = topic_ints[max_idx],
+    topic_max_value = mat[cbind(seq_len(nrow(mat)), max_idx)]
+  )
+}
+
 #' Extract docvars from model input
 #'
 #' Builds a compact document-variable table aligned to fitted document IDs.

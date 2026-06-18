@@ -10,6 +10,7 @@ get_representative_candidates(
   topics = NULL,
   docvars = FALSE,
   include_text = FALSE,
+  top_n = NULL,
   quantile_probs = c(0.25, 0.5, 0.75),
   labels = c("VLOW", "LOW", "HIGH", "VHIGH"),
   doc_id_col = "doc_id",
@@ -34,6 +35,11 @@ onto the returned DTW table? Defaults to \code{FALSE}.}
 \item{include_text}{Should a \code{text} column be attached when a text-bearing
 \code{doc_data} source is available? Defaults to \code{FALSE}. When \code{TRUE} but no
 text-bearing \code{doc_data} is available, the function emits a warning.}
+
+\item{top_n}{Optional integer. When supplied, keep only the \code{top_n}
+highest-ranked documents within each dominant topic. Defaults to \code{NULL},
+which returns every document. Useful for extracting a handful of exemplar
+documents per topic on large corpora.}
 
 \item{quantile_probs}{Numeric vector of cumulative probabilities used to form
 candidate bands within each dominant topic. Defaults to quartiles:
