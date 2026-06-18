@@ -28,10 +28,19 @@ as_nlp_topic_fit(x, ...)
   doc_data = NULL,
   control = list(),
   warn_partial = TRUE,
+  return_dtw = TRUE,
+  return_tww = TRUE,
   ...
 )
 
-\method{as_nlp_topic_fit}{TopicModel}(x, docvars = NULL, doc_data = NULL, ...)
+\method{as_nlp_topic_fit}{TopicModel}(
+  x,
+  docvars = NULL,
+  doc_data = NULL,
+  return_dtw = TRUE,
+  return_tww = TRUE,
+  ...
+)
 
 \method{as_nlp_topic_fit}{LDA_Gibbs}(x, docvars = NULL, doc_data = NULL, ...)
 
@@ -39,7 +48,15 @@ as_nlp_topic_fit(x, ...)
 
 \method{as_nlp_topic_fit}{CTM_VEM}(x, docvars = NULL, doc_data = NULL, ...)
 
-\method{as_nlp_topic_fit}{textmodel}(x, model = NULL, docvars = NULL, doc_data = NULL, ...)
+\method{as_nlp_topic_fit}{textmodel}(
+  x,
+  model = NULL,
+  docvars = NULL,
+  doc_data = NULL,
+  return_dtw = TRUE,
+  return_tww = TRUE,
+  ...
+)
 
 \method{as_nlp_topic_fit}{textmodel_lda}(x, model = NULL, docvars = NULL, doc_data = NULL, ...)
 
@@ -52,10 +69,20 @@ as_nlp_topic_fit(x, ...)
   doc_data = NULL,
   control = list(),
   warn_partial = TRUE,
+  return_dtw = TRUE,
+  return_tww = TRUE,
   ...
 )
 
-\method{as_nlp_topic_fit}{STM}(x, doc_ids = NULL, docvars = NULL, doc_data = NULL, ...)
+\method{as_nlp_topic_fit}{STM}(
+  x,
+  doc_ids = NULL,
+  docvars = NULL,
+  doc_data = NULL,
+  return_dtw = TRUE,
+  return_tww = TRUE,
+  ...
+)
 
 \method{as_nlp_topic_fit}{default}(x, ...)
 }
@@ -84,6 +111,13 @@ the old model used non-default WarpLDA priors.}
 
 \item{warn_partial}{Logical. Warn when \code{theta} or \code{phi} cannot be recovered.
 Defaults to \code{TRUE}.}
+
+\item{return_dtw, return_tww}{Logical. Should the standardized document-topic
+weights (DTW) and topic-word weights (TWW) be materialized and cached on the
+converted object? Both default to \code{TRUE}. Set \code{return_tww = FALSE} to avoid
+densifying very large topic-word matrices (for example n-gram models) at
+conversion time; \code{get_tww()} and \code{get_dtw()} then reconstruct on demand from
+the retained model object. Mirrors the same arguments on \code{\link[=fit_topic_model]{fit_topic_model()}}.}
 
 \item{model}{Optional model family override for raw \strong{seededlda} objects.
 Use \code{"seqlda"} for sequential LDA fits, which are not reliably

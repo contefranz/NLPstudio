@@ -1,3 +1,25 @@
+# NLPstudio 1.1.1  (2026-06-18)
+
+## NEW FEATURES
+
+1. `as_nlp_topic_fit()` gained `return_dtw` and `return_tww` arguments (both
+   default `TRUE`), mirroring `fit_topic_model()`. Setting `return_tww = FALSE`
+   skips materializing the standardized topic-word matrix at adoption, which
+   avoids large memory spikes when converting models with very large
+   vocabularies (for example n-gram models). `get_tww()` and `get_dtw()`
+   reconstruct the tables on demand from the retained model object. The flags
+   apply to every adopted backend: topicmodels, seededlda, stm, and text2vec.
+
+## CHANGES
+
+1. Reduced peak memory when standardizing document-topic (DTW) and topic-word
+   (TWW) matrices during conversion and extraction: the builders now set
+   `dimnames` in a single copy-on-modify step and coerce storage only when
+   needed, instead of triggering several full copies of large matrices. This
+   also benefits `fit_topic_model()`, which shares the same builders.
+
+2. Removed a redundant matrix copy in the ETM topic-word extractor.
+
 # NLPstudio 1.1.0  (2026-06-18)
 
 ## NEW FEATURES
