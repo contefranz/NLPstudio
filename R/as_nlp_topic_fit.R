@@ -63,6 +63,12 @@ as_nlp_topic_fit.nlp_topic_fit <- function(x, ...) {
 #'   the old model used non-default WarpLDA priors.
 #' @param warn_partial Logical. Warn when `theta` or `phi` cannot be recovered.
 #'   Defaults to `TRUE`.
+#' @param return_dtw,return_tww Logical. Should the standardized document-topic
+#'   weights (DTW) and topic-word weights (TWW) be materialized and cached on the
+#'   converted object? Both default to `TRUE`. Set `return_tww = FALSE` to avoid
+#'   densifying very large topic-word matrices (for example n-gram models) at
+#'   conversion time; `get_tww()` and `get_dtw()` then reconstruct on demand from
+#'   the retained model object. Mirrors the same arguments on [fit_topic_model()].
 #'
 #' @examplesIf interactive()
 #' old <- readRDS("legacy-warp-lda-output.rds")
@@ -78,6 +84,7 @@ as_nlp_topic_fit.nlp_topic_fit <- function(x, ...) {
 as_nlp_topic_fit.list <- function(x, k = NULL, doc_ids = NULL, vocab = NULL,
                                   docvars = NULL, doc_data = NULL,
                                   control = list(), warn_partial = TRUE,
+                                  return_dtw = TRUE, return_tww = TRUE,
                                   ...) {
   if (!.is_legacy_warp_lda_output(x)) {
     stop(
@@ -96,6 +103,8 @@ as_nlp_topic_fit.list <- function(x, k = NULL, doc_ids = NULL, vocab = NULL,
     doc_data = doc_data,
     control = control,
     warn_partial = warn_partial,
+    return_dtw = return_dtw,
+    return_tww = return_tww,
     allow_doc_ids_without_theta = FALSE,
     missing_theta_message = "Legacy WarpLDA object does not contain theta; converted fit will not contain cached DTW.",
     missing_phi_message = "Legacy WarpLDA object does not contain recoverable phi; converted fit will not contain cached TWW.",
@@ -105,18 +114,28 @@ as_nlp_topic_fit.list <- function(x, k = NULL, doc_ids = NULL, vocab = NULL,
 
 #' @rdname as_nlp_topic_fit
 #' @export
-as_nlp_topic_fit.TopicModel <- function(x, docvars = NULL, doc_data = NULL, ...) {
+as_nlp_topic_fit.TopicModel <- function(x, docvars = NULL, doc_data = NULL,
+                                        return_dtw = TRUE, return_tww = TRUE, ...) {
   if (!isS4(x)) {
     stop(
       "TopicModel conversion currently supports S4 objects from the topicmodels package.",
       call. = FALSE
     )
   }
+  .validate_topic_cache_flag(return_dtw, "return_dtw")
+  .validate_topic_cache_flag(return_tww, "return_tww")
   model <- .topicmodels_adopt_model_name(x)
   method <- .topicmodels_adopt_method_name(x)
-  dtw <- .dtw_matrix_from_matrix(x@gamma, doc_ids = .topicmodels_doc_ids(x))
-  tww <- .tww_matrix_from_matrix(x@beta, term_names = x@terms, log_scale = TRUE)
-  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = rownames(dtw))
+  doc_ids <- .topicmodels_doc_ids(x)
+  dtw <- if (return_dtw) .dtw_matrix_from_matrix(x@gamma, doc_ids = doc_ids) else NULL
+  tww <- if (return_tww) {
+    .tww_matrix_from_matrix(x@beta, term_names = x@terms, log_scale = TRUE)
+  } else {
+    NULL
+  }
+  fit_doc_ids <- if (!is.null(dtw)) rownames(dtw) else doc_ids
+  vocab <- if (!is.null(tww)) colnames(tww) else as.character(x@terms)
+  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = fit_doc_ids)
   doc_data <- .normalize_doc_data_table(
     doc_data,
     include_text = TRUE,
@@ -129,8 +148,8 @@ as_nlp_topic_fit.TopicModel <- function(x, docvars = NULL, doc_data = NULL, ...)
     model_object = x,
     dtw = dtw,
     tww = tww,
-    doc_ids = rownames(dtw),
-    vocab = colnames(tww),
+    doc_ids = fit_doc_ids,
+    vocab = vocab,
     docvars = docvars,
     doc_data = doc_data,
     hyperparameters = .topicmodels_hyperparameters(x, model, x@k, method),
@@ -164,11 +183,17 @@ as_nlp_topic_fit.CTM_VEM <- function(x, docvars = NULL, doc_data = NULL, ...) {
 #' @rdname as_nlp_topic_fit
 #' @export
 as_nlp_topic_fit.textmodel <- function(x, model = NULL, docvars = NULL,
-                                       doc_data = NULL, ...) {
+                                       doc_data = NULL,
+                                       return_dtw = TRUE, return_tww = TRUE, ...) {
+  .validate_topic_cache_flag(return_dtw, "return_dtw")
+  .validate_topic_cache_flag(return_tww, "return_tww")
   model <- .seededlda_adopt_model_name(x, model)
-  dtw <- .dtw_matrix_from_matrix(x$theta, doc_ids = .seededlda_doc_ids(x))
-  tww <- .tww_matrix_from_matrix(x$phi, term_names = colnames(x$phi))
-  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = rownames(dtw))
+  doc_ids <- .seededlda_doc_ids(x)
+  dtw <- if (return_dtw) .dtw_matrix_from_matrix(x$theta, doc_ids = doc_ids) else NULL
+  tww <- if (return_tww) .tww_matrix_from_matrix(x$phi, term_names = colnames(x$phi)) else NULL
+  fit_doc_ids <- if (!is.null(dtw)) rownames(dtw) else doc_ids
+  vocab <- if (!is.null(tww)) colnames(tww) else colnames(x$phi)
+  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = fit_doc_ids)
   doc_data <- .normalize_doc_data_table(
     doc_data,
     include_text = TRUE,
@@ -181,8 +206,8 @@ as_nlp_topic_fit.textmodel <- function(x, model = NULL, docvars = NULL,
     model_object = x,
     dtw = dtw,
     tww = tww,
-    doc_ids = rownames(dtw),
-    vocab = colnames(tww),
+    doc_ids = fit_doc_ids,
+    vocab = vocab,
     docvars = docvars,
     doc_data = doc_data,
     hyperparameters = .topic_hyperparameters_table(
@@ -222,7 +247,8 @@ as_nlp_topic_fit.textmodel_lda <- function(x, model = NULL, docvars = NULL,
 as_nlp_topic_fit.WarpLDA <- function(x, theta = NULL, doc_ids = NULL,
                                      vocab = NULL, docvars = NULL,
                                      doc_data = NULL, control = list(),
-                                     warn_partial = TRUE, ...) {
+                                     warn_partial = TRUE,
+                                     return_dtw = TRUE, return_tww = TRUE, ...) {
   .as_text2vec_warp_nlp_topic_fit(
     model_object = x,
     theta = theta,
@@ -234,6 +260,8 @@ as_nlp_topic_fit.WarpLDA <- function(x, theta = NULL, doc_ids = NULL,
     doc_data = doc_data,
     control = control,
     warn_partial = warn_partial,
+    return_dtw = return_dtw,
+    return_tww = return_tww,
     allow_doc_ids_without_theta = TRUE,
     missing_theta_message = "Raw text2vec WarpLDA objects do not retain DTW; pass the fit_transform() output via 'theta' to cache DTW.",
     missing_phi_message = "Raw text2vec WarpLDA object does not contain recoverable TWW.",
@@ -244,12 +272,21 @@ as_nlp_topic_fit.WarpLDA <- function(x, theta = NULL, doc_ids = NULL,
 #' @rdname as_nlp_topic_fit
 #' @export
 as_nlp_topic_fit.STM <- function(x, doc_ids = NULL, docvars = NULL,
-                                 doc_data = NULL, ...) {
-  tww <- .stm_tww_matrix(x)
-  doc_ids <- .stm_doc_ids(x, doc_ids = doc_ids)
-  dtw <- .dtw_matrix_from_matrix(x$theta, doc_ids = doc_ids)
-  tww <- .tww_matrix_from_matrix(tww, term_names = x$vocab)
-  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = rownames(dtw))
+                                 doc_data = NULL,
+                                 return_dtw = TRUE, return_tww = TRUE, ...) {
+  .validate_topic_cache_flag(return_dtw, "return_dtw")
+  .validate_topic_cache_flag(return_tww, "return_tww")
+  # Reject content-covariate STMs up front, regardless of return_tww, so the
+  # documented limitation is enforced at conversion (this check is cheap).
+  if (is.null(x$beta$logbeta) || length(x$beta$logbeta) != 1L) {
+    stop(.stm_content_covariate_error(), call. = FALSE)
+  }
+  resolved_doc_ids <- .stm_doc_ids(x, doc_ids = doc_ids)
+  dtw <- if (return_dtw) .dtw_matrix_from_matrix(x$theta, doc_ids = resolved_doc_ids) else NULL
+  tww <- if (return_tww) .tww_matrix_from_matrix(.stm_tww_matrix(x), term_names = x$vocab) else NULL
+  fit_doc_ids <- if (!is.null(dtw)) rownames(dtw) else resolved_doc_ids
+  vocab <- if (!is.null(tww)) colnames(tww) else as.character(x$vocab)
+  docvars <- .legacy_warp_docvars_table(docvars, doc_ids = fit_doc_ids)
   doc_data <- .normalize_doc_data_table(
     doc_data,
     include_text = TRUE,
@@ -262,8 +299,8 @@ as_nlp_topic_fit.STM <- function(x, doc_ids = NULL, docvars = NULL,
     model_object = x,
     dtw = dtw,
     tww = tww,
-    doc_ids = rownames(dtw),
-    vocab = colnames(tww),
+    doc_ids = fit_doc_ids,
+    vocab = vocab,
     docvars = docvars,
     doc_data = doc_data,
     hyperparameters = .topic_hyperparameters_table(
@@ -305,6 +342,7 @@ as_nlp_topic_fit.default <- function(x, ...) {
                                             docvars = NULL, doc_data = NULL,
                                             control = list(),
                                             warn_partial = TRUE,
+                                            return_dtw = TRUE, return_tww = TRUE,
                                             allow_doc_ids_without_theta = FALSE,
                                             missing_theta_message,
                                             missing_phi_message,
@@ -312,6 +350,8 @@ as_nlp_topic_fit.default <- function(x, ...) {
   if (!is.logical(warn_partial) || length(warn_partial) != 1L || is.na(warn_partial)) {
     stop("'warn_partial' must be a single TRUE/FALSE value.", call. = FALSE)
   }
+  .validate_topic_cache_flag(return_dtw, "return_dtw")
+  .validate_topic_cache_flag(return_tww, "return_tww")
   control <- .normalize_topic_control(control)
   k <- .validate_legacy_warp_k_arg(k)
 
@@ -322,10 +362,10 @@ as_nlp_topic_fit.default <- function(x, ...) {
     dtw_doc_ids <- NULL
   }
 
-  model_tww <- .legacy_warp_model_tww(model_object)
-  dtw <- .legacy_warp_dtw_matrix(theta, doc_ids = dtw_doc_ids)
+  model_tww <- if (return_tww) .legacy_warp_model_tww(model_object) else NULL
+  dtw <- if (return_dtw) .legacy_warp_dtw_matrix(theta, doc_ids = dtw_doc_ids) else NULL
   tww_source <- if (!is.null(phi)) phi else model_tww
-  tww <- .legacy_warp_tww_matrix(tww_source, vocab = vocab)
+  tww <- if (return_tww) .legacy_warp_tww_matrix(tww_source, vocab = vocab) else NULL
 
   inferred_k <- .legacy_warp_infer_k(
     k = k,
@@ -334,10 +374,10 @@ as_nlp_topic_fit.default <- function(x, ...) {
     model_object = model_object
   )
 
-  if (is.null(dtw) && warn_partial) {
+  if (is.null(dtw) && return_dtw && warn_partial) {
     warning(missing_theta_message, call. = FALSE)
   }
-  if (is.null(tww) && warn_partial) {
+  if (is.null(tww) && return_tww && warn_partial) {
     warning(missing_phi_message, call. = FALSE)
   }
 
