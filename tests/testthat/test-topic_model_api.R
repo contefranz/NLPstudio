@@ -818,7 +818,7 @@ test_that("representative candidates validate public topic selectors", {
   expect_equal(nrow(empty_out), 0L)
   expect_named(
     empty_out,
-    c("doc_id", "Topic001", "Topic002", "topic_max_id", "topic_max_int",
+    c("doc_id", "topic_max_id", "topic_max_int",
       "topic_max_value", "candidate_band", "topic_rank")
   )
   expect_error(get_representative_candidates(dtw, topics = 3), "Some requested topics are not available")

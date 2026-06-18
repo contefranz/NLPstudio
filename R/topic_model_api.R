@@ -891,6 +891,10 @@ plot_topic_embeddings <- function(x, top_n = 15, ...) {
 #'   `c(0.25, 0.50, 0.75)`.
 #' @param labels Labels used for the candidate bands. Must have length
 #'   `length(quantile_probs) + 1L`. Defaults to `c("VLOW", "LOW", "HIGH", "VHIGH")`.
+#' @param top_n Optional integer. When supplied, keep only the `top_n`
+#'   highest-ranked documents within each dominant topic. Defaults to `NULL`,
+#'   which returns every document. Useful for extracting a handful of exemplar
+#'   documents per topic on large corpora.
 #'
 #' @returns A `data.table` with one row per document and these core columns:
 #'
@@ -953,6 +957,7 @@ plot_topic_embeddings <- function(x, top_n = 15, ...) {
 get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
                                           docvars = FALSE,
                                           include_text = FALSE,
+                                          top_n = NULL,
                                           quantile_probs = c(0.25, 0.50, 0.75),
                                           labels = c("VLOW", "LOW", "HIGH", "VHIGH"),
                                           doc_id_col = "doc_id",
@@ -966,17 +971,37 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
   if (!all(diff(quantile_probs) > 0) || any(quantile_probs <= 0) || any(quantile_probs >= 1)) {
     stop("quantile_probs must be strictly increasing values between 0 and 1.")
   }
+  if (!is.null(top_n)) {
+    if (!is.numeric(top_n) || length(top_n) != 1L || is.na(top_n) ||
+        !is.finite(top_n) || top_n < 1L || top_n != as.integer(top_n)) {
+      stop("top_n must be NULL or a single positive integer.")
+    }
+    top_n <- as.integer(top_n)
+  }
 
-  out <- get_dtw(
-    x = x,
-    doc_data = doc_data,
-    docvars = docvars,
-    include_text = include_text,
-    doc_id_col = doc_id_col,
-    text_col = text_col
-  )
-  if (!docvars) {
-    out <- .drop_stored_docvars(out, x)
+  is_dtw_table <- .looks_like_dtw_table(x)
+  if (is_dtw_table) {
+    # Existing wide path: preserves inline metadata/text supplied on the table.
+    out <- get_dtw(
+      x = x,
+      doc_data = doc_data,
+      docvars = docvars,
+      include_text = include_text,
+      doc_id_col = doc_id_col,
+      text_col = text_col
+    )
+    if (!docvars) {
+      out <- .drop_stored_docvars(out, x)
+    }
+    topic_cols <- .find_topic_columns(out, id_col = "doc_id")
+    if (length(topic_cols)) {
+      out[, (topic_cols) := NULL]
+    }
+  } else {
+    # Memory-light path for fitted models: compute the dominant topic directly
+    # from the DTW matrix in O(D) memory rather than materializing (and copying)
+    # the full wide document-topic table.
+    out <- .representative_candidates_base(x)
   }
 
   if (!is.null(topics)) {
@@ -994,6 +1019,42 @@ get_representative_candidates <- function(x, doc_data = NULL, topics = NULL,
       by = topic_max_id]
   out[, candidate_band := .assign_candidate_bands(topic_max_value, quantile_probs, labels),
       by = topic_max_id]
+
+  if (!is.null(top_n)) {
+    out <- out[topic_rank <= top_n]
+  }
+
+  # For the fit path, attach metadata/text after filtering so they are resolved
+  # for the retained rows. The DTW-table path already carried them through.
+  if (!is_dtw_table) {
+    if (docvars) {
+      out <- .bind_topic_metadata(
+        out,
+        .stored_docvars_table(x, doc_ids = out$doc_id),
+        overwrite = FALSE
+      )
+    }
+    out <- .bind_topic_metadata(
+      out,
+      .resolved_doc_data_table(
+        x = x,
+        doc_data = doc_data,
+        include_text = include_text,
+        doc_id_col = doc_id_col,
+        text_col = text_col
+      ),
+      overwrite = TRUE
+    )
+    if (!docvars) {
+      out <- .drop_stored_docvars(out, x)
+    }
+    if (include_text && !"text" %in% names(out)) {
+      warning(
+        "include_text = TRUE, but no text-bearing doc_data was available.",
+        call. = FALSE
+      )
+    }
+  }
 
   data.table::setorder(out, topic_max_id, topic_rank, doc_id)
   .order_representative_candidates_output(out)

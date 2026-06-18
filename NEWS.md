@@ -10,6 +10,10 @@
    reconstruct the tables on demand from the retained model object. The flags
    apply to every adopted backend: topicmodels, seededlda, stm, and text2vec.
 
+2. `get_representative_candidates()` gained a `top_n` argument. When supplied, it
+   keeps only the `top_n` highest-ranked documents within each dominant topic
+   (default `NULL` returns every document).
+
 ## CHANGES
 
 1. Reduced peak memory when standardizing document-topic (DTW) and topic-word
@@ -19,6 +23,15 @@
    also benefits `fit_topic_model()`, which shares the same builders.
 
 2. Removed a redundant matrix copy in the ETM topic-word extractor.
+
+3. `get_representative_candidates()` now derives each document's dominant topic
+   directly from the document-topic matrix in O(documents) memory, instead of
+   materializing and copying the full document-by-topic table. Its output is now
+   compact: the documented `doc_id`, `topic_max_*`, `topic_rank`, and
+   `candidate_band` columns (plus requested metadata/text), without the
+   per-document `Topic###` distribution columns that were previously included as
+   an undocumented byproduct. This unblocks representative-candidate extraction
+   for fits with very large document counts (e.g. n-gram sequential LDA).
 
 # NLPstudio 1.1.0  (2026-06-18)
 
