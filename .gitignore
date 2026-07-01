@@ -33,6 +33,7 @@ cobertura.xml
 
 # produced vignettes and local PDF artifacts
 vignettes/*.html
+vignettes/*.R
 *.pdf
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
